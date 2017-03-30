@@ -49,7 +49,7 @@ var GLOBAL_VARIABLES = {
 };
 
 var valueRE = /^((-)?\d+|true|false|undefined|null|'(?:\\'|[^'])*')$/;
-var repeatRE = /([\w$]+)(?:\s*,(\s*[\w$]+)){0,1}\s+in\s+([\w$]+(?:\.[\w$\(,\)]+){0,})(?:\s*\|\s*filter\s*\:\s*(.+?)){0,1}(?:\s*\|\s*orderBy\:(.+)){0,1}(\s|$)/;
+var repeatRE = /([\w$]+)(?:\s*,(\s*[\w$]+)){0,1}\s+in\s+([\w$]+(?:\.[\w$\(,\)]+){0,})(?:\s*\|\s*filter\s*:\s*(.+?)){0,1}(?:\s*\|\s*orderBy:(.+)){0,1}(\s|$)/;
 var matchExpressionRE = /\{\s*(\{[\s\S]+?\}|[\s\S]+?)\s*\}(?!\s*\})/g;
 var setRE = /([\w$]+(?:\.[\w$]+)*)\s*=\s*((?:\((?:'(?:\\'|[^'])*'|[^\)])+\)|'(?:\\'|[^'])*'|[\w$][!=]==?|[^;=])+?)(?=;|,|\)|$)/g;
 var methodRE = /\b((?:this\.){0,1}[\.\w$]+\()((?:'(?:\\'|[^'])*'|\((?:\((?:\((?:\(.*?\)|.)*?\)|.)*?\)|[^\)])*\)|[^\)])*)\)/g;
@@ -1064,7 +1064,7 @@ function genFunction(expression) {
     };
 }
 
-function updateParent(model) {
+function updateParentReference(model) {
     var parent = model.parent;
 
     if (!parent) return;
@@ -1302,7 +1302,7 @@ var Model = util.createClass({
 
             if (this.attributes != val) {
                 this.attributes = val;
-                updateParent(this);
+                updateParentReference(this);
                 updateViewNextTick(this);
             }
             return this;
@@ -1326,7 +1326,7 @@ var Model = util.createClass({
 
         if (this.attributes === null || !isPlainObject(this.attributes)) {
             this.attributes = {};
-            updateParent(this);
+            updateParentReference(this);
         }
 
         var data = this.attributes;
