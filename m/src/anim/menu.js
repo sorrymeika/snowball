@@ -1,4 +1,3 @@
-
 module.exports = {
     openEnterZIndex: 1,
     closeEnterZIndex: 2,

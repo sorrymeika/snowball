@@ -121,23 +121,20 @@ exports.createIndex = function (config, callback) {
         encoding: 'utf-8'
     }, function (err, html) {
 
-        var T = razor.nodeFn(html.replace(/^\uFEFF/i, ''));
+        var T = razor.nodeFn(Tools.removeBOMHeader(html));
         var rimg = /url\(("|'|)([^\)]+)\1\)/g;
 
         Promise.all(config.css.map(function (cssPath, i) {
 
             return new Promise(function (resolve) {
-
                 fs.readFile(cssPath, {
                     encoding: 'utf-8'
                 }, function (err, style) {
-                    resolve(style.replace(/^\uFEFF/i, ''));
+                    resolve(Tools.removeBOMHeader(style));
                 });
             });
 
-
         })).then(function (styles) {
-
             var style = styles.join('').replace(rimg, function (r0, r1, r2) {
                 return /^data\:image\//.test(r2) ? r0 : ("url(images/" + r2 + ")");
             });
@@ -151,7 +148,6 @@ exports.createIndex = function (config, callback) {
         });
     });
 }
-
 
 exports.startWebServer = function (config) {
     var express = require('express');
@@ -193,7 +189,7 @@ exports.startWebServer = function (config) {
                     next();
                     return;
                 }
-                text = text.replace(/^\uFEFF/i, '');
+                text = Tools.removeBOMHeader(text);
                 text = razor.web(text);
                 res.set('Content-Type', "text/javascript; charset=utf-8");
                 res.send(text);
@@ -208,7 +204,7 @@ exports.startWebServer = function (config) {
                     next();
                     return;
                 }
-                text = text.replace(/^\uFEFF/i, '');
+                text = Tools.removeBOMHeader(text);
 
                 text = formatJs(text);
                 text = Tools.replaceDefine(filePath.replace(/(^\/)|(\.js$)/g, ''), text, requires);
@@ -233,7 +229,7 @@ exports.startWebServer = function (config) {
                 return;
             }
 
-            text = text.replace(/^\uFEFF/i, '');
+            text = Tools.removeBOMHeader(text);
             if (isRazorTpl) text = razor.web(text);
             text = formatJs(text);
 
@@ -251,7 +247,6 @@ exports.startWebServer = function (config) {
     });
 
     app.all('*.css', function (req, res, next) {
-
         fsc.firstExistentFile(_.map(config.projects, 'root').concat(config.path), [req.params[0] + '.scss'], function (fileName) {
             if (!fileName) {
                 next();
@@ -389,7 +384,6 @@ if (args.build) {
             }
 
             var packCss = function (key, fileList) {
-
                 Promise.all(fileList.map(function (file) {
 
                     return new Promise(function (resolve) {
@@ -418,7 +412,6 @@ if (args.build) {
                 })).then(function (results) {
                     Tools.save(path.join(destDir, project.root, key), results.join(''));
                 });
-
             }
 
             for (var key in project.css) {
@@ -492,7 +485,6 @@ if (args.build) {
                             });
                         })
                     });
-
                 })(project.route[key]);
             }
 
@@ -509,17 +501,13 @@ if (args.build) {
         var resouceExt = '*.(jpg|gif|png|eot|svg|ttf|woff)';
 
         Promise.all(config.images.map(function (imgDir, i) {
-
             return new Promise(function (resolve, reject) {
-
                 fsc.copy(path.join(baseDir, imgDir), path.join(config.dest, 'images'), resouceExt, function (err, result) {
                     resolve(result);
                 });
-            })
-
+            });
         })).then(function () {
             config.projects.forEach(function (proj) {
-
                 if (proj.images) {
                     proj.images.forEach(function (imgDir) {
                         fsc.copy(path.join(proj.root, imgDir), path.join(config.dest, proj.root, 'images'), resouceExt, function (err, result) {
@@ -528,17 +516,13 @@ if (args.build) {
                     });
                 }
             });
-
         }).then(function () {
-
             console.log('copy resources success');
-
         });
     });
 
 } else {
     exports.loadConfig(function (config) {
-
         exports.startWebServer(config);
     });
 }

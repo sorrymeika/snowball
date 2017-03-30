@@ -1,30 +1,27 @@
-﻿module.exports = {
+module.exports = {
     openEnterZIndex: 2,
     closeEnterZIndex: 1,
     openExitZIndex: 1,
     closeExitZIndex: 3,
     openEnterAnimationFrom: {
-        translate: '99%,0%'
+        opacity: 0
     },
     openEnterAnimationTo: {
-        translate: '0%,0%'
+        opacity: 1
     },
     openExitAnimationFrom: {
-        translate: '0%,0%'
     },
     openExitAnimationTo: {
-        translate: '-50%,0%'
-    },
-    closeEnterAnimationTo: {
-        translate: '0%,0%'
     },
     closeEnterAnimationFrom: {
-        translate: '-50%,0%'
+        translate: '0,0'
+    },
+    closeEnterAnimationTo: {
     },
     closeExitAnimationFrom: {
-        translate: '0%,0%'
+        opacity: 1
     },
     closeExitAnimationTo: {
-        translate: '100%,0%'
+        opacity: 0
     }
 };

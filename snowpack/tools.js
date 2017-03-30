@@ -232,7 +232,7 @@ function copy(sourcePath, destPath, callback) {
     return _save(sourcePath, destPath, true, callback)
 }
 
-var Tools = function (baseDir, destDir) {
+function Tools(baseDir, destDir) {
     this.baseDir = baseDir;
     this.destDir = destDir;
 
@@ -243,7 +243,6 @@ Tools.prototype = {
 
     combine: function (pathDict) {
         var self = this;
-
         var map = {};
 
         for (var destPath in pathDict) {

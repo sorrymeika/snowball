@@ -46,7 +46,7 @@ function onStatusChange(e) {
 var Activity = Component.extend({
     el: '<div class="view"></div>',
 
-    toggleAnim: 'def',
+    toggleAnim: 'default',
 
     recordBackURL: true,
     defaultBackURL: '/',
