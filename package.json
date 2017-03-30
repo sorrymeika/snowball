@@ -1,0 +1,30 @@
+{
+    "name": "snowball",
+    "version": "0.0.1",
+    "description": "snowball mvvm framework",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "dependencies": {
+        "nodemailer": "",
+        "lodash": "",
+        "express": ">=4.12.2",
+        "multer": "",
+        "body-parser": "",
+        "multiparty": ">=4.1.1",
+        "uglify-js": "",
+        "fs-extra": "",
+        "mongodb": "~2.0",
+        "oracledb": "",
+        "mysql": "2.6.2",
+        "redis": "",
+        "hiredis": "",
+        "async": "",
+        "canvas": "",
+        "gm": "",
+        "node-sass": ""
+    },
+    "author": "SL",
+    "license": "ISC"
+}

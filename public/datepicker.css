@@ -1,0 +1,131 @@
+﻿.clear { clear: both; }
+.it, .so, .is { border: 1px solid #ccc; vertical-align: middle; }
+
+/* Date Picker*/
+table.jCalendar { border-collapse: inherit; width: 100%; font-family: Tahoma; z-index: 2001; color: #666666; border: 1px solid #ffffff; }
+table.jCalendar th { font-weight: normal; padding: 3px 5px; vertical-align: middle; border-bottom: 1px solid #cccccc; }
+table.jCalendar th.weekend { color: #c60b02; }
+table.jCalendar td { font-size: 12px; padding: 4px 3px; text-align: center; }
+table.jCalendar th.weeknum, table.jCalendar td.weeknum, div.datepicker table th.datepickerWeek { font-weight: bold; border-right: 1px solid #e7e7e7; }
+table.jCalendar td.current-month.weekend { color: #c60b02; }
+table.jCalendar td.other-month { color: #ffffff; visibility: hidden; }
+table.jCalendar td.today { background-color: #f1f1f1; }
+table.jCalendar td.selected { background: #fdab00; color: #ffffff; }
+table.jCalendar td.selected.dp-hover { background: #fdab00; color: #ffffff; }
+table.jCalendar td.dp-hover, table.jCalendar .activeWeekHover { background: #fcbd12; color: #ffffff; /* border:1px solid #93d1e8; */ }
+table.jCalendar .selectedWeek { background: #fdab00; color: #fff; }
+table.jCalendar td.disabled, table.jCalendar td.disabled.dp-hover { background: #ECF1F4; color: #888; }
+table.jCalendar td.unselectable, table.jCalendar td.unselectable:hover, table.jCalendar td.unselectable.dp-hover { background: #fdab00; color: #ffffff; }
+
+/* For the popup */
+
+/* NOTE - you will probably want to style a.dp-choose-date - see how I did it in demo.css */
+
+div.dp-popup { position: relative; background: #fff; border: 1px solid #cccccc; font-size: 12px; font-family: arial, sans-serif; width: 188px; /*width:162px\9;*/ line-height: 1.2em; font-family: Tahoma; }
+div#dp-popup { position: absolute; z-index: 199; }
+div.dp-popup h2, div.dp-popup .month-year { font-size: 12px; text-align: center; margin: 0; padding: 2px 0; color: #0d68c1; font-weight: normal; }
+div.dp-popup .month-year { border-bottom: 1px solid #CCCCCC; }
+a#dp-close { font-size: 12px; padding: 4px 0; text-align: center; display: block; }
+a#dp-close:hover { text-decoration: underline; }
+div.dp-popup a { color: #0D68C1; text-decoration: none; padding: 3px 4px 0; }
+div.dp-popup div.dp-nav-prev, div.dp-popup div.dp-month-nav-prev { position: absolute; top: 2px; left: 4px; width: 100px; }
+div.dp-popup div.dp-nav-prev a, div.dp-popup div.dp-month-nav-prev a { float: left; font-size: 14px; }
+/* Opera needs the rules to be this specific otherwise it doesn't change the cursor back to pointer after you have disabled and re-enabled a link */
+div.dp-popup div.dp-nav-prev a, div.dp-popup div.dp-nav-next a { cursor: pointer; }
+div.dp-popup div.dp-nav-prev a.disabled, div.dp-popup div.dp-nav-next a.disabled { cursor: default; }
+div.dp-popup div.dp-nav-next, div.dp-popup div.dp-month-nav-next { position: absolute; top: 2px; right: 4px; width: 100px; }
+div.dp-popup div.dp-nav-next a, div.dp-popup div.dp-month-nav-next a { float: right; font-size: 14px; }
+div.dp-popup a.disabled { cursor: default; color: #aaa; }
+div.dp-popup td { cursor: pointer; }
+div.dp-popup td.disabled { cursor: default; background: #FFFFFF; color: #888888; -moz-opacity: 0.5; opacity: 0.5; filter: alpha(opacity=50); }
+
+div.dp-calendarNum { position: absolute; top: 48px; left: 2px; font-size: 90px; color: #e2e2e2; z-index: 1900; cursor: default; height: 90px; width: 186px; line-height: 90px; text-align: center; }
+div.dp-calendar { z-index: 2000; position: relative; }
+div.dp-tabs a { display: block; width: 93px; background-color: #e1e1e1; padding: 4px 0; text-align: center; float: left; border-right: 1px solid #d4d4d4; border-bottom: 1px solid #d4d4d4; cursor: pointer; color: #666666; }
+div.dp-tabs a.set-month { }
+div.dp-tabs a.set-day { border-right: 1px solid #e1e1e1; }
+div.dp-tabs a.set-month.selected { background-color: #ffffff; border-right: 1px solid #d4d4d4; border-bottom: 1px solid #ffffff; }
+div.dp-tabs a.set-day.selected { background-color: #ffffff; border-right: 1px solid #ffffff; border-bottom: 1px solid #ffffff; }
+.clearfix:after { content: "."; display: block; height: 0; clear: both; visibility: hidden; zoom: 1; }
+* html .clearfix { height: 1%; }
+
+.dp-month { z-index: 2000; position: relative; padding: 20px 0; }
+div.dp-monthNum { position: absolute; top: 28px; left: 2px; font-size: 67px; color: #e2e2e2; z-index: 1900; cursor: default; height: 90px; width: 186px; line-height: 90px; text-align: center; }
+table.jMonth { border-collapse: inherit; width: 100%; font-family: Tahoma; z-index: 2001; color: #666666; border: 1px solid #ffffff; }
+table.jMonth th { font-weight: normal; padding: 3px 5px; vertical-align: middle; border-bottom: 1px solid #cccccc; }
+table.jMonth th.weekend { color: #c60b02; }
+table.jMonth td { font-size: 12px; padding: 4px 6px; text-align: center; }
+table.jMonth td.current-month.weekend { color: #c60b02; }
+table.jMonth td.other-month { color: #ffffff; visibility: hidden; }
+table.jMonth td.thisMonth { background: #fdab00; color: #ffffff; }
+table.jMonth td.selected { background: #fdab00; color: #ffffff; }
+table.jMonth td.selected.dp-hover { background: #fdab00; color: #ffffff; }
+table.jMonth td.dp-year-hover, table.jMonth .activeWeekHover { background: #fcbd12; color: #ffffff; /* border:1px solid #93d1e8; */ }
+table.jMonth .selectedWeek { background: #f66; color: #fff; }
+table.jMonth td.disabled, table.jCalendar td.disabled.dp-hover { background: #FFFFFF; color: #888888; -moz-opacity: 0.5; opacity: 0.5; filter: alpha(opacity=50); }
+table.jMonth td.unselectable, table.jMonth td.unselectable:hover, table.jMonth td.unselectable.dp-hover { background: #fdab00; color: #ffffff; }
+
+
+
+.Wdate { border: #CCCCCC 1px solid; height: 22px; line-height: 22px; background: #fff url(images/datePicker.gif) no-repeat right; font-family: verdana; width: 116px; }
+
+.WdateFmtErr { font-weight: bold; color: red; }
+
+/*new picker*/
+div.datepicker { position: relative; font-family: Arial, Helvetica, sans-serif; font-size: 12px; width: 196px; height: 147px; position: absolute; cursor: default; top: 0; left: 0; display: none; }
+.datepickerContainer { position: absolute; top: 10px; left: 10px; }
+.datepickerBorderT { position: absolute; left: 10px; top: 0; right: 10px; height: 10px; }
+.datepickerBorderB { position: absolute; left: 10px; bottom: 0; right: 10px; height: 10px; }
+.datepickerBorderL { position: absolute; left: 0; bottom: 10px; top: 10px; width: 10px; }
+.datepickerBorderR { position: absolute; right: 0; bottom: 10px; top: 10px; width: 10px;}
+.datepickerBorderTL { position: absolute; top: 0; left: 0; width: 10px; height: 10px; }
+.datepickerBorderTR { position: absolute; top: 0; right: 0; width: 10px; height: 10px; }
+.datepickerBorderBL { position: absolute; bottom: 0; left: 0; width: 10px; height: 10px; }
+.datepickerBorderBR { position: absolute; bottom: 0; right: 0; width: 10px; height: 10px; }
+.datepickerHidden { display: none; }
+div.datepicker table { border-collapse: collapse; }
+div.datepicker a { color: #555; text-decoration: none; outline: none; padding: 2px; }
+div.datepicker table td { text-align: center; padding: 0; margin: 0; vertical-align: top; }
+div.datepicker th { text-align: center; color: #999; font-weight: normal; }
+div.datepicker tbody th { text-align: left; }
+div.datepicker tbody a { display: block; }
+.datepickerDays a { width: 20px; line-height: 16px; height: 16px; }
+.datepickerYears a, .datepickerMonths a { width: 44px; line-height: 36px; height: 36px; text-align: center; }
+td.datepickerNotInMonth a { color: #666; }
+tbody.datepickerDays td.datepickerSelected { background: #FFAAAB; }
+tbody.datepickerDays td.datepickerNotInMonth.datepickerSelected { background: #FFD5D6; }
+tbody.datepickerYears td.datepickerSelected, tbody.datepickerMonths td.datepickerSelected { background: #17384d; }
+div.datepicker a:hover, div.datepicker a:hover { color: #88c5eb; }
+div.datepicker td.datepickerNotInMonth a:hover { color: #999; }
+div.datepicker tbody th { text-align: center; }
+div.datepicker thead th.datepickerGoPrev, div.datepicker thead th.datepickerMonth, div.datepicker thead th.datepickerGoNext { background: url("images/weekCon_bg.png") repeat-x scroll 0 -46px transparent; }
+div.datepicker tbody td.datepickerSunday span, div.datepicker tbody td.datepickerSaturday span { color: #C60B02; }
+div.datepicker thead th a { color: #fff; }
+div.datepicker .datepickerDoW { background-color: #f1f4f9; }
+.datepickerSpace div { width: 20px; }
+.datepickerGoNext a, .datepickerGoPrev a, .datepickerMonth a { text-align: center; height: 20px; line-height: 20px; }
+.datepickerGoNext a { float: right; width: 20px; }
+.datepickerGoPrev a { float: left; width: 20px; }
+table.datepickerViewDays tbody.datepickerMonths, table.datepickerViewDays tbody.datepickerYears { display: none; }
+table.datepickerViewMonths tbody.datepickerDays, table.datepickerViewMonths tbody.datepickerYears, table.datepickerViewMonths tr.datepickerDoW { display: none; }
+table.datepickerViewYears tbody.datepickerDays, table.datepickerViewYears tbody.datepickerMonths, table.datepickerViewYears tr.datepickerDoW { display: none; }
+td.datepickerDisabled a, td.datepickerDisabled.datepickerNotInMonth a { color: #333; }
+td.datepickerDisabled a:hover { color: #333; }
+td.datepickerSpecial a { background: #700; }
+td.datepickerSpecial.datepickerSelected a { background: #a00; }
+
+/*new datepicker */
+input.inputDate { border: 1px solid #999; padding: 4px; border-bottom-color: #ddd; border-right-color: #ddd; width: 65px; }
+#widget { display: inline-block; position: relative; vertical-align: middle; z-index: 22; }
+#widgetField { width: 218px; height: 26px; background: url("images/datePicker.gif") no-repeat scroll right center #FFFFFF; overflow: hidden; position: relative; border: 1px solid #CCCCCC; }
+#widgetField a { display: block; position: absolute; width: 26px; height: 26px; top: 0; right: 0; text-decoration: none; text-indent: -3000px; }
+#widgetField span { font-size: 12px; color: #000; position: absolute; top: 0; height: 26px; line-height: 26px; left: 5px; width: 186px; text-align: center; }
+#widgetField input { border: 0 none; color: #000000; font-size: 12px; height: 26px; left: 5px; line-height: 26px; position: absolute; text-align: center; top: 0; width: 186px; vertical-align: middle; }
+#widgetCalendar { position: absolute; top: 25px; left: 0; height: 0px; overflow: hidden; width: 646px; }
+#widgetCalendar .c-box { border: 1px solid #b9b9b9; background-color: #fff; }
+#widgetCalendar .datepicker { position: absolute; bottom: 0; top: auto; }
+#widgetCalendar .datepickerContainer, #widgetCalendar .datepickerBorderT, #widgetCalendar .datepickerBorderB, #widgetCalendar .datepickerBorderL, #widgetCalendar .datepickerBorderR, #widgetCalendar .datepickerBorderTL, #widgetCalendar .datepickerBorderTR, #widgetCalendar .datepickerBorderBL, #widgetCalendar .datepickerBorderBR { background: transparent !important; }
+#widgetCalendar .datepicker td a:hover { background: none repeat scroll 0 0 #FCBD12; color: #FFF; }
+#widgetCalendar .datepicker thead th a:hover { background-color: transparent; color: #FFF; }
+#widgetCalendar .c-btn { padding: 0 5px 10px 15px; }
+.datepickerDisabled { filter: alpha(opacity=30); -moz-opacity: .3; opacity: 0.3; cursor: default; color: #777; }

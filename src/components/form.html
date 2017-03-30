@@ -1,0 +1,69 @@
+﻿<form class="form" action="@(url)" method="@method" enctype="@(enctype||"multipart/form-data")">
+    @for (var i=0,len=hiddens.length;i<len;i++) {
+        var field=hiddens[i];
+        <input type="hidden" name="@(field.field)" sn-model="data.@(field.field)" value="{data.@(field.field)}" />
+    }
+    <table>
+        <tbody>
+            @for (var i=0,len=fields.length;i < len;i++) {
+                var items=fields[i],
+                    field;
+                if (!items.length){
+                    items=[items];
+                }
+                <tr sn-if="@(items.map(function(item){ return 'fields.'+item.field+'.visible' }).join('&&'))">
+                    @for (var j=0,length=items.length;j < length;j++){
+                        field = items[j];
+                        var attr = 'placeholder="{fields.'+field.field+'.placeholder}" ref="'+field.field+'" style="' + (field.width ? "width:" + field.width+"px;" : '') + (field.height ? "height:" + field.height+"px;" : '') + '" name="' + field.field + '" sn-model="data.' + field.field + '" value="{data.' + field.field + '}"';
+
+                        <th sn-style="{fields.@(field.field).vAlign?'vertical-align:'+field.vAlign:''}" sn-if="fields.@(field.field).visible">@field.label <i sn-if="fields.@(field.field).emptyAble===false">*</i></th>
+                        <td colspan="@(field.colSpan||1)" sn-if="fields.@(field.field).visible">
+
+                        @if (field.type=='text'||!field.type){
+                            <input class="@(field.className||'text')" type="text"@(attr)/>
+
+                        } else if (field.type=='textarea') {
+                            <textarea style="padding:5px" class="@(field.className||'text')"@(attr)></textarea>
+
+                        } else if (field.type=='select') {
+                            <select class="@(field.className||'text')"@(attr)>
+                                <option selected="{item.value==data.@(field.field)}" sn-repeat="item in fields.@(field.field).options" value="{item.value}">{item.text}</option>
+                            </select>
+
+                        } else if (field.type=='number'){
+                            <input class="@(field.className||'text_normal')" type="text"@(attr)/>
+
+                        } else if (field.type=='password'){
+                            <input class="@(field.className||'text')" type="password"@(attr)/>
+
+                        } else if (field.type=='captcha'){
+                            <input class="@(field.className||'text_normal')" type="text"@(attr)/>
+                            <img class="captcha" src="@(field.captcha)?v=@(Date.now())" onclick="this.src='@(field.captcha)?v='+Date.now()" src="{captcha||'@(field.captcha)'}"/>
+
+                        } else if (field.type=='file'){
+                            <input type="file" name="@(field.field)" sn-model="data.@(field.field)"/>
+
+                        }  else if (field.type=='radio'||field.type=='checkbox'){
+                            <input type="@(field.type)" name="@(field.field)" sn-model="data.@(field.field)" checked="{data.@(field.field)||undefined}"/>
+
+                        } else {
+                            <input type="hidden"@(attr) />
+                            <text>@(field.html||'')</text>
+                        }
+                            <span class="{result.@(field.field).success==-1?'msg_tip':result.@(field.field).success===true?'right_tip':result.@(field.field).success===false?'error_tip':'hide'}" html="{result.@(field.field).msg}"></span>
+                        </td>
+                    }
+                </tr>
+            }
+            <tr>
+                <td colspan="2" class="ta_r action"> 
+                    @if (buttons) {
+                        for (var i=0,len=buttons.length;i < len;i++) {
+                            <b style="@(buttons[i].style)" class="button" sn-click="this.button@(i)Click()">@(buttons[i].value)</b>
+                        }
+                    }
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</form>
