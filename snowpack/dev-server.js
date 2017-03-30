@@ -255,21 +255,17 @@ exports.startWebServer = function (config) {
 
             sass.render({
                 file: fileName
-
             }, function (err, result) {
                 if (err) {
                     console.log(err);
                     next();
-
                 } else {
                     res.set('Content-Type', "text/css; charset=utf-8");
                     res.send(result.css.toString());
                 }
-
             });
         });
     });
-
 
     for (var key in config.proxy) {
         var proxy = config.proxy[key].split(':');
@@ -353,17 +349,13 @@ if (args.build) {
                             resourceMapping.push(jsId);
 
                             if (isRazorTpl) text = razor.web(text);
-
                             text = formatJs(text);
-
                             text = Tools.compressJs(Tools.replaceDefine(jsId, text));
 
                             resolve(text);
                         });
                     })
-
                 })).then(function (results) {
-
                     Tools.save(path.join(destDir, project.root, key + '.js'), results.join(''));
                 });
             }
@@ -387,7 +379,6 @@ if (args.build) {
                 Promise.all(fileList.map(function (file) {
 
                     return new Promise(function (resolve) {
-
                         fsc.firstExistentFile([path.join(project.root, file), path.join(project.root, file).replace(/\.css$/, '.scss')], function (file) {
 
                             if (/\.css$/.test(file)) {
@@ -406,7 +397,6 @@ if (args.build) {
                                 });
                             }
                         });
-
                     });
 
                 })).then(function (results) {
@@ -418,7 +408,6 @@ if (args.build) {
                 requires.push(joinPath(project.root, key));
 
                 if (project.css[key] && project.css[key].length) {
-
                     //打包项目引用css
                     packCss(key, project.css[key]);
                 }
@@ -495,7 +484,6 @@ if (args.build) {
                 Tools.save(path.join(destDir, project.root, 'controller.js'), codes);
             });
         });
-
 
         //复制图片资源
         var resouceExt = '*.(jpg|gif|png|eot|svg|ttf|woff)';
