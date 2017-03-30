@@ -3,7 +3,7 @@
 var BrowserMutationObserver = window.MutationObserver || window.WebKitMutationObserver;
 
 var flushQueue = new Array(1000);
-let len = 0;
+var len = 0;
 
 // as soon as possible
 function asap(callback, arg) {

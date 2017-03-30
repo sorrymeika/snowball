@@ -11,14 +11,20 @@ var Util = require('util');
 var util = require('./util');
 _.extend(Util, util);
 
-var http_proxy = require('./http-proxy');
+var httpProxy = require('./http-proxy');
 
-var joinPath = util.joinPath;
+var getDefinedId = util.joinPath;
 var formatJs = Tools.formatJs;
 
+// if (__dirname != process.cwd()) process.chdir(__dirname);
+
+function absolutePath(...paths) {
+    if (paths[0][0] !== '/') paths.unshift(process.cwd());
+    return path.join(...paths);
+}
+
 function trimPath(path) {
-    var rpath = /(^\/)|(\/$)/g;
-    return path.replace(rpath, '');
+    return path.replace(/(^\/)|(\/$)/g, '');
 }
 
 function combineRouters(config) {
@@ -37,8 +43,8 @@ function combineRouters(config) {
                 router = _.extend({}, router);
             }
             _.extend(router, {
-                controller: joinPath("views", router.controller),
-                template: joinPath("template", router.template)
+                controller: getDefinedId("views", router.controller),
+                template: getDefinedId("template", router.template)
             });
 
             router.root = project.root;
@@ -51,7 +57,6 @@ function combineRouters(config) {
 }
 
 exports.loadConfig = function (callback) {
-
     return new Promise(function (resolve) {
         var exec = require('child_process').exec;
 
@@ -64,22 +69,17 @@ exports.loadConfig = function (callback) {
 
             resolve(matchIp ? matchIp[1] : '127.0.0.1');
         });
-
     }).then(function (ip) {
-        console.log(ip);
-
         var map = {
             ip: ip
         }
+        console.log(ip);
 
         return new Promise(function (resolve) {
-
-            fs.readFile('./global.json', {
+            fs.readFile(absolutePath('./global.json'), {
                 encoding: 'utf-8'
             }, function (err, globalStr) {
-
                 globalStr = globalStr.replace(/\$\{(\w+)\}/g, function (match, key) {
-
                     return (key in map) ? map[key] : match;
                 })
 
@@ -88,15 +88,11 @@ exports.loadConfig = function (callback) {
 
                 resolve(globalConfig);
             })
-        })
-
+        });
     }).then(function (globalConfig) {
-
         return Promise.all(globalConfig.projects.map(function (project, i) {
-
             return new Promise(function (resolve) {
-
-                fs.readFile(path.join(project, 'config.json'), {
+                fs.readFile(absolutePath(project, 'config.json'), {
                     encoding: 'utf-8'
                 }, function (err, data) {
                     var config = JSON.parse(data);
@@ -105,7 +101,6 @@ exports.loadConfig = function (callback) {
                     resolve(config);
                 });
             });
-
         })).then(function (results) {
             globalConfig.projects = results;
 
@@ -116,24 +111,21 @@ exports.loadConfig = function (callback) {
     })
 }
 
-exports.createIndex = function (config, callback) {
-    fs.readFile('./root.html', {
+function createIndex(config, callback) {
+    fs.readFile(absolutePath('./root.html'), {
         encoding: 'utf-8'
     }, function (err, html) {
-
         var T = razor.nodeFn(Tools.removeBOMHeader(html));
         var rimg = /url\(("|'|)([^\)]+)\1\)/g;
 
         Promise.all(config.css.map(function (cssPath, i) {
-
             return new Promise(function (resolve) {
-                fs.readFile(cssPath, {
+                fs.readFile(absolutePath(cssPath), {
                     encoding: 'utf-8'
                 }, function (err, style) {
                     resolve(Tools.removeBOMHeader(style));
                 });
             });
-
         })).then(function (styles) {
             var style = styles.join('').replace(rimg, function (r0, r1, r2) {
                 return /^data\:image\//.test(r2) ? r0 : ("url(images/" + r2 + ")");
@@ -149,16 +141,31 @@ exports.createIndex = function (config, callback) {
     });
 }
 
+exports.createIndex = createIndex;
+
 exports.startWebServer = function (config) {
     var express = require('express');
     var app = express();
 
     config.resourceMapping = {};
 
-    app.use('/dest', express.static(config.dest));
+    app.use('/dest', express.static(absolutePath(config.dest)));
+
+    if (config.static) {
+        Object.keys(config.static).forEach(function (key) {
+            app.use(key, express.static(absolutePath(config.static[key])));
+        });
+    }
+
+    config.images.forEach(function (imageDir) {
+        app.use('/images', express.static(absolutePath(imageDir)));
+    });
+
+    app.use('/dest', express.static(absolutePath(config.dest)));
+
 
     app.get('/', function (req, res) {
-        exports.createIndex(config, function (err, html) {
+        createIndex(config, function (err, html) {
             res.send(html);
         });
     });
@@ -169,15 +176,15 @@ exports.startWebServer = function (config) {
 
         for (var key in project.css) {
             project.css[key] && project.css[key].forEach(function (file) {
-                requires.push(joinPath(project.root, file));
+                requires.push(getDefinedId(project.root, file));
             });
         }
 
         var sprite = project.sprite;
         if (sprite) {
-            sprite.out = path.join(root, sprite.out);
-            sprite.src = path.join(root, sprite.src);
-            sprite.template = path.join(root, sprite.template);
+            sprite.out = absolutePath(root, sprite.out);
+            sprite.src = absolutePath(root, sprite.src);
+            sprite.template = absolutePath(root, sprite.template);
             sprity.create(sprite);
         }
 
@@ -216,60 +223,70 @@ exports.startWebServer = function (config) {
     });
 
     app.all('*.js', function (req, res, next) {
-
         var filePath = req.url;
         var isRazorTpl = /\.(html|tpl|cshtml)\.js$/.test(filePath);
 
-        fsc.readFirstExistentFile(_.map(config.projects, 'root').concat(config.path), isRazorTpl ? [filePath.replace(/\.js$/, '')] : [filePath, filePath + 'x'], function (err, text) {
+        fsc.readFirstExistentFile(
+            _.map(config.projects, 'root')
+                .concat(config.path)
+                .map((projPath) => absolutePath(projPath)),
+            isRazorTpl ? [filePath.replace(/\.js$/, '')] : [filePath, filePath + 'x'],
+            function (err, text) {
+                console.log(filePath);
 
-            console.log(filePath);
+                if (err) {
+                    next();
+                    return;
+                }
 
-            if (err) {
-                next();
-                return;
+                text = Tools.removeBOMHeader(text);
+                if (isRazorTpl) text = razor.web(text);
+                text = formatJs(text);
+
+                res.set('Content-Type', "text/javascript; charset=utf-8");
+                res.send(text);
             }
-
-            text = Tools.removeBOMHeader(text);
-            if (isRazorTpl) text = razor.web(text);
-            text = formatJs(text);
-
-            res.set('Content-Type', "text/javascript; charset=utf-8");
-            res.send(text);
-        });
+        );
     });
 
     config.projects.forEach(function (project) {
-        app.use(express.static(project.root));
+        app.use(express.static(absolutePath(project.root)));
     });
 
     config.path.forEach(function (searchPath) {
-        app.use(express.static(searchPath));
+        app.use(express.static(absolutePath(searchPath)));
     });
 
     app.all('*.css', function (req, res, next) {
-        fsc.firstExistentFile(_.map(config.projects, 'root').concat(config.path), [req.params[0] + '.scss'], function (fileName) {
-            if (!fileName) {
-                next();
-                return;
-            }
-
-            sass.render({
-                file: fileName
-            }, function (err, result) {
-                if (err) {
-                    console.log(err);
+        fsc.firstExistentFile(
+            _.map(config.projects, 'root')
+                .concat(config.path)
+                .map(projPath => absolutePath(projPath)),
+            [req.params[0] + '.scss'],
+            function (fileName) {
+                if (!fileName) {
                     next();
-                } else {
-                    res.set('Content-Type', "text/css; charset=utf-8");
-                    res.send(result.css.toString());
+                    return;
                 }
-            });
-        });
+
+                sass.render({
+                    file: fileName
+                }, function (err, result) {
+                    if (err) {
+                        console.log(err);
+                        next();
+                    } else {
+                        res.set('Content-Type', "text/css; charset=utf-8");
+                        res.send(result.css.toString());
+                    }
+                });
+            }
+        );
     });
 
     for (var key in config.proxy) {
         var proxy = config.proxy[key].split(':');
-        app.all(key, http_proxy(proxy[0], proxy[1] ? parseInt(proxy[1]) : 80));
+        app.all(key, httpProxy(proxy[0], proxy[1] ? parseInt(proxy[1]) : 80));
     }
 
     console.log("start with", config.port, process.argv);
@@ -298,10 +315,10 @@ if (args.build) {
             debug: false
         });
 
-        var baseDir = path.join(__dirname, './');
-        var destDir = path.join(__dirname, config.dest);
+        var absoluteBaseDir = absolutePath('./');
+        var absoluteDestDir = absolutePath(config.dest);
 
-        var tools = new Tools(baseDir, destDir);
+        var tools = new Tools(absoluteBaseDir, absoluteDestDir);
 
         //打包框架
         tools.combine({
@@ -310,8 +327,7 @@ if (args.build) {
 
         if (config.copy) {
             Object.keys(config.copy).forEach(function (key) {
-                fsc.copy(config.copy[key], path.join(config.dest, key), function () {
-
+                fsc.copy(config.copy[key], absolutePath(config.dest, key), function () {
                 });
             })
         }
@@ -320,8 +336,8 @@ if (args.build) {
         config.resourceMapping = tools.combine(config.js);
 
         //生成首页
-        exports.createIndex(config, function (err, html) {
-            Tools.save(path.join(destDir, 'index.html'), Tools.compressHTML(html));
+        createIndex(config, function (err, html) {
+            Tools.save(path.join(absoluteDestDir, 'index.html'), Tools.compressHTML(html));
         });
 
         //打包业务代码
@@ -344,7 +360,7 @@ if (args.build) {
 
                     return new Promise(function (resolve) {
                         fsc.readFirstExistentFile([project.root], isRazorTpl ? [file] : [file + '.js', file + '.jsx'], function (err, text, fileName) {
-                            var jsId = ids ? ids[i] : joinPath(project.root, file);
+                            var jsId = ids ? ids[i] : getDefinedId(project.root, file);
 
                             resourceMapping.push(jsId);
 
@@ -356,12 +372,12 @@ if (args.build) {
                         });
                     })
                 })).then(function (results) {
-                    Tools.save(path.join(destDir, project.root, key + '.js'), results.join(''));
+                    Tools.save(path.join(absoluteDestDir, project.root, key + '.js'), results.join(''));
                 });
             }
 
             for (var key in project.js) {
-                var combinedJs = joinPath(project.root, key);
+                var combinedJs = getDefinedId(project.root, key);
                 var resourceMapping = config.resourceMapping[combinedJs] = [];
                 var jsMap = project.js[key];
                 var tmp;
@@ -379,7 +395,7 @@ if (args.build) {
                 Promise.all(fileList.map(function (file) {
 
                     return new Promise(function (resolve) {
-                        fsc.firstExistentFile([path.join(project.root, file), path.join(project.root, file).replace(/\.css$/, '.scss')], function (file) {
+                        fsc.firstExistentFile([absolutePath(project.root, file), absolutePath(project.root, file).replace(/\.css$/, '.scss')], function (file) {
 
                             if (/\.css$/.test(file)) {
                                 fs.readFile(file, 'utf-8', function (err, text) {
@@ -400,12 +416,12 @@ if (args.build) {
                     });
 
                 })).then(function (results) {
-                    Tools.save(path.join(destDir, project.root, key), results.join(''));
+                    Tools.save(path.join(absoluteDestDir, project.root, key), results.join(''));
                 });
             }
 
             for (var key in project.css) {
-                requires.push(joinPath(project.root, key));
+                requires.push(getDefinedId(project.root, key));
 
                 if (project.css[key] && project.css[key].length) {
                     //打包项目引用css
@@ -431,11 +447,11 @@ if (args.build) {
                         template = router.template;
                     }
 
-                    controller = joinPath(project.root, 'views', controller);
-                    template = joinPath(project.root, 'template', template);
+                    controller = getDefinedId(project.root, 'views', controller);
+                    template = getDefinedId(project.root, 'template', template);
 
-                    var controllerPath = path.join(baseDir, controller);
-                    var templatePath = path.join(baseDir, template);
+                    var controllerPath = path.join(absoluteBaseDir, controller);
+                    var templatePath = path.join(absoluteBaseDir, template);
 
                     excludes = excludes.concat(Object.keys(config.framework))
                         .concat(['animation', '$', 'zepto', 'activity']);
@@ -481,7 +497,7 @@ if (args.build) {
             promise.then(function () {
                 console.log('保存合并后的业务代码');
 
-                Tools.save(path.join(destDir, project.root, 'controller.js'), codes);
+                Tools.save(path.join(absoluteDestDir, project.root, 'controller.js'), codes);
             });
         });
 
@@ -490,7 +506,7 @@ if (args.build) {
 
         Promise.all(config.images.map(function (imgDir, i) {
             return new Promise(function (resolve, reject) {
-                fsc.copy(path.join(baseDir, imgDir), path.join(config.dest, 'images'), resouceExt, function (err, result) {
+                fsc.copy(path.join(absoluteBaseDir, imgDir), absolutePath(config.dest, 'images'), resouceExt, function (err, result) {
                     resolve(result);
                 });
             });
@@ -498,7 +514,7 @@ if (args.build) {
             config.projects.forEach(function (proj) {
                 if (proj.images) {
                     proj.images.forEach(function (imgDir) {
-                        fsc.copy(path.join(proj.root, imgDir), path.join(config.dest, proj.root, 'images'), resouceExt, function (err, result) {
+                        fsc.copy(absolutePath(proj.root, imgDir), absolutePath(config.dest, proj.root, 'images'), resouceExt, function (err, result) {
 
                         });
                     });

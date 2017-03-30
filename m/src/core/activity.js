@@ -10,6 +10,7 @@ var util = require('util'),
     slice = Array.prototype.slice,
     indexOf = util.indexOf;
 
+var defaultToggleAnim = require('../anim/default');
 
 var STATUS = {
     INIT: 0,
@@ -20,7 +21,6 @@ var STATUS = {
 }
 
 function onStatusChange(e) {
-
     switch (e.type) {
         case 'Show':
             if (this.status == STATUS.PAUSE) {
@@ -28,13 +28,10 @@ function onStatusChange(e) {
             }
             this.status = STATUS.SHOW;
             break;
-
         case 'Pause':
             this.status = STATUS.PAUSE;
             break;
-
         case 'Destroy':
-
             if (this._scrolls) this._scrolls.destroy();
 
             this.onDestroy && this.onDestroy();
@@ -46,7 +43,7 @@ function onStatusChange(e) {
 var Activity = Component.extend({
     el: '<div class="view"></div>',
 
-    toggleAnim: 'default',
+    toggleAnim: defaultToggleAnim,
 
     recordBackURL: true,
     defaultBackURL: '/',

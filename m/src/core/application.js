@@ -27,7 +27,7 @@ function adjustActivity(currentActivity, activity) {
 function getToggleAnimation(isForward, currentActivity, activity, toggleAnim) {
     if (!toggleAnim) toggleAnim = (isForward ? activity : currentActivity).toggleAnim;
 
-    var anim = require('anim/' + toggleAnim),
+    var anim = toggleAnim,
         type = isForward ? "open" : "close",
         ease = isForward ? 'ease-out' : 'ease-out',
         enterFrom = $.extend({}, anim[type + 'EnterAnimationFrom']),
@@ -369,7 +369,6 @@ var Application = Component.extend({
         var promise;
 
         if (delay) {
-
             promise = new Promise(function (resolve) {
 
                 setTimeout(function () {
@@ -379,7 +378,6 @@ var Application = Component.extend({
 
                 }, delay);
             });
-
         } else {
             $el.appendTo(document.body);
 
@@ -396,7 +394,7 @@ var Application = Component.extend({
 
             that.activityManager.setCurrentActivity(activity);
 
-            activity.$el.transform(require('anim/' + activity.toggleAnim).openEnterAnimationTo);
+            activity.$el.transform(activity.toggleAnim.openEnterAnimationTo);
 
             promise.then(function () {
 

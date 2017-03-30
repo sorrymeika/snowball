@@ -84,12 +84,17 @@ function getCompressor() {
 function compressJs(code, mangle_names) {
     code = removeBOMHeader(code).replace(/\/\/<--development[\s\S]+?\/\/development-->/img, '');
 
-    var ast = UglifyJS.parse(code);
-    ast.figure_out_scope();
-    ast = ast.transform(getCompressor());
-    ast.compute_char_frequency();
-    ast.mangle_names(mangle_names);
-    code = ast.print_to_string();
+    try {
+        var ast = UglifyJS.parse(code);
+        ast.figure_out_scope();
+        ast = ast.transform(getCompressor());
+        ast.compute_char_frequency();
+        ast.mangle_names(mangle_names);
+        code = ast.print_to_string();
+    } catch (e) {
+        console.log(code);
+        throw e;
+    }
 
     return code;
 };
