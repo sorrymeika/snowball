@@ -14,7 +14,7 @@ _.extend(Util, util);
 var httpProxy = require('./http-proxy');
 
 var getDefinedId = util.joinPath;
-var formatJs = Tools.formatJs;
+var transformSnowballJS = Tools.transformSnowballJS;
 
 // if (__dirname != process.cwd()) process.chdir(__dirname);
 
@@ -213,8 +213,8 @@ exports.startWebServer = function (config) {
                 }
                 text = Tools.removeBOMHeader(text);
 
-                text = formatJs(text);
-                text = Tools.replaceDefine(filePath.replace(/(^\/)|(\.js$)/g, ''), text, requires);
+                text = transformSnowballJS(text);
+                text = Tools.setModuleDefine(filePath.replace(/(^\/)|(\.js$)/g, ''), text, requires);
 
                 res.set('Content-Type', "text/javascript; charset=utf-8");
                 res.send(text);
@@ -241,7 +241,7 @@ exports.startWebServer = function (config) {
 
                 text = Tools.removeBOMHeader(text);
                 if (isRazorTpl) text = razor.web(text);
-                text = formatJs(text);
+                text = transformSnowballJS(text);
 
                 res.set('Content-Type', "text/javascript; charset=utf-8");
                 res.send(text);
@@ -277,7 +277,10 @@ exports.startWebServer = function (config) {
                         next();
                     } else {
                         res.set('Content-Type', "text/css; charset=utf-8");
-                        res.send(result.css.toString());
+
+                        Tools.postCSSForDevelopment(result.css.toString()).then(function (result) {
+                            res.send(result.css);
+                        });
                     }
                 });
             }
@@ -318,11 +321,14 @@ if (args.build) {
         var absoluteBaseDir = absolutePath('./');
         var absoluteDestDir = absolutePath(config.dest);
 
-        var tools = new Tools(absoluteBaseDir, absoluteDestDir);
+        var tools = new Tools({
+            baseDir: absoluteBaseDir,
+            destDir: absoluteDestDir
+        });
 
         //打包框架
         tools.combine({
-            "slan.m": config.framework
+            "snowball": config.framework
         });
 
         if (config.copy) {
@@ -332,12 +338,14 @@ if (args.build) {
             })
         }
 
-        //合并js、css
+        //合并js
         config.resourceMapping = tools.combine(config.js);
 
         //生成首页
         createIndex(config, function (err, html) {
-            Tools.save(path.join(absoluteDestDir, 'index.html'), Tools.compressHTML(html));
+            Tools.minifyHTML(html).then(function (res) {
+                Tools.save(path.join(absoluteDestDir, 'index.html'), res);
+            })
         });
 
         //打包业务代码
@@ -365,8 +373,8 @@ if (args.build) {
                             resourceMapping.push(jsId);
 
                             if (isRazorTpl) text = razor.web(text);
-                            text = formatJs(text);
-                            text = Tools.compressJs(Tools.replaceDefine(jsId, text));
+                            text = transformSnowballJS(text);
+                            text = Tools.minifyJS(Tools.setModuleDefine(jsId, text));
 
                             resolve(text);
                         });
@@ -393,23 +401,22 @@ if (args.build) {
 
             var packCss = function (key, fileList) {
                 Promise.all(fileList.map(function (file) {
-
                     return new Promise(function (resolve) {
                         fsc.firstExistentFile([absolutePath(project.root, file), absolutePath(project.root, file).replace(/\.css$/, '.scss')], function (file) {
-
                             if (/\.css$/.test(file)) {
                                 fs.readFile(file, 'utf-8', function (err, text) {
-                                    text = Tools.compressCss(text);
-                                    resolve(text);
+                                    Tools.postCSS(text).then(function (result) {
+                                        resolve(result.css);
+                                    });
                                 });
                             } else {
                                 sass.render({
-                                    file: file
-
+                                    file: file,
+                                    outputStyle: 'compressed'
                                 }, function (err, result) {
-                                    result = Tools.compressCss(result.css.toString());
-
-                                    resolve(result);
+                                    Tools.postCSS(result.css.toString()).then(function (result) {
+                                        resolve(result.css);
+                                    });
                                 });
                             }
                         });
@@ -465,7 +472,7 @@ if (args.build) {
                                 if (!err && contains.indexOf(fileName) == -1) {
                                     contains.push(fileName);
                                     text = razor.web(text);
-                                    text = Tools.compressJs(Tools.replaceDefine(template, text));
+                                    text = Tools.minifyJS(Tools.setModuleDefine(template, text));
                                     codes += text;
                                 }
                                 console.log("打包模版", fileName);
@@ -479,8 +486,8 @@ if (args.build) {
                             //打包控制器
                             fsc.readFirstExistentFile([controllerPath + '.js', controllerPath + '.jsx'], function (err, text, fileName) {
                                 if (!err && contains.indexOf(fileName) == -1) {
-                                    text = formatJs(text);
-                                    text = Tools.compressJs(Tools.replaceDefine(controller, text, requires, excludes));
+                                    text = transformSnowballJS(text);
+                                    text = Tools.minifyJS(Tools.setModuleDefine(controller, text, requires, excludes));
                                     codes += text;
                                 }
 
