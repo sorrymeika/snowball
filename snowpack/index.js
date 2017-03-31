@@ -3,18 +3,27 @@ var fsc = require('./fs');
 var path = require('path');
 var razor = require('./razor');
 var _ = require('lodash');
-var Tools = require('./tools');
+var tools = require('./tools');
 var sass = require('node-sass');
 var sprity = require('./sprity');
-
-var Util = require('util');
 var util = require('./util');
-_.extend(Util, util);
-
 var httpProxy = require('./http-proxy');
 
-var getDefinedId = util.joinPath;
-var transformSnowballJS = Tools.transformSnowballJS;
+var getModuleId = function () {
+    var args = [].slice.apply(arguments);
+    var result = args.join('/').replace(/[\\]+/g, '/').replace(/([^\:\/]|^)[\/]{2,}/g, '$1/').replace(/([^\.]|^)\.\//g, '$1');
+    var flag = true;
+    while (flag) {
+        flag = false;
+        result = result.replace(/([^\/]+)\/\.\.(\/|$)/g, function (match, name) {
+            if (name == '..') return match;
+            if (!flag) flag = true;
+            return '';
+        })
+    }
+    return result.replace(/\/$/, '');
+};
+var transformSnowballJS = tools.transformSnowballJS;
 
 // if (__dirname != process.cwd()) process.chdir(__dirname);
 
@@ -43,8 +52,8 @@ function combineRouters(config) {
                 router = _.extend({}, router);
             }
             _.extend(router, {
-                controller: getDefinedId("views", router.controller),
-                template: getDefinedId("template", router.template)
+                controller: getModuleId("views", router.controller),
+                template: getModuleId("template", router.template)
             });
 
             router.root = project.root;
@@ -115,7 +124,7 @@ function createIndex(config, callback) {
     fs.readFile(absolutePath('./root.html'), {
         encoding: 'utf-8'
     }, function (err, html) {
-        var T = razor.nodeFn(Tools.removeBOMHeader(html));
+        var T = razor.nodeFn(tools.removeBOMHeader(html));
         var rimg = /url\(("|'|)([^\)]+)\1\)/g;
 
         Promise.all(config.css.map(function (cssPath, i) {
@@ -123,7 +132,7 @@ function createIndex(config, callback) {
                 fs.readFile(absolutePath(cssPath), {
                     encoding: 'utf-8'
                 }, function (err, style) {
-                    resolve(Tools.removeBOMHeader(style));
+                    resolve(tools.removeBOMHeader(style));
                 });
             });
         })).then(function (styles) {
@@ -161,9 +170,6 @@ exports.startWebServer = function (config) {
         app.use('/images', express.static(absolutePath(imageDir)));
     });
 
-    app.use('/dest', express.static(absolutePath(config.dest)));
-
-
     app.get('/', function (req, res) {
         createIndex(config, function (err, html) {
             res.send(html);
@@ -176,7 +182,7 @@ exports.startWebServer = function (config) {
 
         for (var key in project.css) {
             project.css[key] && project.css[key].forEach(function (file) {
-                requires.push(getDefinedId(project.root, file));
+                requires.push(getModuleId(project.root, file));
             });
         }
 
@@ -196,7 +202,7 @@ exports.startWebServer = function (config) {
                     next();
                     return;
                 }
-                text = Tools.removeBOMHeader(text);
+                text = tools.removeBOMHeader(text);
                 text = razor.web(text);
                 res.set('Content-Type', "text/javascript; charset=utf-8");
                 res.send(text);
@@ -211,10 +217,9 @@ exports.startWebServer = function (config) {
                     next();
                     return;
                 }
-                text = Tools.removeBOMHeader(text);
 
-                text = transformSnowballJS(text);
-                text = Tools.setModuleDefine(filePath.replace(/(^\/)|(\.js$)/g, ''), text, requires);
+                text = tools.removeBOMHeader(text);
+                text = transformSnowballJS(filePath.replace(/(^\/)|(\.js$)/g, ''), text, requires);
 
                 res.set('Content-Type', "text/javascript; charset=utf-8");
                 res.send(text);
@@ -225,12 +230,20 @@ exports.startWebServer = function (config) {
     app.all('*.js', function (req, res, next) {
         var filePath = req.url;
         var isRazorTpl = /\.(html|tpl|cshtml)\.js$/.test(filePath);
+        var moduleId = filePath.replace(/\.jsx?$/, '');
+        var exts;
+
+        if (isRazorTpl) {
+            exts = [moduleId];
+        } else {
+            exts = [filePath, filePath + 'x'];
+        }
 
         fsc.readFirstExistentFile(
             _.map(config.projects, 'root')
                 .concat(config.path)
                 .map((projPath) => absolutePath(projPath)),
-            isRazorTpl ? [filePath.replace(/\.js$/, '')] : [filePath, filePath + 'x'],
+            exts,
             function (err, text) {
                 console.log(filePath);
 
@@ -239,9 +252,9 @@ exports.startWebServer = function (config) {
                     return;
                 }
 
-                text = Tools.removeBOMHeader(text);
+                text = tools.removeBOMHeader(text);
                 if (isRazorTpl) text = razor.web(text);
-                text = transformSnowballJS(text);
+                text = transformSnowballJS(moduleId, text);
 
                 res.set('Content-Type', "text/javascript; charset=utf-8");
                 res.send(text);
@@ -278,7 +291,7 @@ exports.startWebServer = function (config) {
                     } else {
                         res.set('Content-Type', "text/css; charset=utf-8");
 
-                        Tools.postCSSForDevelopment(result.css.toString()).then(function (result) {
+                        tools.transformCSSForDevelopment(result.css.toString()).then(function (result) {
                             res.send(result.css);
                         });
                     }
@@ -287,9 +300,23 @@ exports.startWebServer = function (config) {
         );
     });
 
+    // 代理设置
     for (var key in config.proxy) {
-        var proxy = config.proxy[key].split(':');
-        app.all(key, httpProxy(proxy[0], proxy[1] ? parseInt(proxy[1]) : 80));
+        var proxy = config.proxy[key];
+        var httpRE = /^(https?\:)\/\/([^:\/]+)(?:\:(\d+))?(?:(\/[^?#]*)(\?.+)?(#.+)?)?/;
+
+        if (httpRE.test(proxy)) {
+            var protocol = RegExp.$1;
+            var host = RegExp.$2;
+            var port = RegExp.$3 ? parseInt(RegExp.$3) : 80;
+
+            console.log("proxy:", host, port);
+
+            app.all(key, httpProxy(host, port));
+        } else {
+            console.log("file proxy:", proxy);
+            app.use(key, express.static(absolutePath(proxy)));
+        }
     }
 
     console.log("start with", config.port, process.argv);
@@ -311,6 +338,7 @@ for (var i = 2, arg, length = argv.length; i < length; i++) {
 
 //打包
 if (args.build) {
+
     exports.loadConfig(function (config) {
         console.log("start:", util.formatDate(new Date()));
 
@@ -321,36 +349,23 @@ if (args.build) {
         var absoluteBaseDir = absolutePath('./');
         var absoluteDestDir = absolutePath(config.dest);
 
-        var tools = new Tools({
-            baseDir: absoluteBaseDir,
-            destDir: absoluteDestDir
-        });
-
         //打包框架
-        tools.combine({
+        tools.combineJS(absoluteBaseDir, absoluteDestDir, {
             "snowball": config.framework
         });
 
-        if (config.copy) {
-            Object.keys(config.copy).forEach(function (key) {
-                fsc.copy(config.copy[key], absolutePath(config.dest, key), function () {
-                });
-            })
-        }
-
         //合并js
-        config.resourceMapping = tools.combine(config.js);
+        config.resourceMapping = tools.combineJS(absoluteBaseDir, absoluteDestDir, config.js);
 
         //生成首页
         createIndex(config, function (err, html) {
-            Tools.minifyHTML(html).then(function (res) {
-                Tools.save(path.join(absoluteDestDir, 'index.html'), res);
+            tools.minifyHTML(html).then(function (res) {
+                tools.save(path.join(absoluteDestDir, 'index.html'), res);
             })
         });
 
         //打包业务代码
         config.projects.forEach(function (project) {
-            var codes = '';
             var requires = [];
             var excludes = [];
 
@@ -368,24 +383,25 @@ if (args.build) {
 
                     return new Promise(function (resolve) {
                         fsc.readFirstExistentFile([project.root], isRazorTpl ? [file] : [file + '.js', file + '.jsx'], function (err, text, fileName) {
-                            var jsId = ids ? ids[i] : getDefinedId(project.root, file);
+                            var moduleId = ids ? ids[i] : getModuleId(project.root, file);
 
-                            resourceMapping.push(jsId);
+                            resourceMapping.push(moduleId);
 
                             if (isRazorTpl) text = razor.web(text);
-                            text = transformSnowballJS(text);
-                            text = Tools.minifyJS(Tools.setModuleDefine(jsId, text));
+                            text = transformSnowballJS(moduleId, text);
+                            text = tools.minifyJS(text);
 
                             resolve(text);
                         });
                     })
                 })).then(function (results) {
-                    Tools.save(path.join(absoluteDestDir, project.root, key + '.js'), results.join(''));
+                    tools.save(path.join(absoluteDestDir, project.root, key + '.js'), results.join(''));
                 });
             }
 
+            //打包项目引用js
             for (var key in project.js) {
-                var combinedJs = getDefinedId(project.root, key);
+                var combinedJs = getModuleId(project.root, key);
                 var resourceMapping = config.resourceMapping[combinedJs] = [];
                 var jsMap = project.js[key];
                 var tmp;
@@ -395,26 +411,25 @@ if (args.build) {
                     jsMap = tmp;
                 }
 
-                //打包项目引用js
                 pachJs(key, jsMap, resourceMapping);
             }
 
-            var packCss = function (key, fileList) {
+            function packCSS(key, fileList) {
                 Promise.all(fileList.map(function (file) {
                     return new Promise(function (resolve) {
                         fsc.firstExistentFile([absolutePath(project.root, file), absolutePath(project.root, file).replace(/\.css$/, '.scss')], function (file) {
                             if (/\.css$/.test(file)) {
                                 fs.readFile(file, 'utf-8', function (err, text) {
-                                    Tools.postCSS(text).then(function (result) {
+                                    tools.minifyCSS(text).then(function (result) {
                                         resolve(result.css);
                                     });
                                 });
                             } else {
                                 sass.render({
-                                    file: file,
-                                    outputStyle: 'compressed'
+                                    // outputStyle: 'compressed',
+                                    file: file
                                 }, function (err, result) {
-                                    Tools.postCSS(result.css.toString()).then(function (result) {
+                                    tools.minifyCSS(result.css.toString()).then(function (result) {
                                         resolve(result.css);
                                     });
                                 });
@@ -423,90 +438,86 @@ if (args.build) {
                     });
 
                 })).then(function (results) {
-                    Tools.save(path.join(absoluteDestDir, project.root, key), results.join(''));
+                    tools.save(path.join(absoluteDestDir, project.root, key), results.join(''));
                 });
             }
 
+            //打包项目引用css
             for (var key in project.css) {
-                requires.push(getDefinedId(project.root, key));
-
+                requires.push(getModuleId(project.root, key));
                 if (project.css[key] && project.css[key].length) {
-                    //打包项目引用css
-                    packCss(key, project.css[key]);
+                    packCSS(key, project.css[key]);
                 }
             }
 
-            var promise = Promise.resolve();
-
             //打包template和controller
+            excludes = excludes.concat(Object.keys(config.framework))
+                .concat(['animation', '$', 'zepto', 'activity']);
+
             var contains = [];
 
-            for (var key in project.route) {
-                (function (router) {
-                    var controller;
-                    var template;
+            function packBusinessFromRouter(template, controller) {
+                var controllerPath = path.join(absoluteBaseDir, controller);
+                var templatePath = path.join(absoluteBaseDir, template);
+                var codes = '';
 
-                    if (typeof router == 'string') {
-                        controller = template = router;
+                return new Promise(function (resolve) {
+                    //打包模版
+                    fsc.readFirstExistentFile([templatePath + '.html', templatePath + '.cshtml', templatePath + '.tpl'], function (err, text, fileName) {
+                        if (!err && contains.indexOf(fileName) == -1) {
+                            contains.push(fileName);
+                            text = razor.web(text);
+                            text = tools.minifyJS(transformSnowballJS(template, text));
+                            codes += text;
+                        }
+                        console.log("打包模版", fileName);
 
-                    } else {
-                        controller = router.controller;
-                        template = router.template;
-                    }
-
-                    controller = getDefinedId(project.root, 'views', controller);
-                    template = getDefinedId(project.root, 'template', template);
-
-                    var controllerPath = path.join(absoluteBaseDir, controller);
-                    var templatePath = path.join(absoluteBaseDir, template);
-
-                    excludes = excludes.concat(Object.keys(config.framework))
-                        .concat(['animation', '$', 'zepto', 'activity']);
-
-                    promise = promise.then(function () {
-
-                        return new Promise(function (resolve) {
-
-                            //打包模版
-                            fsc.readFirstExistentFile([templatePath + '.html', templatePath + '.cshtml', templatePath + '.tpl'], function (err, text, fileName) {
-                                if (!err && contains.indexOf(fileName) == -1) {
-                                    contains.push(fileName);
-                                    text = razor.web(text);
-                                    text = Tools.minifyJS(Tools.setModuleDefine(template, text));
-                                    codes += text;
-                                }
-                                console.log("打包模版", fileName);
-
-                                resolve();
-                            });
-                        })
-                    }).then(function () {
-                        return new Promise(function (resolve) {
-
-                            //打包控制器
-                            fsc.readFirstExistentFile([controllerPath + '.js', controllerPath + '.jsx'], function (err, text, fileName) {
-                                if (!err && contains.indexOf(fileName) == -1) {
-                                    text = transformSnowballJS(text);
-                                    text = Tools.minifyJS(Tools.setModuleDefine(controller, text, requires, excludes));
-                                    codes += text;
-                                }
-
-                                console.log("打包控制器", fileName);
-
-                                resolve();
-                            });
-                        })
+                        resolve();
                     });
-                })(project.route[key]);
+                }).then(function () {
+                    return new Promise(function (resolve) {
+                        //打包控制器
+                        fsc.readFirstExistentFile([controllerPath + '.js', controllerPath + '.jsx'], function (err, text, fileName) {
+                            if (!err && contains.indexOf(fileName) == -1) {
+                                text = tools.minifyJS(transformSnowballJS(controller, text, requires, excludes));
+                                codes += text;
+                            }
+                            console.log("打包控制器", fileName);
+                            resolve(codes);
+                        });
+                    })
+                });
+            }
+
+            var packingProcess = [];
+
+            for (var key in project.route) {
+                var router = project.route[key];
+                var controller;
+                var template;
+
+                if (typeof router == 'string') {
+                    controller = template = router;
+                } else {
+                    controller = router.controller;
+                    template = router.template;
+                }
+
+                controller = getModuleId(project.root, 'views', controller);
+                template = getModuleId(project.root, 'template', template);
+
+                packingProcess.push(packBusinessFromRouter(template, controller));
             }
 
             //保存合并后的业务代码
-            promise.then(function () {
+            Promise.all(packingProcess).then(function (results) {
                 console.log('保存合并后的业务代码');
-
-                Tools.save(path.join(absoluteDestDir, project.root, 'controller.js'), codes);
+                tools.save(path.join(absoluteDestDir, project.root, 'controller.js'), results.join(''));
             });
         });
+
+        // 移动静态文件
+        if (config.static) tools.moveDir(absoluteBaseDir, absoluteDestDir, config.static);
 
         //复制图片资源
         var resouceExt = '*.(jpg|gif|png|eot|svg|ttf|woff)';
@@ -521,9 +532,7 @@ if (args.build) {
             config.projects.forEach(function (proj) {
                 if (proj.images) {
                     proj.images.forEach(function (imgDir) {
-                        fsc.copy(absolutePath(proj.root, imgDir), absolutePath(config.dest, proj.root, 'images'), resouceExt, function (err, result) {
-
-                        });
+                        fsc.copy(absolutePath(proj.root, imgDir), absolutePath(config.dest, proj.root, 'images'), resouceExt, function (err, result) { });
                     });
                 }
             });

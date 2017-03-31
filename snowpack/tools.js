@@ -4,6 +4,7 @@ var razor = require('./razor');
 var path = require('path');
 var fs = require('fs');
 var fse = require('fs-extra');
+var fsUtil = require('./fs');
 
 var htmlMinifier = require('html-minifier');
 
@@ -11,50 +12,21 @@ var postcss = require('postcss');
 var cssnano = require('cssnano');
 var autoprefixer = require('autoprefixer');
 
-function postCSS(css) {
+// function minifyCSS(res) {
+//     return removeBOMHeader(res).replace(/\s*([;|,|\{|\}])\s*/img, '$1').replace(/\{(\s*[-a-zA-Z]+\s*\:\s*[^;\}]+?(;|\}))+/mg, function (match) {
+//         return match.replace(/\s*:\s*/mg, ':');
+//     }).replace(/[\r\n]/mg, '').replace(/;}/mg, '}').replace(/\s*\/\*.*?\*\/\s*/mg, '');
+// }
+function minifyCSS(css) {
     return postcss([cssnano]).process(css);
 }
 
-function postCSSForDevelopment(css) {
+function transformCSSForDevelopment(css) {
     return postcss([autoprefixer]).process(css);
 }
 
 function removeBOMHeader(text) {
     return text.replace(/^\uFEFF/i, '');
-}
-
-function minifyCSS(res) {
-    return removeBOMHeader(res).replace(/\s*([;|,|\{|\}])\s*/img, '$1').replace(/\{(\s*[-a-zA-Z]+\s*\:\s*[^;\}]+?(;|\}))+/mg, function (match) {
-        return match.replace(/\s*:\s*/mg, ':');
-    }).replace(/[\r\n]/mg, '').replace(/;}/mg, '}').replace(/\s*\/\*.*?\*\/\s*/mg, '');
-}
-
-var rcmd = /"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\/\*[\S\s]*?\*\/|\/(?:\\\/|[^\/\r\n])+\/(?=[^\/])|\/\/.*|(?:^|\b|\uFEFF)(module\.exports\s*=|exports\.[a-z0-9A-Z\._]+\s*=)/mg;
-var rdefine = /"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\/\*[\S\s]*?\*\/|\/(?:\\\/|[^\/\r\n])+\/(?=[^\/])|\/\/.*|\.\s*define|(?:^|\uFEFF|[^$])(\bdefine\()/g;
-
-function hasFirstGroupOfRegExp(regex, text) {
-    regex.lastIndex = 0;
-    var m;
-    do {
-        m = regex.exec(text);
-        if (m && m[1]) {
-            return true;
-        }
-    } while (m);
-
-    return false;
-}
-
-var domRE = /"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\/\*[\S\s]*?\*\/|\/(?:\\\/|[^\/\r\n])+\/(?=[^\/])|\/\/.*|\s*(return\s+|=|\:|\()\s*(<([a-zA-Z]+)[^>]*>[\s\S]*?<\/\3>)\s*(,|;|\}|\))/mg;
-
-function transformSnowballJS(jsCode) {
-    if ((hasFirstGroupOfRegExp(rcmd, jsCode) || hasFirstGroupOfRegExp(REQUIRE_RE, jsCode)) && !hasFirstGroupOfRegExp(rdefine, jsCode)) {
-        jsCode = "define(function (require, exports, module) {" + jsCode + "});";
-    }
-
-    return jsCode.replace(domRE, function (match, symbol, dom, tagName, end) {
-        return dom ? symbol + "'" + dom.replace(/\\/g, '\\\\').replace(/'/g, '\\\'').replace(/(\s*(\r|\n)+\s*)+/g, ' ') + "'" + end : match;
-    });
 }
 
 var __compressor;
@@ -128,9 +100,6 @@ var SLASH_RE = /\\\\/g;
 
 function parseDependencies(code) {
     var ret = [];
-    //var m = code.match(REQUIRE_NAME_RE);
-    //var requireRe;
-    //requireRe = new RegExp("\\b" + m[1] + "\\s*\\(\\s*([\"'])(.+?)\\1\\s*\\)", 'g');
 
     code.replace(SLASH_RE, "")
         .replace(REQUIRE_RE, function (m, m1, m2) {
@@ -142,48 +111,84 @@ function parseDependencies(code) {
     return ret
 }
 
+function hasFirstGroupOfRegExp(regex, text) {
+    regex.lastIndex = 0;
+    var m;
+    do {
+        m = regex.exec(text);
+        if (m && m[1]) {
+            return true;
+        }
+    } while (m);
+
+    return false;
+}
+
 var definedIdRE = /"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\/\*[\S\s]*?\*\/|\/(?:\\\/|[^\/\r\n])+\/(?=[^\/])|\/\/.*|\.\s*define|(?:^|\uFEFF|[^$])(\bdefine\(([\'\"])[^\2]+\2)/g;
 
-function setModuleDefine(id, code, requires, exclude) {
-    if (typeof requires == 'string') requires = [requires];
+var cmdRE = /"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\/\*[\S\s]*?\*\/|\/(?:\\\/|[^\/\r\n])+\/(?=[^\/])|\/\/.*|(?:^|\b|\uFEFF)(module\.exports\s*=|exports\.[a-z0-9A-Z\._]+\s*=)/mg;
+var defineRE = /"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\/\*[\S\s]*?\*\/|\/(?:\\\/|[^\/\r\n])+\/(?=[^\/])|\/\/.*|\.\s*define|(?:^|\uFEFF|[^$])(\bdefine\()/g;
+var domRE = /"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\/\*[\S\s]*?\*\/|\/(?:\\\/|[^\/\r\n])+\/(?=[^\/])|\/\/.*|\s*(return\s+|=|\:|\()\s*(<([a-zA-Z]+)[^>]*>[\s\S]*?<\/\3>)\s*(,|;|\}|\))/mg;
 
-    code = removeBOMHeader(code);
-
-    if (hasFirstGroupOfRegExp(definedIdRE, code)) {
-        return code;
+/**
+ * 
+ * @param {String} moduleId 
+ * @param {String} jsCode js代码
+ * @param {Array|String} [dependencies] 依赖的js
+ * @param {Array} [exclude] 依赖从中排除的文件
+ */
+function transformSnowballJS(moduleId, jsCode, dependencies, exclude) {
+    if ((hasFirstGroupOfRegExp(cmdRE, jsCode) || hasFirstGroupOfRegExp(REQUIRE_RE, jsCode)) &&
+        !hasFirstGroupOfRegExp(defineRE, jsCode)) {
+        jsCode = "define(function (require, exports, module) {\n" + jsCode + "\n});\n";
     }
 
-    return code.replace(/"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\/\*[\S\s]*?\*\/|\/(?:\\\/|[^\/\r\n])+\/(?=[^\/])|\/\/.*|\.\s*define|(^|\uFEFF|[^$])(\bdefine\((?:\s*(\[[^\]]*\]){0,1}\s*,\s*){0,1})/mg, function (match, pre, fn, param) {
-        if (!fn) return match;
-        param = param ? JSON.parse(param.replace(/\'/g, '"')) : [];
+    jsCode = removeBOMHeader(jsCode);
+    jsCode = jsCode.replace(domRE, function (match, symbol, dom, tagName, end) {
+        return dom ?
+            symbol + "'" + dom.replace(/\\/g, '\\\\').replace(/'/g, '\\\'').replace(/(\s*(\r|\n)+\s*)+/g, ' ') + "'" + end :
+            match;
+    });
 
-        if (requires && requires.length) {
-            param = concat(requires, param);
+    if (typeof dependencies == 'string') dependencies = [dependencies];
+
+    if (hasFirstGroupOfRegExp(definedIdRE, jsCode)) {
+        return jsCode;
+    }
+
+    jsCode = jsCode.replace(/"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\/\*[\S\s]*?\*\/|\/(?:\\\/|[^\/\r\n])+\/(?=[^\/])|\/\/.*|\.\s*define|(^|\uFEFF|[^$])(\bdefine\((?:\s*(\[[^\]]*\]){0,1}\s*,\s*){0,1})/mg, function (match, pre, fn, deps) {
+        if (!fn) return match;
+        deps = deps ? JSON.parse(deps.replace(/\'/g, '"')) : [];
+
+        if (dependencies && dependencies.length) {
+            deps = concat(dependencies, deps);
         }
 
         if (exclude !== true) {
-            param = concat(param, parseDependencies(code));
+            deps = concat(deps, parseDependencies(jsCode));
         }
+
         if (exclude && exclude.length) {
-            for (var i = param.length - 1; i >= 0; i--) {
-                var pathA = param[i];
-                pathA = /^(\.)/.test(pathA) ? path.resolve(path.dirname(id + ".js"), pathA) : path.resolve(pathA);
+            for (var i = deps.length - 1; i >= 0; i--) {
+                var pathA = deps[i];
+                pathA = /^(\.)/.test(pathA) ? path.resolve(path.dirname(moduleId + ".js"), pathA) : path.resolve(pathA);
 
                 for (var j = 0; j < exclude.length; j++) {
-
                     var pathB = exclude[j];
-                    pathB = /^(\.)/.test(pathB) ? path.resolve(path.dirname(id + ".js"), pathB) : path.resolve(pathB);
+                    pathB = /^(\.)/.test(pathB) ? path.resolve(path.dirname(moduleId + ".js"), pathB) : path.resolve(pathB);
 
                     if (pathA == pathB) {
-                        param.splice(i, 1);
+                        deps.splice(i, 1);
                         break;
                     }
                 }
             }
         }
 
-        return pre + 'define(' + '"' + id + '",' + (JSON.stringify(param) + ',');
+        return pre + 'define(' + '"' + moduleId + '",' + (JSON.stringify(deps) + ',');
     });
+
+    return jsCode;
 }
 
 function minifyHTML(html) {
@@ -194,9 +199,6 @@ function minifyHTML(html) {
         minifyCSS: false
     });
     // html = html.replace(/\s*(<(\/{0,1}[a-zA-Z]+)(?:\s+[a-zA-Z1-9_-]+="[^"]*"|\s+[^\s]+)*?\s*(\/){0,1}\s*>)\s*/img, '$1')
-    // html = html.replace(/<style[^>]*>([\S\s]*?)<\/style>/img, function (r0, r1) {
-    //     return /^\s*$/.test(r1) ? r0 : ('<style>' + minifyCSS(r1) + '</style>');
-    // })
 
     html = html.replace(/\s*<script[^>]*>([\S\s]*?)<\/script>\s*/img, function (r0, r1) {
         return /^\s*$/.test(r1) ? r0 : ('<script>' + minifyJS(r1) + '</script>');
@@ -273,40 +275,82 @@ function copy(sourcePath, destPath, callback) {
     return _save(sourcePath, destPath, true, callback)
 }
 
-function Tools(options) {
-    this.baseDir = options.baseDir;
-    this.destDir = options.destDir;
-
-    this.promise = Promise.resolve();
+function isRazorTemplate(fileName) {
+    return /\.(tpl|html)$/.test(fileName);
 }
 
-Tools.prototype.combine = function (pathDict) {
-    var self = this;
+function combineSnowballJS(fileList, ids, destPath) {
+    var promise = Promise.all(fileList.map(function (fileName) {
+        return new Promise(function (resolve) {
+            fs.readFile(fileName, 'utf8', function (err, res) {
+                if (err) {
+                    if (/\.js$/.test(fileName)) {
+                        fs.readFile(fileName + "x", 'utf8', function (err, res) {
+                            if (err) {
+                                console.error(fileName, err);
+                            }
+                            resolve(res);
+                        });
+                        return;
+                    } else
+                        console.error(fileName, err);
+                }
+                resolve(res);
+            });
+        });
+    })).then(function (result) {
+        var text = '';
+
+        result.forEach(function (data, i) {
+            if (isRazorTemplate(fileList[i]))
+                data = razor.web(data);
+
+            text += minifyJS(transformSnowballJS(ids[i], data));
+        });
+
+        return save(destPath, text);
+    });
+}
+
+/**
+ * 根据config合并JS到指定文件夹
+ * 
+ * @example
+ * combineJS('/root', '/root/dest', {
+ *     destFileName: [moduleId1, moduleId2],
+ *     destFileName1: {
+ *         moduleId1: "filePath1",
+ *         moduleId2: "filePath1"
+ *     }
+ * });
+ * 
+ * @param {String} baseDir js当前所在文件夹
+ * @param {String} destDir 目标存放文件夹
+ * @param {Object} config 合并的配置
+ */
+function combineJS(baseDir, destDir, config) {
     var map = {};
 
-    for (var destPath in pathDict) {
+    for (var destPath in config) {
         var fileList = [],
-            paths = pathDict[destPath],
+            paths = config[destPath],
             ids = [],
-            isCss = /\.css$/.test(destPath),
             item;
 
         if (!paths.length) {
             for (var key in paths) {
                 item = paths[key] || key;
-                if (/\.(tpl|html|cshtml)$/.test(item)) {
 
-                } else if (!/\.js$/.test(item))
-                    item += '.js';
+                if (!isRazorTemplate(item) && !/\.js$/.test(item)) item += '.js';
 
-                fileList.push(path.join(self.baseDir, item));
+                fileList.push(path.join(baseDir, item));
                 ids.push(key);
             }
         } else {
             for (var i = 0, n = paths.length; i < n; i++) {
                 item = paths[i];
 
-                fileList.push(path.join(self.baseDir, isCss || /\.js$/.test(item) ? item : (item + '.js')));
+                fileList.push(path.join(baseDir, /\.js$/.test(item) ? item : (item + '.js')));
                 ids.push(item);
             }
         }
@@ -314,79 +358,115 @@ Tools.prototype.combine = function (pathDict) {
         map[destPath] = ids;
 
         if (fileList.length) {
-            (function (fileList, ids, isCss, destPath) {
-                var promise = Promise.all(fileList.map(function (fileName) {
-
-                    return new Promise(function (resolve) {
-                        fs.readFile(fileName, 'utf8', function (err, res) {
-                            if (err) {
-                                if (/\.js$/.test(fileName)) {
-                                    fs.readFile(fileName + "x", 'utf8', function (err, res) {
-                                        if (err) {
-                                            console.error(fileName, err);
-                                        }
-                                        resolve(res);
-                                    });
-                                    return;
-                                } else
-                                    console.error(fileName, err);
-                            }
-                            resolve(res);
-                        });
-                    });
-
-                })).then(function (result) {
-                    var text = '';
-
-                    result.forEach(function (data, i) {
-                        if (/\.(tpl|html|cshtml)$/.test(fileList[i]))
-                            data = razor.web(data);
-
-                        text += isCss ?
-                            minifyCSS(data) :
-                            minifyJS(setModuleDefine(ids[i], transformSnowballJS(data)));
-                    });
-
-                    return self.save(destPath, text);
-                });
-
-                self.promise = self.promise.then(promise);
-
-            })(fileList, ids, isCss, path.join(self.destDir, isCss || /\.js$/.test(destPath) ? destPath : (destPath + '.js')));
+            combineSnowballJS(fileList, ids, path.join(destDir, /\.js$/.test(destPath) ? destPath : (destPath + '.js')));
         }
     }
 
     return map;
 }
 
-Tools.prototype.save = save;
+function moveStaticFile(savePath, source) {
+    var promise = new Promise(function (resolve) {
+        var dir = path.dirname(savePath);
+        fs.exists(dir, function (exists) {
+            if (!exists) {
+                mkdirs(dir, function (err, r) {
+                    resolve(source);
+                });
+            } else {
+                resolve(source);
+            }
+        });
+    });
 
-Tools.prototype.copy = copy;
+    console.log('move to:' + savePath);
 
-Tools.prototype.copy = copy;
+    promise = promise.then(function () {
+        return new Promise(function (resolve) {
+            var extname = path.extname(source);
+            if (extname == '.js' || extname == '.css' || extname == '.html') {
+                fs.readFile(source, 'utf8', function (err, fileData) {
+                    switch (extname) {
+                        case '.js':
+                            resolve(minifyJS(fileData));
+                            break;
+                        case '.css':
+                            minifyCSS(fileData).then(function () {
+                                resolve();
+                            })
+                            break;
+                        case '.html':
+                            resolve(minifyHTML(fileData));
+                            break;
+                    }
+                });
+            } else
+                fs.readFile(source, function (err, fileData) {
+                    resolve(fileData);
+                })
+        });
+    });
 
-Tools.prototype.postCSS = function () {
+    promise = promise.then(function (data) {
+        return new Promise(function (resolve) {
+            console.log('start save:', savePath);
+            fs.writeFile(savePath, data, function (err, res) {
+                console.log('save:', savePath);
+                resolve(res);
+            });
+        })
+    })
+
+    return promise;
 };
 
-Tools.postCSSForDevelopment = postCSSForDevelopment;
-Tools.postCSS = postCSS;
-Tools.minifyCSS = minifyCSS;
-Tools.minifyHTML = minifyHTML;
-Tools.minifyJS = minifyJS;
+/**
+ * 移动静态文件，并压缩其中的CSS,JS,HTML文件
+ * 
+ * @example
+ * static('','', {
+ *     "/ueditor": "../components/ueditor",
+ *     "/upload": "../upload"
+ * })
+ * 
+ * @param {String} baseDir 
+ * @param {String} destDir 
+ * @param {Object} config 
+ */
+function moveDir(baseDir, destDir, config) {
+    return Promise.all(Object.keys(config).map(function (outputDir) {
+        var sourceDir = config[outputDir];
+        sourceDir = path.join(baseDir, sourceDir);
 
-Tools.setJsCompressorGlobalDef = function (globalDef) {
-    __compressor_global_defs = globalDef;
+        if (/^\//.test(outputDir)) outputDir = '.' + outputDir;
+        outputDir = path.join(destDir, outputDir);
+
+        return new Promise(function (resolve) {
+            fsUtil.find(sourceDir, '*', function (err, results) {
+                Promise.all(results.map(function (fileName) {
+                    return moveStaticFile(path.join(outputDir, fileName.replace(sourceDir, '')), fileName);
+                })).then(function () {
+                    resolve();
+                });
+            });
+        });
+    }))
 }
 
-Tools.save = save;
-Tools.copy = copy;
-Tools.setModuleDefine = setModuleDefine;
-Tools.removeBOMHeader = removeBOMHeader;
-Tools.transformSnowballJS = transformSnowballJS;
-
-var rwebresource = /([^@]{0,1})@webresource\(\s*([\"|\'])([^\2]+)\2\s*\)/mg;
-Tools.webresource = function (webresource, template) {
-    return template.replace(rwebresource, '$1' + webresource + '$3');
+var tools = {
+    config: function (config) {
+        __compressor_global_defs = config.global_defs;
+    },
+    removeBOMHeader: removeBOMHeader,
+    combineJS: combineJS,
+    transformSnowballJS: transformSnowballJS,
+    minifyJS: minifyJS,
+    minifyCSS: minifyCSS,
+    transformCSSForDevelopment: transformCSSForDevelopment,
+    minifyHTML: minifyHTML,
+    moveDir: moveDir,
+    save: save,
+    copy: copy
 };
 
-module.exports = Tools;
+module.exports = tools;

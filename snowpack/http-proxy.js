@@ -6,9 +6,7 @@ var _ = require('lodash');
 //app.all('*', httpProxy('192.168.0.106', 6004));
 
 module.exports = function (host, port, replace) {
-
     return function (request, response) {
-
         var url = replace
             ? replace(request.url)
             : (
@@ -25,7 +23,6 @@ module.exports = function (host, port, replace) {
         };
 
         var isDebug = false;
-
         var log = isDebug ? console.log : function () { }
 
         log(url, options);
