@@ -95,18 +95,16 @@ function concat() {
     return res;
 };
 
-var REQUIRE_RE = /"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\/\*[\S\s]*?\*\/|\/(?:\\\/|[^\/\r\n])+\/(?=[^\/])|\/\/.*|\.\s*require|(?:^|[^$])\brequire\s*\(\s*(["'])(.+?)\1\s*\)/g
-var SLASH_RE = /\\\\/g;
+var REQUIRE_RE = /"(?:(?:\\{2})+|\\"|[^"])*"|'(?:(?:\\{2})+|\\'|[^'])*'|\/\*[\S\s]*?\*\/|\/(?:(?:\\{2})+|\\\/|[^\/\r\n])+\/(?=[^\/])|\/\/.*|\.\s*require|(?:^|[^$])\brequire\s*\(\s*(["'])(.+?)\1\s*\)/g
 
 function parseDependencies(code) {
     var ret = [];
 
-    code.replace(SLASH_RE, "")
-        .replace(REQUIRE_RE, function (m, m1, m2) {
-            if (m2) {
-                ret.push(m2)
-            }
-        })
+    code.replace(REQUIRE_RE, function (m, m1, m2) {
+        if (m2) {
+            ret.push(m2)
+        }
+    })
 
     return ret
 }

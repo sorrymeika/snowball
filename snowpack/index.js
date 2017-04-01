@@ -219,7 +219,7 @@ exports.startWebServer = function (config) {
                 }
 
                 text = tools.removeBOMHeader(text);
-                text = transformSnowballJS(filePath.replace(/(^\/)|(\.js$)/g, ''), text, requires);
+                text = transformSnowballJS(filePath.replace(/^\/|\.js$/g, ''), text, requires);
 
                 res.set('Content-Type', "text/javascript; charset=utf-8");
                 res.send(text);
@@ -230,7 +230,7 @@ exports.startWebServer = function (config) {
     app.all('*.js', function (req, res, next) {
         var filePath = req.url;
         var isRazorTpl = /\.(html|tpl|cshtml)\.js$/.test(filePath);
-        var moduleId = filePath.replace(/\.jsx?$/, '');
+        var moduleId = filePath.replace(/^\/|\.jsx?$/g, '');
         var exts;
 
         if (isRazorTpl) {
