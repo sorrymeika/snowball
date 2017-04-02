@@ -48,8 +48,8 @@ var GLOBAL_VARIABLES = {
     'document': true
 };
 
-
 // var stringRE = "'(?:(?:\\\\{2})+|\\\\'|[^'])*'|\"(?:(?:\\\\{2})+|\\\\\"|[^\"])*\"";
+// var regExpRE = "\/(?:(?:\\{2})+|\\\/|[^\/\r\n])+\/[img]*(?=[\)|\.|,])"
 var stringRE = "'(?:(?:\\\\{2})+|\\\\'|[^'])*'";
 
 function createCodeExp(exp, flags, deep) {
@@ -91,10 +91,6 @@ var matchExpressionRE = createCodeExp("{...}", 'g');
 var setRE = createCodeExp("([\\w$]+(?:\\.[\\w$]+)*)\\s*=\\s*((?:(...)|" + stringRE + "|[\\w$][!=]==?|[^;=])+?)(?=;|,|\\)|$)", 'g', 4);
 var methodRE = createCodeExp("\\b((?:this\\.){0,1}[\\.\\w$]+)((...))", 'g', 4);
 var snAttrRE = /^sn-/;
-
-console.log(matchExpressionRE);
-
-console.log('{video.selectedCat.id==item.id?\'curr\':\'\'} {video.isFullscreen?\'\':\'bd_b\'}'.match(matchExpressionRE))
 
 var Filters = {
     contains: function (source, keywords) {
@@ -1018,9 +1014,12 @@ function createFunction(viewModel, expression) {
     return expId;
 }
 
-var expressionRE = /(?:\{|,)\s*[\w$]+\s*:|'(?:\\'|[^'])*'|"(?:\\"|[^"])*"|\/\*[\S\s]*?\*\/|\/(?:\\\/|[^\/\r\n])+\/[img]*(?=[\)|\.|,])|\/\/.*|\bvar\s+('(?:\\'|[^'])*'|[^;]+);|(^|[!=><?\s:(),%&|+*\-\/\[\]]+)([$a-zA-Z_][\w$]*(?:\.[\w$]+)*(?![\w$]*\())/g;
-
+var expressionRE = /(?:\{|,)\s*[\w$]+\s*:|'(?:(?:\\{2})+|\\'|[^'])*'|\bvar\s+('(?:(?:\\{2})+|\\'|[^'])*'|[^;]+);|(^|[!=><?\s:(),%&|+*\-\/\[\]]+)([$a-zA-Z_][\w$]*(?:\.[\w$]+)*(?![\w$]*\())/g;
 var varsRE = /([\w$]+)\s*(?:=(?:'(?:\\'|[^'])*'|[^;,]+))?/g;
+
+function replaceQuote(str) {
+    return str.replace(/\\/g, '\\\\').replace(/'/g, '\\\'');
+}
 
 // 测试代码
 // console.log('{var a=2,c=2;b=4,t$y_p0e=type_$==1?2:1}'.match(expressionRE))
@@ -1030,10 +1029,6 @@ var varsRE = /([\w$]+)\s*(?:=(?:'(?:\\'|[^'])*'|[^;,]+))?/g;
 //     console.log(m);
 // }
 // console.log(genFunction('{var a=2,c;b=4,t$y_p0e=type_$==1?2:1}').code)
-
-function replaceQuote(str) {
-    return str.replace(/\\/g, '\\\\').replace(/'/g, '\\\'');
-}
 /**
  * 将字符串转为function
  * 
@@ -1058,12 +1053,11 @@ function genFunction(expression) {
             + '\'+('
             + exp.replace(expressionRE, function (match, vars, prefix, name) {
                 if (vars) {
-                    var m;
-                    while (m = varsRE.exec(vars)) {
-                        (variables || (variables = [])).push(m[1]);
+                    var mVar;
+                    while (mVar = varsRE.exec(vars)) {
+                        (variables || (variables = [])).push(mVar[1]);
                     }
                     return vars + ',';
-
                 } else if (!name) {
                     return match;
                 }
