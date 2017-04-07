@@ -18,7 +18,9 @@ var autoprefixer = require('autoprefixer');
 //     }).replace(/[\r\n]/mg, '').replace(/;}/mg, '}').replace(/\s*\/\*.*?\*\/\s*/mg, '');
 // }
 function minifyCSS(css) {
-    return postcss([cssnano]).process(css);
+    return postcss([cssnano({
+        isSafe: true
+    })]).process(css);
 }
 
 function transformCSSForDevelopment(css) {
