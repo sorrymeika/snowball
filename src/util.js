@@ -338,7 +338,6 @@ util.formatDate = function (d, f) {
         var date = new Date(d.getFullYear(), d.getMonth(), d.getDate());
         if (today - date == 86400000) {
             return '昨天' + pad(d.getHours()) + ':' + pad(d.getMinutes());
-
         } else if (today - date == 0) {
             var minutes = Math.round((now - d) / 60000);
 
@@ -356,7 +355,6 @@ util.formatDate = function (d, f) {
                     return pad(d.getHours()) + ':' + pad(d.getMinutes());
                 }
             }
-
         } else {
             return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate())
         }
@@ -418,15 +416,11 @@ function classExtend(proto) {
 }
 
 util.createClass = function (proto) {
-
     var func = hasOwnProperty.call(proto, 'constructor') ? proto.constructor : function () {
     }
-
     func.prototype = proto;
     func.prototype.constructor = func;
-
     func.extend = classExtend;
-
     return func;
 }
 
@@ -568,7 +562,6 @@ function groupBy(query, data) {
 
     query.split(/\s*,\s*/).forEach(function (item) {
         var m = /(sum|avg)\(([^\)]+)\)/.exec(item);
-
         console.log(m);
 
         if (m) {
@@ -591,7 +584,6 @@ function groupBy(query, data) {
         }
 
         for (var i = 0, n = results.length; i < n; i++) {
-
             if (equals(results[i].key, key)) {
                 group = results[i];
                 break;
@@ -644,14 +636,14 @@ util.groupBy = groupBy;
 function sum(arr, key) {
     var fn;
     var result = 0;
+    var i = 0, n = arr.length;
 
     if (typeof key === 'string') {
-        for (var i = 0, n = arr.length; i < n; i++) {
+        for (; i < n; i++) {
             result += arr[i][key];
         }
-
     } else {
-        for (var i = 0, n = arr.length; i < n; i++) {
+        for (; i < n; i++) {
             result += key(arr[i], i);
         }
     }
@@ -664,19 +656,18 @@ util.sum = sum;
 function indexOf(arr, key, val) {
     var length = arr.length;
     var keyType = typeof key;
+    var i = 0;
 
     if (keyType === 'string' && arguments.length == 3) {
-        for (var i = 0; i < length; i++) {
+        for (; i < length; i++) {
             if (arr[i][key] == val) return i;
         }
-
     } else if (keyType === 'function') {
-        for (var i = 0; i < length; i++) {
+        for (; i < length; i++) {
             if (key(arr[i], i)) return i;
         }
-
     } else {
-        for (var i = 0; i < length; i++) {
+        for (; i < length; i++) {
             if (contains(arr[i], key)) return i;
         }
     }
@@ -689,19 +680,18 @@ util.indexOf = indexOf;
 function lastIndexOf(arr, key, val) {
     var length = arr.length;
     var keyType = typeof key;
+    var i = arr.length - 1;
 
     if (keyType === 'string' && arguments.length == 3) {
-        for (var i = arr.length - 1; i >= 0; i--) {
+        for (; i >= 0; i--) {
             if (arr[i][key] == val) return i;
         }
-
     } else if (keyType === 'function') {
-        for (var i = arr.length - 1; i >= 0; i--) {
+        for (; i >= 0; i--) {
             if (key(arr[i], i)) return i;
         }
-
     } else {
-        for (var i = arr.length - 1; i >= 0; i--) {
+        for (; i >= 0; i--) {
             if (contains(arr[i], key)) return i;
         }
     }
@@ -710,7 +700,6 @@ function lastIndexOf(arr, key, val) {
 }
 
 util.lastIndexOf = lastIndexOf;
-
 
 
 var RE_QUERY_ATTR = /([\w]+)(\^|\*|=|!|\$|~)?\=(\d+|null|undefined|true|false|'(?:\\'|[^'])*'|"(?:\\"|[^"])*"|(?:.*?(?=[,\|&])))([,\|&])?/g;
@@ -749,9 +738,7 @@ function compileQuery(query) {
     });
 
     return groups[0].length > 0 ? function (obj) {
-
         return matchObject(groups, obj);
-
     } : function () { return true; };
 }
 
@@ -765,7 +752,6 @@ function compileQuery(query) {
  * @returns {boolean}
  */
 function matchObject(queryGroups, obj) {
-
     var result = true;
     var flag;
     var val;
@@ -811,13 +797,10 @@ function matchObject(queryGroups, obj) {
                     if (item.lg == '&') {
                         break;
                     }
-
                 } else {
-
                     if (item.lg == '|') {
                         break;
                     }
-
                 }
             }
 
@@ -874,7 +857,6 @@ util.query = function (query, array) {
 }
 
 ArrayQuery.prototype._ = function (query) {
-
     return new ArrayQuery(util.query(query, this.array));
 }
 
@@ -887,16 +869,16 @@ ArrayQuery.prototype._ = function (query) {
  */
 function map(arr, key) {
     var result = [];
+    var i = 0, len = arr.length;
 
     if (typeof key === 'string') {
-        for (var i = 0, len = arr.length; i < len; i++) {
+        for (; i < len; i++) {
             result.push(arr[i][key]);
         }
-
     } else if (Array.isArray(key)) {
         var item;
         var k;
-        for (var i = 0, len = arr.length; i < len; i++) {
+        for (; i < len; i++) {
             item = {};
             for (var j = key.length - 1; j >= 0; j--) {
                 k = key[j];
@@ -904,9 +886,8 @@ function map(arr, key) {
             }
             result.push(item);
         }
-
     } else {
-        for (var i = 0, len = arr.length; i < len; i++) {
+        for (; i < len; i++) {
             result.push(key(arr[i], i));
         }
     }
@@ -933,24 +914,23 @@ ArrayQuery.prototype.concat = function (array) {
  * @param {any} val 
  */
 function filter(arr, key, val) {
-    var length = arr.length;
     var keyType = typeof key;
     var result = [];
+    var i = 0;
+    var length = arr.length;
 
     if (keyType === 'string' && arguments.length == 3) {
-        for (var i = 0; i < length; i++) {
+        for (; i < length; i++) {
             if (arr[i][key] == val)
                 result.push(arr[i]);
         }
-
     } else if (keyType === 'function') {
-        for (var i = 0; i < length; i++) {
+        for (; i < length; i++) {
             if (key(arr[i], i))
                 result.push(arr[i]);
         }
-
     } else {
-        for (var i = 0; i < length; i++) {
+        for (; i < length; i++) {
             if (contains(arr[i], key))
                 result.push(arr[i]);
         }
@@ -974,19 +954,18 @@ ArrayQuery.prototype.filter = function (key, val) {
  * @param {any} [val]
  */
 function first(array, key, val) {
+    var i = 0, len = array.length;
 
     if (typeof key === 'string' && arguments.length == 3) {
-        for (var i = 0, len = array.length; i < len; i++) {
+        for (; i < len; i++) {
             if (array[i][key] == val) return array[i];
         }
-
     } else if (typeof key === 'function') {
-        for (var i = 0, len = array.length; i < len; i++) {
+        for (; i < len; i++) {
             if (key(array[i], i)) return array[i];
         }
-
     } else {
-        for (var i = 0, len = array.length; i < len; i++) {
+        for (; i < len; i++) {
             if (contains(array[i], key)) return array[i];
         }
     }
