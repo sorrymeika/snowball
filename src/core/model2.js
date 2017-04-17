@@ -512,14 +512,14 @@ function updateRepeatElement(viewModel, el) {
 function findModelByKey(model, key) {
     if (model.key == key) return model;
 
-    var models = model._model;
+    var modelMap = model._model;
     var model;
 
     while (1) {
         var flag = false;
 
-        for (var modelKey in models) {
-            model = models[modelKey];
+        for (var modelKey in modelMap) {
+            model = modelMap[modelKey];
 
             if (model instanceof Model || model instanceof Collection) {
                 if (model.key == key) {
@@ -545,7 +545,7 @@ function findModelByKey(model, key) {
                 }
 
                 if (flag && model._model) {
-                    models = model._model;
+                    modelMap = model._model;
                     break;
                 }
             }
@@ -595,7 +595,6 @@ function updateNode(viewModel, el) {
                         switch (nextElement.snIfType) {
                             case 'sn-else':
                             case 'sn-else-if':
-
                                 if (nextElement.snIf) {
                                     nextElement.parentNode.removeChild(nextElement);
                                     currentElement = nextElement.snIf;
@@ -1188,7 +1187,7 @@ var Model = util.createClass({
         this.cid = util.guid();
 
         this.type = typeof attributes == 'object' ? 'object' : 'value';
-        this.attributes = this.type == 'object' ? extend({}, attributes) : attributes;
+        this.attributes = this.type == 'object' ? {} : undefined;
 
         this._model = {};
         this.parent = parent;
@@ -1232,7 +1231,7 @@ var Model = util.createClass({
             query = m[2];
 
             if (result instanceof Model) {
-                result = result._model[attr];
+                result = attr in result._model ? result._model[attr] : result.attributes[attr];
 
                 if (query && result instanceof Collection) {
                     return result._(query + search.substr(m.index + m[0].length), def);
@@ -1314,11 +1313,10 @@ var Model = util.createClass({
             return this;
         } else if (!isArrayKey && typeof key == 'object') {
             attrs = key;
-        } else if (typeof val == 'undefined') {
+        } else if (typeof val === 'undefined') {
             val = key;
-            key = '';
 
-            if (this.attributes != val) {
+            if (this.attributes !== val) {
                 this.attributes = val;
                 updateParentReference(this);
                 updateViewNextTick(this);
@@ -1347,11 +1345,11 @@ var Model = util.createClass({
             updateParentReference(this);
         }
 
-        var data = this.attributes;
-        model = this._model;
+        var attributes = this.attributes;
+        var modelMap = this._model;
 
         if (renew) {
-            for (var attr in data) {
+            for (var attr in attributes) {
                 if (attrs[attr] === undefined) {
                     attrs[attr] = null;
                 }
@@ -1365,33 +1363,31 @@ var Model = util.createClass({
         var value;
 
         for (var attr in attrs) {
-            origin = model[attr];
             value = attrs[attr];
+            origin = attr in modelMap ? modelMap[attr] : attributes[attr];
 
             if (origin !== value) {
                 if (value instanceof Model || value instanceof Collection) {
-                    model[attr] = value;
-                    data[attr] = value instanceof Collection ? value.array : value.attributes;
+                    modelMap[attr] = value;
+                    attributes[attr] = value instanceof Collection ? value.array : value.attributes;
 
                     if (origin instanceof Model || origin instanceof Collection) {
                         unlinkModels(this, origin);
                     }
 
-                    linkModels(this, value, model.key ? model.key + '.' + attr : attr);
+                    linkModels(this, value, this.key ? this.key + '.' + attr : attr);
 
                     hasChange = true;
                 } else if (origin instanceof Model) {
                     if (value === null || value === undefined) {
                         origin.restore();
                         origin.attributes = null;
-
                     } else {
                         origin.set(renewChild, value);
                     }
-                    data[attr] = origin.attributes;
+                    attributes[attr] = origin.attributes;
 
                     if (!hasChange && origin.changed) hasChange = true;
-
                 } else if (origin instanceof Collection) {
                     if (!isArray(value)) {
                         if (value == null) {
@@ -1402,10 +1398,9 @@ var Model = util.createClass({
                     }
 
                     origin.set(value);
-                    data[attr] = origin.array;
+                    attributes[attr] = origin.array;
 
                     if (!hasChange && origin.changed) hasChange = true;
-
                 } else if (isThenable(value)) {
                     value.then(function (res) {
                         self.set(attr, res);
@@ -1416,17 +1411,18 @@ var Model = util.createClass({
                     switch (valueType) {
                         case '[object Object]':
                             value = new Model(this, attr, value);
-                            model[attr] = value;
-                            data[attr] = value.attributes;
+                            modelMap[attr] = value;
+                            attributes[attr] = value.attributes;
                             break;
                         case '[object Array]':
                             value = new Collection(this, attr, value);
-                            model[attr] = value;
-                            data[attr] = value.array;
+                            modelMap[attr] = value;
+                            attributes[attr] = value.array;
                             break;
                         default:
-                            changes.push(this.key ? this.key + "." + attr : attr, value, data[attr]);
-                            data[attr] = model[attr] = value;
+                            changes.push(this.key ? this.key + "." + attr : attr, value, attributes[attr]);
+                            attributes[attr] = value;
+                            // delete modelMap[attr];
                             break;
                     }
 
@@ -1434,6 +1430,8 @@ var Model = util.createClass({
                 }
             }
         }
+
+        console.log(attributes, modelMap);
 
         if (hasChange) {
             updateViewNextTick(this);
@@ -2157,8 +2155,6 @@ var ViewModel = Event.mixin(
             this.cid = util.guid();
             this.snModelKey = 'sn-' + this.cid + 'model';
 
-            this.attributes = extend({}, this.attributes, attributes);
-
             this.repeats = {};
 
             this._model = {};
@@ -2171,8 +2167,9 @@ var ViewModel = Event.mixin(
 
             template && this.template(template);
 
-            this.set(this.attributes);
-
+            attributes = extend({}, this.attributes, attributes);
+            this.attributes = {};
+            this.set(attributes);
             this.initialize.call(this, attributes);
         },
 
