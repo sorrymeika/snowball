@@ -164,9 +164,7 @@ var util = {
     },
 
     params: function (params) {
-
         return Object.keys(params).map(function (key) {
-
             return key + "=" + (params[key] ? encodeURIComponent(params[key]) : '');
         }).join('&');
     },
@@ -759,6 +757,7 @@ function matchObject(queryGroups, obj) {
     var item;
 
     if (queryGroups) {
+        if (!obj) return false;
 
         for (var i = 0, length = queryGroups.length; i < length; i++) {
             group = queryGroups[i];
