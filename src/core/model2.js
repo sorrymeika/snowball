@@ -52,7 +52,7 @@ var GLOBAL_VARIABLES = {
 // var regExpRE = "\/(?:(?:\\{2})+|\\\/|[^\/\r\n])+\/[img]*(?=[\)|\.|,])"
 var stringRE = "'(?:(?:\\\\{2})+|\\\\'|[^'])*'";
 
-function createCodeExp(exp, flags, deep) {
+function createCodePieceExp(exp, flags, deep) {
     if (typeof flags === 'number') {
         deep = flags;
         flags = undefined;
@@ -87,9 +87,9 @@ function createCodeExp(exp, flags, deep) {
 
 var valueRE = /^((-)?\d+|true|false|undefined|null|'(?:\\'|[^'])*')$/;
 var repeatRE = /([\w$]+)(?:\s*,(\s*[\w$]+)){0,1}\s+in\s+([\w$]+(?:\.[\w$\(,\)]+){0,})(?:\s*\|\s*filter\s*:\s*(.+?)){0,1}(?:\s*\|\s*orderBy:(.+)){0,1}(\s|$)/;
-var matchExpressionRE = createCodeExp("{...}", 'g');
-var setRE = createCodeExp("([\\w$]+(?:\\.[\\w$]+)*)\\s*=\\s*((?:(...)|" + stringRE + "|[\\w$][!=]==?|[^;=])+?)(?=;|,|\\)|$)", 'g', 4);
-var methodRE = createCodeExp("\\b((?:this\\.){0,1}[\\.\\w$]+)((...))", 'g', 4);
+var matchExpressionRE = createCodePieceExp("{...}", 'g');
+var setRE = createCodePieceExp("([\\w$]+(?:\\.[\\w$]+)*)\\s*=\\s*((?:(...)|" + stringRE + "|[\\w$][!=]==?|[^;=])+?)(?=;|,|\\)|$)", 'g', 4);
+var methodRE = createCodePieceExp("\\b((?:this\\.){0,1}[\\.\\w$]+)((...))", 'g', 4);
 var snAttrRE = /^sn-/;
 
 var Filters = {
@@ -1007,7 +1007,6 @@ function createFunction(viewModel, expression) {
     viewModel._codes.push('function($data){' + res.code + '}');
 
     expId = viewModel._expressions.id++;
-
     viewModel._expressions[expression] = expId;
 
     return expId;
@@ -1430,8 +1429,6 @@ var Model = util.createClass({
                 }
             }
         }
-
-        console.log(attributes, modelMap);
 
         if (hasChange) {
             updateViewNextTick(this);
