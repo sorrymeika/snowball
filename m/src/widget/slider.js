@@ -1,4 +1,4 @@
-﻿var $ = require('$'),
+var $ = require('$'),
     util = require('util'),
     Touch = require('core/touch');
 
@@ -9,13 +9,13 @@ var Slider = function (options) {
         vScroll: false,
         width: '100%',
         index: 0,
+        loop: false,
         autoLoop: false,
         align: 'center',
         container: null
-
     }, options);
 
-    $.extend(this, util.pick(options, ['width', 'loop', 'render', 'template', 'itemTemplate', 'navTemplate']));
+    $.extend(this, util.pick(options, ['width', 'loop', 'renderItem', 'template', 'itemTemplate', 'navTemplate']));
 
     var self = this,
         data = options.data,
@@ -48,7 +48,6 @@ var Slider = function (options) {
     });
 
     this.touch.on('start', function () {
-
         if (self.wrapperW == 0 || self.scrollerW == 0) {
             self.adjustWidth();
         }
@@ -57,12 +56,10 @@ var Slider = function (options) {
         this.minX = 0;
 
         self.options.autoLoop && self.stopAutoLoop();
-
     }).on('move', function () {
-        self.slider.style.webkitTransform = 'translate3d(' + this.x * -1 + 'px,' + this.y * -1 + 'px,0)';
-
+        self.slider.style.transform =
+            self.slider.style.webkitTransform = 'translate3d(' + this.x * -1 + 'px,' + this.y * -1 + 'px,0)';
     }).on('end bounceBack', function (e) {
-
         if (e.type == 'end' && this.shouldBounceBack()) {
             return;
         }
@@ -88,10 +85,9 @@ var Slider = function (options) {
 
         self.$el.on('tap', '.js_pre', function (e) {
             self._toPage(options.index - 1, 250);
-        })
-            .on('tap', '.js_next', function (e) {
-                self._toPage(options.index + 1, 250);
-            });
+        }).on('tap', '.js_next', function (e) {
+            self._toPage(options.index + 1, 250);
+        });
     }
 
     $(window).on('ortchange', $.proxy(self.adjustWidth, self));
@@ -107,15 +103,12 @@ $.extend(Slider.prototype, {
     loop: false,
     x: 0,
     itemTemplate: '<a href="<%=url%>" forward><img src="<%=src%>" /></a>',
-    renderItem: util.template('<li class="js_slide_item slider-item"><%=$data%></li>'),
     template: util.template('<div class="slider"><ul class="js_slider slider-con"></ul><ol class="js_slide_navs slider-nav"></ol></div>'),
 
     _loadImage: function () {
         var self = this;
-
         var item = self.$items.eq(self.options.index);
         if (!item.prop('_detected')) {
-
             if (self.loop) {
                 if (self.options.index == 1) {
                     item = item.add(self.$slider.children(':last-child'));
@@ -133,7 +126,7 @@ $.extend(Slider.prototype, {
         }
     },
 
-    _adjust: function () {
+    _adjustBox: function () {
         var self = this,
             slider = self.$slider,
             children = slider.children(),
@@ -144,7 +137,6 @@ $.extend(Slider.prototype, {
         self.scrollerW = self.wrapperW * length;
 
         slider.css({ width: length * self.width + '%', marginLeft: '0%' });
-
         children.css({ width: 100 / length + '%' });
 
         self.touch.maxX = self.scrollerW;
@@ -152,11 +144,10 @@ $.extend(Slider.prototype, {
     },
 
     adjustWidth: function () {
-        var self = this;
-
-        self._adjust();
-
-        self.index(self.options.index)
+        if (this.containerW !== this.el.clientWidth) {
+            this._adjustBox();
+            this.index(this.options.index);
+        }
     },
 
     _change: function () {
@@ -166,67 +157,40 @@ $.extend(Slider.prototype, {
         if (options.onChange) options.onChange.call(self, options.index);
 
         self._loadImage();
-
         self.$dots.children().removeClass('curr').eq(options.index).addClass('curr');
-
-    },
-
-    _set: function (data) {
-        var self = this,
-            itemsHtml = '',
-            $slider,
-            options = self.options;
-
-        if (!$.isArray(data)) data = data ? [data] : [];
-        self._data = data;
-        self.length = data.length;
-
-        var dotsHtml = '';
-        for (var i = 0, n = data.length; i < n; i++) {
-            itemsHtml += self.render(data[i]);
-            dotsHtml += '<li class="slider-nav-item"></li>';
-        }
-
-
-        $slider = self.$slider.html(itemsHtml);
-        self.$items = $slider.children();
-
-        if (options.dots) {
-            self.$dots.html(dotsHtml);
-            self.$dots.children().eq(options.index).addClass('curr')
-        }
-
-        if (self.length < 2) self.loop = false;
-        else if (self.width < 30) self.loop = false;
-
-        if (self.loop) {
-            $slider.prepend(self.$items.eq(self.length - 1).clone());
-            $slider.append(self.$items.eq(0).clone());
-            self.$items = $slider.children();
-        }
     },
 
     prepend: function (data) {
         this._data.unshift(data);
-        this.$slider.prepend(this.render(data));
-        this._adjust();
+        this.$slider.prepend(this.renderItem(data));
+        this._adjustBox();
     },
 
     shift: function () {
         this._data.shift();
         this.$slider.children(":first-child").remove();
-        this._adjust();
+        this._adjustBox();
     },
 
     append: function (data) {
         this._data.push(data);
-        this._set(this._data);
+        this.set(this._data);
     },
 
     set: function (data) {
-        this._set(data);
+        if (!$.isArray(data)) data = data ? [data] : [];
+        this._data = data;
 
-        this.adjustWidth();
+        var lengthChanged = this.length !== data.length;
+        if (lengthChanged) this.length = data.length;
+
+        this.render();
+
+        if (lengthChanged) this._adjustBox();
+
+        this.index(this.options.index);
+
+        return this;
     },
 
     startAutoLoop: function () {
@@ -235,7 +199,6 @@ $.extend(Slider.prototype, {
 
         self.loopTimer = setTimeout(function () {
             self.index(self.options.index + 1, 300);
-
             self.loopTimer = setTimeout(arguments.callee, self.options.autoLoop);
         }, self.options.autoLoop);
     },
@@ -265,12 +228,10 @@ $.extend(Slider.prototype, {
             x;
 
         if (typeof index === 'undefined') return options.index;
-
         index = index >= this.length ? 0 : index < 0 ? this.length - 1 : index;
 
         if (this.loop) {
             x = this.wrapperW * (index + 1);
-
         } else {
             x = this.wrapperW * index;
         }
@@ -282,31 +243,42 @@ $.extend(Slider.prototype, {
         if (x != this.x) this.touch.scrollTo(x, 0, duration);
     },
 
-
     data: function (index) {
         return this._data[index || this.options.index];
     },
 
-    appendItem: function () {
-        var item = $(this.renderItem(''));
-        this.$slider.append(item);
-        this.length++;
-        this.adjustWidth();
-
-        return item;
-    },
-    prependItem: function () {
-        var item = $(this.renderItem(''));
-        this.$slider.prepend(item);
-        this.length++;
-        this.adjustWidth();
-
-        return item;
+    renderItem: function (dataItem) {
+        return '<li class="js_slide_item slider-item">' + this.itemTemplate(dataItem) + '</li>';
     },
 
-    render: function (dataItem) {
+    render: function () {
+        var self = this;
+        var dotsHtml = '';
+        var data = this._data;
+        var itemsHtml = '';
+        var options = self.options;
 
-        return this.renderItem(this.itemTemplate(dataItem));
+        for (var i = 0, n = data.length; i < n; i++) {
+            itemsHtml += self.renderItem(data[i]);
+            dotsHtml += '<li class="slider-nav-item"></li>';
+        }
+
+        var $slider = self.$slider.html(itemsHtml);
+        self.$items = $slider.children();
+
+        if (options.dots) {
+            self.$dots.html(dotsHtml);
+            self.$dots.children().eq(options.index).addClass('curr')
+        }
+
+        if (self.length < 2) self.loop = false;
+        else if (self.width < 30) self.loop = false;
+
+        if (self.loop) {
+            $slider.prepend(self.$items.eq(self.length - 1).clone());
+            $slider.append(self.$items.eq(0).clone());
+            self.$items = $slider.children();
+        }
     },
 
     destroy: function () {
