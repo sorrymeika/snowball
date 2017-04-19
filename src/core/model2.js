@@ -950,14 +950,12 @@ function bindElement(viewModel, $el) {
 
 function linkModels(model, value, key) {
     var root = model.root;
-
     var link = {
         childModelKey: key,
         childModel: value,
         childRoot: value.root,
         model: model,
         cb: function () {
-
             root.render();
         }
     };
@@ -1106,9 +1104,7 @@ function updateModelOnKeys(model, renew, keys, val) {
         if (!(model._model[key] instanceof Model)) {
             tmp = model._model[key] = new Model(model, key, {});
             model.attributes[key] = tmp.attributes;
-
             model = tmp;
-
         } else {
             model = model._model[key];
         }
@@ -1761,7 +1757,6 @@ Collection.prototype = {
                 }
 
                 this[this.length++] = model;
-
                 this.array.push(model.attributes);
 
                 results.push(model);
@@ -2122,7 +2117,7 @@ var ViewModel = Event.mixin(
          *     }
          * })
          * 
-         * @param {String|Element|Boolean|Object} [template] 字符类型或dom元素时为模版，只有一个参数且arguments[0].el和arguments[0].attributes不为空时为配置项
+         * @param {String|Element|Boolean|Object} [template] 字符类型或dom元素时为模版，当参数为Object时，若el和attributes属性都存在，则参数为配置项，否则为attributes
          * @param {Object} [attributes] 属性
          * @param {Array} [children] 子节点列表
          */

@@ -341,7 +341,6 @@ Scroll.prototype = {
             animation.animate(function (step) {
                 el._scrollLeft = el.scrollLeft = startX + animation.step(0, distX, step);
                 el._scrollTop = el.scrollTop = startY + animation.step(0, distY, step);
-
             }, duration);
 
         } else {
@@ -374,7 +373,6 @@ ScrollBindResult.prototype = {
     },
 
     add: function (item) {
-
         this.items.push(item);
     },
 
@@ -384,7 +382,6 @@ ScrollBindResult.prototype = {
 
     destroy: function () {
         this.items.forEach(function (item) {
-
             item.destroy();
         });
     }
@@ -412,11 +409,9 @@ ScrollBindResult.prototype = {
  * })
  */
 exports.bind = function (selector, options) {
-
     options = $.extend({
         vScroll: true,
         hScroll: false
-
     }, options);
 
     var result = new ScrollBindResult();
@@ -433,8 +428,7 @@ exports.bind = function (selector, options) {
         if ((options && options.useScroll) ||
             (android && parseFloat(util.osVersion <= 2.3))) {
             ret = scrollView = new ScrollView(el, options);
-        }
-        else {
+        } else {
             ret = new Scroll(el, options);
         }
 
@@ -484,14 +478,12 @@ exports.bind = function (selector, options) {
             $el.on('focus', 'input:not(readonly),textarea:not(readonly)', function (e) {
 
                 setTimeout(function () {
-
                     var node = e.currentTarget,
                         offsetTop = 0;
                     do {
                         offsetTop += node.offsetTop;
                         node = node.offsetParent;
-                    }
-                    while (node && el !== node && !$.contains(node, el));
+                    } while (node && el !== node && !$.contains(node, el));
 
                     var y = offsetTop - (window.innerHeight / 4 - 60);
 
@@ -504,7 +496,6 @@ exports.bind = function (selector, options) {
             });
 
         if (options && options.refresh) {
-
             var $scroller = $el.children('.scroller_container'),
                 $refresh = $('<div class="refresh" style="height:50px;text-align:center;line-height:50px;">下拉刷新</div>');
 
