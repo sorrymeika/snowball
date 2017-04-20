@@ -201,10 +201,12 @@ function cloneElement(node, each) {
     return nodeClone;
 }
 
+var ConstuctorOf$ = $.zepto ? $.zepto.Z : $.fn.constructor;
+
 function eachElement(el, fn) {
     if (!el) return;
 
-    if (isArray(el) || el instanceof $.fn.constructor) {
+    if (isArray(el) || el instanceof ConstuctorOf$) {
         for (var i = 0, len = el.length; i < len; i++) {
             eachElement(el[i], fn);
         }
@@ -1382,7 +1384,7 @@ var Model = util.createClass({
                     }
                     attributes[attr] = origin.attributes;
 
-                    if (!hasChange && origin.changed) hasChange = true;
+                    if (origin.changed) hasChange = true;
                 } else if (origin instanceof Collection) {
                     if (!isArray(value)) {
                         if (value == null) {
@@ -1395,32 +1397,25 @@ var Model = util.createClass({
                     origin.set(value);
                     attributes[attr] = origin.array;
 
-                    if (!hasChange && origin.changed) hasChange = true;
+                    if (origin.changed) hasChange = true;
                 } else if (isThenable(value)) {
                     value.then(function (res) {
                         self.set(attr, res);
                     });
+                } else if (isPlainObject(value)) {
+                    value = new Model(this, attr, value);
+                    modelMap[attr] = value;
+                    attributes[attr] = value.attributes;
+                    hasChange = true;
+                } else if (isArray(value)) {
+                    value = new Collection(this, attr, value);
+                    modelMap[attr] = value;
+                    attributes[attr] = value.array;
+                    hasChange = true;
                 } else {
-                    valueType = value === null || value === undefined ? null : toString.call(value);
-
-                    switch (valueType) {
-                        case '[object Object]':
-                            value = new Model(this, attr, value);
-                            modelMap[attr] = value;
-                            attributes[attr] = value.attributes;
-                            break;
-                        case '[object Array]':
-                            value = new Collection(this, attr, value);
-                            modelMap[attr] = value;
-                            attributes[attr] = value.array;
-                            break;
-                        default:
-                            changes.push(this.key ? this.key + "." + attr : attr, value, attributes[attr]);
-                            attributes[attr] = value;
-                            // delete modelMap[attr];
-                            break;
-                    }
-
+                    changes.push(this.key ? this.key + "." + attr : attr, value, attributes[attr]);
+                    attributes[attr] = value;
+                    // delete modelMap[attr];
                     hasChange = true;
                 }
             }

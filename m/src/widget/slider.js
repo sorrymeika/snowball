@@ -1,6 +1,6 @@
-var $ = require('$'),
-    util = require('util'),
-    Touch = require('core/touch');
+var $ = require('$');
+var util = require('util');
+var Touch = require('core/touch');
 
 var Slider = function (options) {
     options = $.extend({
@@ -9,6 +9,7 @@ var Slider = function (options) {
         vScroll: false,
         width: '100%',
         index: 0,
+        dots: false,
         loop: false,
         autoLoop: false,
         align: 'center',
@@ -19,12 +20,10 @@ var Slider = function (options) {
 
     var self = this,
         data = options.data,
-        itemsHtml = '',
-        item,
         $slider;
 
     if (typeof self.itemTemplate === 'string') self.itemTemplate = util.template(self.itemTemplate);
-    if (typeof self.width == 'string') self.width = parseInt(self.width.replace('%', ''));
+    if (typeof self.width === 'string') self.width = parseInt(self.width.replace('%', ''), 10);
 
     if (options.index !== undefined) options.index = options.index;
 
@@ -48,7 +47,7 @@ var Slider = function (options) {
     });
 
     this.touch.on('start', function () {
-        if (self.wrapperW == 0 || self.scrollerW == 0) {
+        if (!self.wrapperW || !self.scrollerW) {
             self.adjustWidth();
         }
 
@@ -60,13 +59,13 @@ var Slider = function (options) {
         self.slider.style.transform =
             self.slider.style.webkitTransform = 'translate3d(' + this.x * -1 + 'px,' + this.y * -1 + 'px,0)';
     }).on('end bounceBack', function (e) {
-        if (e.type == 'end' && this.shouldBounceBack()) {
+        if (e.type === 'end' && this.shouldBounceBack()) {
             return;
         }
 
-        var index = e.type == 'bounceBack' ? options.index : this.isMoveLeft && this.x - this.startX > 0 ? options.index + 1 : !this.isMoveLeft && this.x - this.startX < 0 ? options.index - 1 : options.index;
+        var index = e.type === 'bounceBack' ? options.index : this.isMoveLeft && this.x - this.startX > 0 ? options.index + 1 : !this.isMoveLeft && this.x - this.startX < 0 ? options.index - 1 : options.index;
 
-        self._toPage(options.loop ? index : index < 0 ? 0 : index >= self.length ? self.length - 1 : index, e.type == 'bounceBack' ? 0 : 250);
+        self._toPage(options.loop ? index : index < 0 ? 0 : index >= self.length ? self.length - 1 : index, e.type === 'bounceBack' ? 0 : 250);
 
         if (self.options.autoLoop) {
             self.startAutoLoop();
@@ -110,9 +109,9 @@ $.extend(Slider.prototype, {
         var item = self.$items.eq(self.options.index);
         if (!item.prop('_detected')) {
             if (self.loop) {
-                if (self.options.index == 1) {
+                if (self.options.index === 1) {
                     item = item.add(self.$slider.children(':last-child'));
-                } else if (self.options.index == self.length + 1) {
+                } else if (self.options.index === self.length + 1) {
                     item = item.add(self.$slider.children(':first-child'));
                 }
             }
@@ -137,7 +136,7 @@ $.extend(Slider.prototype, {
         self.scrollerW = self.wrapperW * length;
 
         slider.css({ width: length * self.width + '%', marginLeft: '0%' });
-        children.css({ width: 100 / length + '%' });
+        length && children.css({ width: 100 / length + '%' });
 
         self.touch.maxX = self.scrollerW;
         self.touch.minX = self.wrapperW * -1;
@@ -197,9 +196,9 @@ $.extend(Slider.prototype, {
         var self = this;
         if (self.loopTimer) return;
 
-        self.loopTimer = setTimeout(function () {
+        self.loopTimer = setTimeout(function loopTimeout() {
             self.index(self.options.index + 1, 300);
-            self.loopTimer = setTimeout(arguments.callee, self.options.autoLoop);
+            self.loopTimer = setTimeout(loopTimeout, self.options.autoLoop);
         }, self.options.autoLoop);
     },
 
@@ -217,7 +216,7 @@ $.extend(Slider.prototype, {
         self._change();
 
         self.touch.scrollTo(x, 0, duration, function () {
-            if (self.options.index != index) {
+            if (self.options.index !== index) {
                 self.index(page);
             }
         });
@@ -235,12 +234,12 @@ $.extend(Slider.prototype, {
         } else {
             x = this.wrapperW * index;
         }
-        if (index != options.index) {
+        if (index !== options.index) {
             this._change();
             options.index = index;
         }
 
-        if (x != this.x) this.touch.scrollTo(x, 0, duration);
+        if (x !== this.x) this.touch.scrollTo(x, 0, duration);
     },
 
     data: function (index) {

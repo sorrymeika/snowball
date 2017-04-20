@@ -4,7 +4,6 @@ var $ = require('$'),
     CubicBezier = require('../graphics/cubicBezier'),
     Event = require('./event');
 
-var slice = Array.prototype.slice;
 var defaultCB = new CubicBezier(.08, .53, .2, .96);
 
 var Touch = Event.mixin(function (el, options) {
@@ -37,10 +36,10 @@ var Touch = Event.mixin(function (el, options) {
         y: 0,
 
         delegate: function (event, sub, fn) {
-            if (typeof sub == 'undefined' && typeof fn == 'function')
+            if (typeof sub === 'undefined' && typeof fn === 'function')
                 sub = fn;
 
-            (typeof sub == 'function') ?
+            (typeof sub === 'function') ?
                 this.$el.on(event, $.proxy(sub, this)) :
                 this.$el.on(event, sub, $.proxy(fn, this));
             return this;
@@ -85,7 +84,7 @@ var Touch = Event.mixin(function (el, options) {
         },
 
         _move: function (e) {
-            if (this.isTouchStop || e.isHoldScroll && (this.isTouchStop = true)) return;
+            if (this.isTouchStop || (e.isHoldScroll && (this.isTouchStop = true))) return;
 
             var self = this,
                 point = e.touches[0],
@@ -103,7 +102,7 @@ var Touch = Event.mixin(function (el, options) {
 
                 if (isDirectionY || isDirectionX) {
 
-                    if (isDirectionY && !self.options.enableVertical || isDirectionX && !self.options.enableHorizontal) {
+                    if ((isDirectionY && !self.options.enableVertical) || (isDirectionX && !self.options.enableHorizontal)) {
                         this.stop();
                         return;
                     }
@@ -143,8 +142,8 @@ var Touch = Event.mixin(function (el, options) {
 
             self.isTouchMoved = true;
 
-            self.isMoveLeft = self.pointX - point.pageX > 0 ? true : self.pointX == point.pageX ? self.isMoveLeft : false;
-            self.isMoveTop = self.pointY - point.pageY > 0 ? true : self.pointY == point.pageY ? self.isMoveTop : false;
+            self.isMoveLeft = self.pointX - point.pageX > 0 ? true : self.pointX === point.pageX ? self.isMoveLeft : false;
+            self.isMoveTop = self.pointY - point.pageY > 0 ? true : self.pointY === point.pageY ? self.isMoveTop : false;
 
             if (Date.now() - self.timestamp < 50) {
 
@@ -252,7 +251,7 @@ var Touch = Event.mixin(function (el, options) {
 
                 resultX = distX + currentX;
 
-                distX = resultX % self.options.divisorX == 0 ? distX :
+                distX = resultX % self.options.divisorX === 0 ? distX :
                     self.isMoveLeft ? Math.ceil(resultX / self.options.divisorX) * self.options.divisorX - currentX :
                         (Math.floor(resultX / self.options.divisorX) * self.options.divisorX - currentX);
             }
@@ -260,7 +259,7 @@ var Touch = Event.mixin(function (el, options) {
             if (self.options.divisorY) {
                 resultY = distY + currentY;
 
-                distY = resultY % self.options.divisorY == 0 ? distY :
+                distY = resultY % self.options.divisorY === 0 ? distY :
                     self.isMoveTop ? Math.ceil(resultY / self.options.divisorY) * self.options.divisorY - currentY :
                         (Math.floor(resultY / self.options.divisorY) * self.options.divisorY - currentY);
 
@@ -269,7 +268,7 @@ var Touch = Event.mixin(function (el, options) {
 
             if (self.options.momentum && (distX || distY)) {
 
-                !duration && (duration = 200) || maxDuration && duration > maxDuration && (duration = maxDuration);
+                (!duration && (duration = 200)) || (maxDuration && duration > maxDuration && (duration = maxDuration));
 
                 //惯性移动
                 self.momentum = animation.animate(function (d, current, duration) {
@@ -277,7 +276,7 @@ var Touch = Event.mixin(function (el, options) {
                     x = currentX + distX * d;
                     y = currentY + distY * d;
 
-                    if (self.options.enableVertical && (y < self.minY || y > self.maxY) || (self.options.enableHorizontal && !self.options.enableVertical && (x < self.minX || x > self.maxX))) {
+                    if ((self.options.enableVertical && (y < self.minY || y > self.maxY)) || ((self.options.enableHorizontal && !self.options.enableVertical && (x < self.minX || x > self.maxX)))) {
                         self.momentum && self.momentum.stop();
 
                         distX = currentX + distX;
@@ -321,7 +320,8 @@ var Touch = Event.mixin(function (el, options) {
 
         shouldBounceBack: function () {
             var self = this;
-            return self.options.enableHorizontal && (self.x < self.minX || self.x > self.maxX) || self.options.enableVertical && (self.y < self.minY || self.y > self.maxY);
+            return (self.options.enableHorizontal && (self.x < self.minX || self.x > self.maxX))
+                || (self.options.enableVertical && (self.y < self.minY || self.y > self.maxY));
         },
 
         bounceBack: function () {
@@ -412,4 +412,3 @@ var Touch = Event.mixin(function (el, options) {
     });
 
 module.exports = Touch;
-
