@@ -235,8 +235,8 @@ $.extend(Slider.prototype, {
             x = this.wrapperW * index;
         }
         if (index !== options.index) {
-            this._change();
             options.index = index;
+            this._change();
         }
 
         if (x !== this.x) this.touch.scrollTo(x, 0, duration);
