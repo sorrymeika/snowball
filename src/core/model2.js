@@ -12,6 +12,7 @@ var toString = Object.prototype.toString;
 var isArray = Array.isArray;
 var isPlainObject = $.isPlainObject;
 var extend = $.extend;
+var camelCase = $.camelCase;
 
 var TRANSITION_END = $.fx.transitionEnd;
 var LINKSCHANGE_EVENT = 'linkschange';
@@ -46,6 +47,8 @@ var GLOBAL_VARIABLES = {
     "JSON": true,
     'Math': true,
     'Date': true,
+    'parseInt': true,
+    'parseFloat': true,
     'encodeURIComponent': true,
     'decodeURIComponent': true,
     'window': true,
@@ -331,6 +334,10 @@ function updateRequiredView(viewModel, el) {
         delete el.snRequire;
     }
     setRef(viewModel, el);
+}
+
+function isRepeatableNode(node) {
+    return node.nodeType === ELEMENT_NODE && node.getAttribute('sn-repeat');
 }
 
 function cloneRepeatElement(source, snData) {
@@ -634,7 +641,6 @@ function setSNDisplay(el, val) {
 
     if (display == 'none') {
         if (!$el.hasClass('sn-display-hide')) {
-
             var onHide = function () {
                 if ($el.hasClass('sn-display-hide'))
                     $el.hide();
@@ -785,11 +791,11 @@ function updateNodeAttributes(viewModel, el, attribute) {
     }
 }
 
+var globalMethodsRE = /^((Math|JSON|Date|util|\$)\.|(encodeURIComponent|decodeURIComponent|parseInt|parseFloat)$)/;
 
 function bindNodeAttributes(viewModel, el) {
-    if (el.nodeType == TEXT_NODE) {
+    if (el.nodeType === TEXT_NODE) {
         var fid = createFunction(viewModel, el.textContent);
-
         if (fid) {
             el.snBinding = {
                 textContent: fid
@@ -797,6 +803,10 @@ function bindNodeAttributes(viewModel, el) {
             el.textContent = '';
         }
         return;
+    } else if (el.nodeName.slice(0, 3) === 'SN-') {
+        el.setAttribute('sn-require', camelCase(el.nodeName.slice(3).toLowerCase()));
+        el.setAttribute('sn-data', el.getAttribute('props'));
+        el.removeAttribute('props');
     }
 
     for (var j = el.attributes.length - 1; j >= 0; j--) {
@@ -860,7 +870,7 @@ function bindNodeAttributes(viewModel, el) {
 
                         if (testRegExp(setRE, val) || testRegExp(methodRE, val)) {
                             var content = val.replace(methodRE, function (match, $1, $2) {
-                                if (/^(Math\.|encodeURIComponent$|parseInt$)/.test($1)) {
+                                if (globalMethodsRE.test($1)) {
                                     return match;
                                 }
                                 return $1 + $2.slice(0, -1) + ($2.length == 2 ? '' : ',') + 'e)';
@@ -882,7 +892,6 @@ function bindNodeAttributes(viewModel, el) {
 
 function bindNewElement(viewModel, newNode) {
     newNode = $(newNode);
-
     newNode.each(function () {
         if (this.snViewModel) throw new Error("can not insert or append binded node!");
     });
@@ -914,7 +923,7 @@ function bindElement(viewModel, $el) {
             }
         }
 
-        if (RepeatSource.isRepeatableNode(node)) {
+        if (isRepeatableNode(node)) {
             if (node.snIf) throw new Error('can not use sn-if and sn-repeat at the same time!!please use filter instead!!');
 
             var nextSibling = node.nextSibling;
@@ -923,7 +932,6 @@ function bindElement(viewModel, $el) {
             node.snRepeatSource = repeatSource;
 
             return nextSibling;
-
         } else if (node.snIf) {
             return node.snIf.nextSibling;
         }
@@ -968,8 +976,8 @@ function unlinkModels(model, value) {
     var link;
     var linkedModels = root._linkedModels;
     var linkedParents = value._linkedParents;
+    
     if (linkedModels && linkedParents) {
-
         for (var i = linkedModels.length - 1; i >= 0; i--) {
             link = linkedModels[i];
             if (link.model == model && link.childModel == value) {
@@ -984,23 +992,16 @@ function unlinkModels(model, value) {
 
 function createFunction(viewModel, expression) {
     if (!expression) return null;
-
     expression = expression.replace(/^\s+|\s+$/g, '');
-
     if (!expression) return null;
 
     var expId = viewModel._expressions[expression];
-
-    if (expId !== undefined) {
-        return expId;
-    }
+    if (expId !== undefined) return expId;
 
     var res = genFunction(expression);
-
     if (!res) return null;
 
     viewModel._codes.push('function($data){' + res.code + '}');
-
     expId = viewModel._expressions.id++;
     viewModel._expressions[expression] = expId;
 
@@ -1159,7 +1160,6 @@ function updateViewNextTick(model) {
 var RE_QUERY = /(?:^|\.)([_a-zA-Z0-9]+)(\[(?:'(?:\\'|[^'])*'|"(?:\\"|[^"])*"|[^\]])+\](?:\[[\+\-]?\d*\])?)?/g;
 var RE_COLL_QUERY = /\[((?:'(?:\\'|[^'])*'|"(?:\\"|[^"])*"|[^\]])+)\](?:\[([\+\-]?)(\d+)?\])?(?:\.(.*))?/;
 
-
 var Model = util.createClass({
 
     constructor: function (parent, key, attributes) {
@@ -1260,7 +1260,6 @@ var Model = util.createClass({
 
     getJSON: function (key) {
         var data = this.get(key);
-
         return data === null ? null : typeof data == 'object' ? extend(true, isArray(data) ? [] : {}, data) : data;
     },
 
@@ -2080,10 +2079,6 @@ function RepeatSource(viewModel, el, parent) {
     this.collectionKey = collectionKey;
 }
 
-RepeatSource.isRepeatableNode = function (node) {
-    return node.nodeType === ELEMENT_NODE && node.getAttribute('sn-repeat');
-}
-
 RepeatSource.prototype.appendChild = function (child) {
     this.children.push(child);
 }
@@ -2232,25 +2227,11 @@ var ViewModel = Event.mixin(
             return model.get(attrs);
         },
 
-        nextUpdate: function (cb) {
-            return this._nextTick ? this.one('viewDidUpdate', cb) : cb.call(this);
-        },
-
-        getRefs: function (names, cb) {
+        getRefs: function (names) {
             var self = this;
-            var count = names.length;
-            var result = {};
-            var callback = function (ref, name) {
-                result[name] = ref;
-                count--;
-                if (count === 0) {
-                    cb.call(self, result);
-                }
-            }
-
-            names.forEach(function (name, i) {
-                self.getRef(name, callback);
-            });
+            return Promise.all(names.map(function (name) {
+                return self.getRef(name)
+            }))
         },
 
         getRef: function (name, cb) {
@@ -2318,6 +2299,10 @@ var ViewModel = Event.mixin(
                 .prependTo(parentNode);
         },
 
+        nextTick: function (cb) {
+            return this._nextTick ? this.one('viewDidUpdate', cb) : cb.call(this);
+        },
+
         render: function () {
             if (!this._nextTick) {
                 this._nextTick = this._rendering ? 1 : requestAnimationFrame(this._render);
@@ -2353,8 +2338,8 @@ var ViewModel = Event.mixin(
 
             this._rendering = false;
 
-            this.viewDidUpdate && this.viewDidUpdate();
             this.trigger('viewDidUpdate');
+            this.viewDidUpdate && this.viewDidUpdate();
         },
 
         destroy: function () {
@@ -2385,7 +2370,7 @@ var ViewModel = Event.mixin(
     })
 );
 
-ViewModel.prototype.next = ViewModel.prototype.nextUpdate;
+ViewModel.prototype.next = ViewModel.prototype.nextTick;
 
 exports.ViewModel = exports.Model = ViewModel;
 
