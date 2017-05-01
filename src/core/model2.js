@@ -265,7 +265,7 @@ function setRef(viewModel, el) {
     }
 }
 
-function formatData(viewModel, element, snData) {
+function getVMFunctionArg(viewModel, element, snData) {
     var data = Object.assign({
         srcElement: element
     }, Filters, viewModel.attributes);
@@ -273,10 +273,8 @@ function formatData(viewModel, element, snData) {
     if (snData) {
         for (var key in snData) {
             var model = snData[key];
-
             if (model instanceof Model || model instanceof Collection) {
                 data[key] = model.attributes;
-
             } else {
                 data[key] = model;
             }
@@ -309,7 +307,7 @@ function checkOwnNode(viewModel, node) {
 
 function updateRequiredView(viewModel, el) {
     var id = el.getAttribute('sn-data');
-    var data = !id ? null : executeFunction(viewModel, id, formatData(viewModel, el.snData, el));
+    var data = !id ? null : executeFunction(viewModel, id, getVMFunctionArg(viewModel, el.snData, el));
 
     if (el.snRequiredInstance) {
         el.snRequiredInstance.set(data);
@@ -374,7 +372,7 @@ function updateRepeatElement(viewModel, el) {
     var collectionData;
 
     if (repeatSource.isFn) {
-        collectionData = executeFunction(viewModel, repeatSource.fid, formatData(viewModel, parentSNData, el));
+        collectionData = executeFunction(viewModel, repeatSource.fid, getVMFunctionArg(viewModel, parentSNData, el));
     }
 
     if (!collection) {
@@ -432,7 +430,7 @@ function updateRepeatElement(viewModel, el) {
         }
 
         if (repeatSource.filter) {
-            isInData = repeatSource.filter.call(viewModel, formatData(viewModel, elem, snData));
+            isInData = repeatSource.filter.call(viewModel, getVMFunctionArg(viewModel, elem, snData));
         }
 
         if (isInData) {
@@ -463,7 +461,7 @@ function updateRepeatElement(viewModel, el) {
             // orderBy=['a',true,someFunctionId,false]
             orderBy = orderBy.map(function (item) {
                 if (typeof item === 'number') {
-                    return executeFunction(viewModel, item, formatData(viewModel, parentSNData, el));
+                    return executeFunction(viewModel, item, getVMFunctionArg(viewModel, parentSNData, el));
                 }
                 return item;
             });
@@ -659,7 +657,7 @@ function setSNDisplay(el, val) {
 
 function updateNodeAttributes(viewModel, el, attribute) {
     var attrsBinding;
-    var data = formatData(viewModel, el, el.snData);
+    var data = getVMFunctionArg(viewModel, el, el.snData);
 
     if (attribute)
         (attrsBinding = {})[attribute] = el.snBinding[attribute];
@@ -808,6 +806,7 @@ function bindNodeAttributes(viewModel, el) {
         var val = el.attributes[j].value;
 
         if (val || attr == 'sn-else') {
+            var originAttrName = attr.replace(snAttrRE, '');
             switch (attr) {
                 case 'sn-if':
                 case 'sn-else':
@@ -832,7 +831,7 @@ function bindNodeAttributes(viewModel, el) {
                     if (val.indexOf("{") == -1 || val.indexOf("}") == -1) {
                         val = '{' + val + '}';
                     }
-                case attr.replace(snAttrRE):
+                case originAttrName:
                     var fid = createFunction(viewModel, val);
 
                     if (attr == "sn-data" && fid) {
@@ -857,7 +856,7 @@ function bindNodeAttributes(viewModel, el) {
                     break;
                 default:
                     //处理事件绑定
-                    var evt = EVENTS[attr.replace(snAttrRE, '')];
+                    var evt = EVENTS[originAttrName];
 
                     if (evt) {
                         el.removeAttribute(attr);
@@ -1080,7 +1079,7 @@ function genFunction(expression) {
     };
 }
 
-function updateParentReference(model) {
+function updateParentReferenceOf(model) {
     var parent = model.parent;
 
     if (!parent) return;
@@ -1095,7 +1094,7 @@ function updateParentReference(model) {
     }
 }
 
-function updateModelOnKeys(model, renew, keys, val) {
+function updateModelByKeys(model, renew, keys, val) {
     var lastKey = keys.pop();
     var tmp;
     var key;
@@ -1315,7 +1314,7 @@ var Model = util.createClass({
 
             if (this.attributes !== val) {
                 this.attributes = val;
-                updateParentReference(this);
+                updateParentReferenceOf(this);
                 updateViewNextTick(this);
             }
             return this;
@@ -1323,7 +1322,7 @@ var Model = util.createClass({
             keys = isArrayKey ? key : key.split('.');
 
             if (keys.length > 1) {
-                model = updateModelOnKeys(this, renew, keys, val);
+                model = updateModelByKeys(this, renew, keys, val);
 
                 if (model.changed) {
                     updateViewNextTick(this);
@@ -1339,7 +1338,7 @@ var Model = util.createClass({
 
         if (this.attributes === null || !isPlainObject(this.attributes)) {
             this.attributes = {};
-            updateParentReference(this);
+            updateParentReferenceOf(this);
         }
 
         var attributes = this.attributes;
@@ -2175,7 +2174,7 @@ var ViewModel = Event.mixin(
             if (eventCode == 'false') {
                 return false;
             } else if (/^\d+$/.test(eventCode)) {
-                var snData = formatData(this, target, target.snData);
+                var snData = getVMFunctionArg(this, target, target.snData);
                 snData.e = e;
 
                 return executeFunction(this, eventCode, snData);

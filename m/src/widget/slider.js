@@ -104,24 +104,23 @@ $.extend(Slider.prototype, {
     itemTemplate: '<a href="<%=url%>" forward><img src="<%=src%>" /></a>',
     template: util.template('<div class="slider"><ul class="js_slider slider-con"></ul><ol class="js_slide_navs slider-nav"></ol></div>'),
 
-    _loadImage: function () {
+   _loadImage: function () {
         var self = this;
-        var item = self.$items.eq(self.options.index);
-        if (!item.prop('_detected')) {
+        var $item = self.$items.eq(self.loop ? self.options.index + 1 : self.options.index);
+        if (!$item.prop('_detected')) {
             if (self.loop) {
-                if (self.options.index === 1) {
-                    item = item.add(self.$slider.children(':last-child'));
-                } else if (self.options.index === self.length + 1) {
-                    item = item.add(self.$slider.children(':first-child'));
+                if (self.options.index === 0) {
+                    $item = $item.add(self.$items.eq(self.$items.length - 1));
+                } else if (self.options.index === self.length - 1) {
+                    $item = $item.add(self.$items.eq(0));
                 }
             }
 
-            item.find('img[lazyload]').each(function () {
+            $item.find('img[lazyload]').each(function () {
                 this.src = this.getAttribute('lazyload');
                 this.removeAttribute('lazyload');
             });
-
-            item.prop('_detected', true);
+            $item.prop('_detected', true);
         }
     },
 
