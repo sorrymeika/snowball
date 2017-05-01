@@ -17,6 +17,10 @@ var TRANSITION_END = $.fx.transitionEnd;
 var LINKSCHANGE_EVENT = 'linkschange';
 var DATACHANGED_EVENT = "datachanged";
 
+var TEXT_NODE = document.TEXT_NODE || 3;
+var COMMENT_NODE = document.COMMENT_NODE || 8;
+var ELEMENT_NODE = document.ELEMENT_NODE || 1;
+
 var EVENTS = {
     tap: 'tap',
     'long-tap': 'longTap',
@@ -252,11 +256,7 @@ function setRef(viewModel, el) {
         var refs = viewModel.refs[refName];
 
         if (!refs) {
-
-            viewModel.refs[refName] = el.snRepeatSource || closestElement(el, function (parentNode) {
-                return parentNode.snRepeatSource ? true : parentNode.snViewModel ? false : null;
-            }) ? [ref] : ref;
-
+            viewModel.refs[refName] = el.snIsRepeat ? [ref] : ref;
         } else if (refs.nodeType) {
             viewModel.refs[refName] = [refs, ref];
         } else {
@@ -319,7 +319,7 @@ function updateRequiredView(viewModel, el) {
         for (var i = 0, j = el.childNodes.length - 1; i < j; i++) {
             node = el.childNodes[i];
 
-            if (node.nodeType !== 3) {
+            if (node.nodeType !== TEXT_NODE) {
                 children.push(node);
                 node.snViewModel = viewModel;
                 viewModel.$el.push(node);
@@ -330,13 +330,13 @@ function updateRequiredView(viewModel, el) {
         instance.$el.appendTo(el);
         delete el.snRequire;
     }
-
     setRef(viewModel, el);
 }
 
 function cloneRepeatElement(source, snData) {
     return cloneElement(source, function (node, clone) {
         clone.snData = snData;
+        clone.snIsRepeat = true;
 
         if (node.snRepeatSource) {
             clone.snRepeatSource = node.snRepeatSource;
@@ -558,7 +558,7 @@ function findModelByKey(model, key) {
 }
 
 function updateNode(viewModel, el) {
-    if (el.nodeType == 8 && el.snRepeatSource) {
+    if (el.nodeType == COMMENT_NODE && el.snRepeatSource) {
         updateRepeatElement(viewModel, el);
     } else if (el.snIfOrigin) {
         return {
@@ -568,7 +568,7 @@ function updateNode(viewModel, el) {
     } else {
         el.snBinding && updateNodeAttributes(viewModel, el);
 
-        if (el.nodeType == 1) {
+        if (el.nodeType == ELEMENT_NODE) {
             if (el.snIf) {
                 if (!el.parentNode) {
                     return {
@@ -583,7 +583,7 @@ function updateNode(viewModel, el) {
                     var currentElement = el;
 
                     while (nextElement) {
-                        if (nextElement.nodeType === 3) {
+                        if (nextElement.nodeType === TEXT_NODE) {
                             nextElement = nextElement.nextSibling;
                             continue;
                         }
@@ -598,7 +598,6 @@ function updateNode(viewModel, el) {
                                 if (nextElement.snIf) {
                                     nextElement.parentNode.removeChild(nextElement);
                                     currentElement = nextElement.snIf;
-
                                 } else {
                                     currentElement = nextElement;
                                 }
@@ -617,7 +616,6 @@ function updateNode(viewModel, el) {
                 setRef(viewModel, el);
             }
         }
-
     }
 }
 
@@ -789,7 +787,7 @@ function updateNodeAttributes(viewModel, el, attribute) {
 
 
 function bindNodeAttributes(viewModel, el) {
-    if (el.nodeType == 3) {
+    if (el.nodeType == TEXT_NODE) {
         var fid = createFunction(viewModel, el.textContent);
 
         if (fid) {
@@ -806,7 +804,7 @@ function bindNodeAttributes(viewModel, el) {
         var val = el.attributes[j].value;
 
         if (val || attr == 'sn-else') {
-            var originAttrName = attr.replace(snAttrRE, '');
+            var attrName = attr.replace(snAttrRE, '');
             switch (attr) {
                 case 'sn-if':
                 case 'sn-else':
@@ -831,16 +829,14 @@ function bindNodeAttributes(viewModel, el) {
                     if (val.indexOf("{") == -1 || val.indexOf("}") == -1) {
                         val = '{' + val + '}';
                     }
-                case originAttrName:
+                case attrName:
                     var fid = createFunction(viewModel, val);
 
                     if (attr == "sn-data" && fid) {
                         el.setAttribute(attr, fid);
-
                     } else if (fid) {
                         (el.snBinding || (el.snBinding = {}))[attr] = fid;
                         el.removeAttribute(attr);
-
                     } else if (attr == "ref" && !el.getAttribute('sn-require')) {
                         viewModel.refs[val] = el;
                     }
@@ -856,7 +852,7 @@ function bindNodeAttributes(viewModel, el) {
                     break;
                 default:
                     //处理事件绑定
-                    var evt = EVENTS[originAttrName];
+                    var evt = EVENTS[attrName];
 
                     if (evt) {
                         el.removeAttribute(attr);
@@ -904,7 +900,7 @@ function bindElement(viewModel, $el) {
     eachElement($el, function (node) {
         if (node.snViewModel) return false;
 
-        if (node.nodeType != 8)
+        if (node.nodeType != COMMENT_NODE)
             bindNodeAttributes(viewModel, node);
 
         var parentRepeatSource;
@@ -1081,7 +1077,6 @@ function genFunction(expression) {
 
 function updateParentReferenceOf(model) {
     var parent = model.parent;
-
     if (!parent) return;
 
     if (parent instanceof Collection) {
@@ -1124,7 +1119,6 @@ function updateViewNextTick(model) {
 
     model.root.one(DATACHANGED_EVENT, function () {
         model.changed = false;
-
         model.key && model.root.trigger(new Event(DATACHANGED_EVENT + ":" + model.key, {
             target: model
         }));
@@ -1137,7 +1131,6 @@ function updateViewNextTick(model) {
             }
             model = model.parent;
         }
-
     }).render();
 }
 
@@ -2088,7 +2081,7 @@ function RepeatSource(viewModel, el, parent) {
 }
 
 RepeatSource.isRepeatableNode = function (node) {
-    return node.nodeType == 1 && node.getAttribute('sn-repeat');
+    return node.nodeType === ELEMENT_NODE && node.getAttribute('sn-repeat');
 }
 
 RepeatSource.prototype.appendChild = function (child) {
@@ -2241,6 +2234,23 @@ var ViewModel = Event.mixin(
 
         nextUpdate: function (cb) {
             return this._nextTick ? this.one('viewDidUpdate', cb) : cb.call(this);
+        },
+
+        getRefs: function (names, cb) {
+            var self = this;
+            var count = names.length;
+            var result = {};
+            var callback = function (ref, name) {
+                result[name] = ref;
+                count--;
+                if (count === 0) {
+                    cb.call(self, result);
+                }
+            }
+
+            names.forEach(function (name, i) {
+                self.getRef(name, callback);
+            });
         },
 
         getRef: function (name, cb) {
