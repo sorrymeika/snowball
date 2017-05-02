@@ -13,6 +13,7 @@ var isArray = Array.isArray;
 var isPlainObject = $.isPlainObject;
 var extend = $.extend;
 var camelCase = $.camelCase;
+var ConstuctorOf$ = $.zepto ? $.zepto.Z : $.fn.constructor;
 
 var TRANSITION_END = $.fx.transitionEnd;
 var LINKSCHANGE_EVENT = 'linkschange';
@@ -55,51 +56,7 @@ var GLOBAL_VARIABLES = {
     'document': true
 };
 
-// var stringRE = "'(?:(?:\\\\{2})+|\\\\'|[^'])*'|\"(?:(?:\\\\{2})+|\\\\\"|[^\"])*\"";
-// var regExpRE = "\/(?:(?:\\{2})+|\\\/|[^\/\r\n])+\/[img]*(?=[\)|\.|,])"
-var stringRE = "'(?:(?:\\\\{2})+|\\\\'|[^'])*'";
-
-function createCodePieceExp(exp, flags, deep) {
-    if (typeof flags === 'number') {
-        deep = flags;
-        flags = undefined;
-    } else if (!deep) deep = 6;
-
-    var expArr = exp.split('...');
-    if (expArr.length < 2) return new RegExp(exp, flags);
-
-    var result = "";
-    var lastIndex = expArr.length - 1;
-    for (var i = 0; i <= lastIndex; i++) {
-        if (i == lastIndex) {
-            result += expArr[i].substr(1);
-        } else {
-            var pre = expArr[i].slice(-1);
-            var suf = expArr[i + 1].charAt(0);
-            var parenthesisREStart = '\\' + pre + '(?:' + stringRE + '|';
-            var parenthesisREEnd = '[^\\' + suf + '])*\\' + suf;
-
-            var before = "";
-            var after = "";
-            for (var j = 0; j <= deep; j++) {
-                before += '(?:' + parenthesisREStart;
-                after += parenthesisREEnd + ')|';
-            }
-
-            result += expArr[i].slice(0, -1) + parenthesisREStart + before + after + parenthesisREEnd;
-        }
-    }
-    return new RegExp(result, flags);
-}
-
-var valueRE = /^((-)?\d+|true|false|undefined|null|'(?:\\'|[^'])*')$/;
-var repeatRE = /([\w$]+)(?:\s*,(\s*[\w$]+)){0,1}\s+in\s+([\w$]+(?:\.[\w$\(,\)]+){0,})(?:\s*\|\s*filter\s*:\s*(.+?)){0,1}(?:\s*\|\s*orderBy:(.+)){0,1}(\s|$)/;
-var matchExpressionRE = createCodePieceExp("{...}", 'g');
-var setRE = createCodePieceExp("([\\w$]+(?:\\.[\\w$]+)*)\\s*=\\s*((?:(...)|" + stringRE + "|[\\w$][!=]==?|[^;=])+?)(?=;|,|\\)|$)", 'g', 4);
-var methodRE = createCodePieceExp("\\b((?:this\\.){0,1}[\\.\\w$]+)((...))", 'g', 4);
-var snAttrRE = /^sn-/;
-
-var Filters = {
+var utils = {
     contains: function (source, keywords) {
         return !keywords || source.indexOf(keywords) != -1;
     },
@@ -111,44 +68,13 @@ var Filters = {
     util: util
 };
 
-var FILTERS_VARS = (function () {
-    var res = '';
-    for (var key in Filters) {
-        res += 'var ' + key + '=$data.' + key + ';';
-    }
-    return res;
-})();
+var UTILS_VARS = "";
+for (var varName in utils) {
+    UTILS_VARS += 'var ' + varName + '=$data.' + varName + ';';
+}
 
 function isThenable(thenable) {
-    return thenable && typeof thenable.then === 'function';
-}
-
-function testRegExp(regExp, val) {
-    return regExp.lastIndex != 0 && (regExp.lastIndex = 0) || regExp.test(val);
-}
-
-function valueExpression(str, variables) {
-    var arr = str.split('.');
-    var alias = arr[0];
-    var result = [];
-    var code = '';
-    var gb = '$data';
-
-    if (!alias || GLOBAL_VARIABLES[alias] || valueRE.test(str) || (variables && variables.indexOf(alias) != -1) || alias in Filters) {
-        return str;
-    } else if (alias == 'delegate') {
-        return 'this.' + str;
-    }
-
-    str = gb + '.' + str;
-
-    for (var i = 0; i < arr.length; i++) {
-        result[i] = (i == 0 ? gb : result[i - 1]) + '.' + arr[i];
-    }
-    for (var i = 0; i < result.length; i++) {
-        code += (i ? '&&' : '') + result[i] + '!==null&&' + result[i] + '!==undefined';
-    }
-    return '((' + code + ')?' + str + ':"")';
+    return thenable && typeof thenable === 'object' && typeof thenable.then === 'function';
 }
 
 function insertElementAfter(cursorElem, elem) {
@@ -208,8 +134,6 @@ function cloneElement(node, each) {
     return nodeClone;
 }
 
-var ConstuctorOf$ = $.zepto ? $.zepto.Z : $.fn.constructor;
-
 function eachElement(el, fn) {
     if (!el) return;
 
@@ -251,27 +175,343 @@ function eachElement(el, fn) {
     }
 }
 
-function setRef(viewModel, el) {
-    var refName = el.getAttribute('ref');
+function checkOwnNode(viewModel, node) {
+    if (typeof node == 'string') {
+        node = viewModel.$el.find(node);
 
-    if (refName && !el.snRequire) {
-        var ref = el.snRequiredInstance || el;
-        var refs = viewModel.refs[refName];
+        if (!node.length)
+            throw new Error('is not own node');
+    } else {
+        viewModel.$el.each(function () {
+            if (!$.contains(this, node))
+                throw new Error('is not own node');
+        });
+    }
+    return node;
+}
 
-        if (!refs) {
-            viewModel.refs[refName] = el.snIsRepeat ? [ref] : ref;
-        } else if (refs.nodeType) {
-            viewModel.refs[refName] = [refs, ref];
-        } else {
-            refs.push(ref);
+function compileNewTemplate(viewModel, template) {
+    var $element = $(template);
+    $element.each(function () {
+        if (this.snViewModel) throw new Error("can not insert or append binded node!");
+    });
+
+    compileElement(viewModel, $element);
+    viewModel.render();
+
+    return $element;
+}
+
+function compileElement(viewModel, $element) {
+    viewModel._codes = [];
+
+    eachElement($element, function (node) {
+        if (node.snViewModel) return false;
+
+        if (node.nodeType != COMMENT_NODE)
+            compileNodeAttributes(viewModel, node);
+
+        var parentRepeatSource;
+        for (var parentNode = (node.snIf || node).parentNode;
+            parentNode && !parentNode.snViewModel;
+            parentNode = (parentNode.snIf || parentNode).parentNode) {
+
+            if (parentNode.snRepeatSource) {
+                parentRepeatSource = parentNode.snRepeatSource;
+                break;
+            }
+        }
+
+        if (isRepeatableNode(node)) {
+            if (node.snIf) throw new Error('can not use sn-if and sn-repeat at the same time!!please use filter instead!!');
+
+            var nextSibling = node.nextSibling;
+            var repeatSource = new RepeatSource(viewModel, node, parentRepeatSource);
+
+            node.snRepeatSource = repeatSource;
+
+            return nextSibling;
+        } else if (node.snIf) {
+            return node.snIf.nextSibling;
+        }
+    });
+
+    for (var key in EVENTS) {
+        var eventName = EVENTS[key];
+        var attr = '[sn-' + viewModel.cid + eventName + ']';
+
+        $element.on(eventName, attr, viewModel._handleSNEvent)
+            .filter(attr)
+            .on(eventName, viewModel._handleSNEvent);
+    }
+
+    var fns = new Function('return [' + viewModel._codes.join(',') + ']')();
+
+    fns.forEach(function (fn) {
+        viewModel.fns.push(fn);
+    });
+
+    return $element;
+}
+
+function compileNodeAttributes(viewModel, el) {
+    if (el.nodeType === TEXT_NODE) {
+        var fid = createVMFunction(viewModel, el.textContent);
+        if (fid) {
+            el.snBinding = {
+                textContent: fid
+            };
+            el.textContent = '';
+        }
+        return;
+    } else if (el.nodeName.slice(0, 3) === 'SN-') {
+        el.setAttribute('sn-require', camelCase(el.nodeName.slice(3).toLowerCase()));
+        el.setAttribute('sn-data', el.getAttribute('props'));
+        el.removeAttribute('props');
+    }
+
+    for (var j = el.attributes.length - 1; j >= 0; j--) {
+        var attr = el.attributes[j].name;
+        var val = el.attributes[j].value;
+
+        if (val || attr == 'sn-else') {
+            var attrName = attr.replace(snAttrRE, '');
+            switch (attr) {
+                case 'sn-if':
+                case 'sn-else':
+                case 'sn-else-if':
+                    var snIf = document.createComment(attr);
+                    snIf.snIfOrigin = el;
+                    el.snIf = snIf;
+                    el.snIfType = snIf.snIfType = attr;
+                    el.parentNode.insertBefore(snIf, el);
+                    el.parentNode.removeChild(el);
+
+                    if (attr == 'sn-else') {
+                        (el.snBinding || (el.snBinding = {}))[attr] = attr;
+                        break;
+                    }
+                case 'sn-src':
+                case 'sn-html':
+                case 'sn-display':
+                case 'sn-style':
+                case 'sn-css':
+                case "sn-data":
+                    if (val.indexOf("{") == -1 || val.indexOf("}") == -1) {
+                        val = '{' + val + '}';
+                    }
+                case attrName:
+                    var fid = createVMFunction(viewModel, val);
+
+                    if (attr == "sn-data" && fid) {
+                        el.setAttribute(attr, fid);
+                    } else if (fid) {
+                        (el.snBinding || (el.snBinding = {}))[attr] = fid;
+                        el.removeAttribute(attr);
+                    } else if (attr == "ref" && !el.getAttribute('sn-require')) {
+                        viewModel.refs[val] = el;
+                    }
+                    break;
+                case 'sn-model':
+                    el.removeAttribute(attr);
+                    el.setAttribute(viewModel.snModelKey, val);
+                    break;
+                case 'sn-require':
+                    el.snRequire = typeof viewModel.requires == 'function' ?
+                        viewModel.requires(val) :
+                        viewModel.requires[val];
+                    break;
+                default:
+                    //处理事件绑定
+                    var evt = EVENTS[attrName];
+
+                    if (evt) {
+                        el.removeAttribute(attr);
+                        attr = "sn-" + viewModel.cid + evt;
+
+                        if (testRegExp(setRE, val) || testRegExp(methodRE, val)) {
+                            var content = val.replace(methodRE, function (match, $1, $2) {
+                                if (globalMethodsRE.test($1)) {
+                                    return match;
+                                }
+                                return $1 + $2.slice(0, -1) + ($2.length == 2 ? '' : ',') + 'e)';
+                            }).replace(setRE, 'this.dataOfElement(e.currentTarget,"$1",$2)');
+
+                            var fid = createVMFunction(viewModel, '{' + content + '}');
+                            if (fid) {
+                                el.setAttribute(attr, fid);
+                            }
+                        } else {
+                            el.setAttribute(attr, val);
+                        }
+                    }
+                    break;
+            }
         }
     }
+}
+
+// var stringRE = "'(?:(?:\\\\{2})+|\\\\'|[^'])*'|\"(?:(?:\\\\{2})+|\\\\\"|[^\"])*\"";
+// var regExpRE = "\/(?:(?:\\{2})+|\\\/|[^\/\r\n])+\/[img]*(?=[\)|\.|,])"
+var stringRE = "'(?:(?:\\\\{2})+|\\\\'|[^'])*'";
+var valueRE = /^((-)?\d+|true|false|undefined|null|'(?:\\'|[^'])*')$/;
+var repeatRE = /([\w$]+)(?:\s*,(\s*[\w$]+)){0,1}\s+in\s+([\w$]+(?:\.[\w$\(,\)]+){0,})(?:\s*\|\s*filter\s*:\s*(.+?)){0,1}(?:\s*\|\s*orderBy:(.+)){0,1}(\s|$)/;
+var matchExpressionRE = createRegExp("{...}", 'g');
+var setRE = createRegExp("([\\w$]+(?:\\.[\\w$]+)*)\\s*=\\s*((?:(...)|" + stringRE + "|[\\w$][!=]==?|[^;=])+?)(?=;|,|\\)|$)", 'g', 4);
+var methodRE = createRegExp("\\b((?:this\\.){0,1}[\\.\\w$]+)((...))", 'g', 4);
+var snAttrRE = /^sn-/;
+var expressionRE = /(?:\{|,)\s*[\w$]+\s*:|'(?:(?:\\{2})+|\\'|[^'])*'|\bvar\s+('(?:(?:\\{2})+|\\'|[^'])*'|[^;]+);|(^|[!=><?\s:(),%&|+*\-\/\[\]]+)([$a-zA-Z_][\w$]*(?:\.[\w$]+)*(?![\w$]*\())/g;
+var varsRE = /([\w$]+)\s*(?:=(?:'(?:\\'|[^'])*'|[^;,]+))?/g;
+var globalMethodsRE = /^((Math|JSON|Date|util|\$)\.|(encodeURIComponent|decodeURIComponent|parseInt|parseFloat)$)/;
+
+function testRegExp(regExp, val) {
+    return regExp.lastIndex != 0 && (regExp.lastIndex = 0) || regExp.test(val);
+}
+
+function createRegExp(exp, flags, deep) {
+    if (typeof flags === 'number') {
+        deep = flags;
+        flags = undefined;
+    } else if (!deep) deep = 6;
+
+    var expArr = exp.split('...');
+    if (expArr.length < 2) return new RegExp(exp, flags);
+
+    var result = "";
+    var lastIndex = expArr.length - 1;
+    for (var i = 0; i <= lastIndex; i++) {
+        if (i == lastIndex) {
+            result += expArr[i].substr(1);
+        } else {
+            var pre = expArr[i].slice(-1);
+            var suf = expArr[i + 1].charAt(0);
+            var parenthesisREStart = '\\' + pre + '(?:' + stringRE + '|';
+            var parenthesisREEnd = '[^\\' + suf + '])*\\' + suf;
+
+            var before = "";
+            var after = "";
+            for (var j = 0; j <= deep; j++) {
+                before += '(?:' + parenthesisREStart;
+                after += parenthesisREEnd + ')|';
+            }
+
+            result += expArr[i].slice(0, -1) + parenthesisREStart + before + after + parenthesisREEnd;
+        }
+    }
+    return new RegExp(result, flags);
+}
+
+function createVMFunction(viewModel, expression) {
+    if (!expression) return null;
+    expression = expression.replace(/^\s+|\s+$/g, '');
+    if (!expression) return null;
+
+    var expId = viewModel._expressions[expression];
+    if (expId !== undefined) return expId;
+
+    var res = genFunction(expression);
+    if (!res) return null;
+
+    viewModel._codes.push('function($data){' + res.code + '}');
+    expId = viewModel._expressions.id++;
+    viewModel._expressions[expression] = expId;
+
+    return expId;
+}
+
+// 测试代码
+// console.log('{var a=2,c=2;b=4,t$y_p0e=type_$==1?2:1}'.match(expressionRE))
+// var match = 'a=34,c';
+// var m;
+// while (m = varsRE.exec(match)) {
+//     console.log(m);
+// }
+// console.log(genFunction('{var a=2,c;b=4,t$y_p0e=type_$==1?2:1}').code)
+/**
+ * 将字符串转为function
+ * 
+ * @param {string} expression 转化为function的表达式，如：
+ *      {user.name+user.age} 或 
+ *      {var a=2,c=2,b;b=name+tt,t$y_p0e=type_$==1?2:1}
+ */
+function genFunction(expression) {
+    if (!testRegExp(matchExpressionRE, expression)) return;
+
+    var variables;
+    var content = UTILS_VARS + 'try{return \'';
+
+    matchExpressionRE.lastIndex = 0;
+
+    var start = 0;
+    var exp;
+    var m;
+    while (m = matchExpressionRE.exec(expression)) {
+        exp = m[0].slice(1, -1);
+        content += replaceQuote(expression.substr(start, m.index - start))
+            + '\'+('
+            + exp.replace(expressionRE, function (match, vars, prefix, name) {
+                if (vars) {
+                    var mVar;
+                    while (mVar = varsRE.exec(vars)) {
+                        (variables || (variables = [])).push(mVar[1]);
+                    }
+                    return vars + ',';
+                } else if (!name) {
+                    return match;
+                }
+
+                return prefix + valueExpression(name, variables);
+            })
+            + ')+\'';
+
+        start = m.index + m[0].length;
+    }
+    content += replaceQuote(expression.substr(start))
+    content += '\';}catch(e){console.error(e);return \'\';}';
+    content = content.replace('return \'\'+', 'return ').replace(/\+\'\'/g, '');
+
+    if (variables && variables.length) {
+        content = 'var ' + variables.join(',') + ';' + content
+    }
+
+    return {
+        code: content,
+        variables: variables
+    };
+}
+
+function replaceQuote(str) {
+    return str.replace(/\\/g, '\\\\').replace(/'/g, '\\\'');
+}
+
+function valueExpression(str, variables) {
+    var arr = str.split('.');
+    var alias = arr[0];
+    var result = [];
+    var code = '';
+    var gb = '$data';
+
+    if (!alias || GLOBAL_VARIABLES[alias] || valueRE.test(str) || (variables && variables.indexOf(alias) != -1) || utils[alias] !== undefined) {
+        return str;
+    } else if (alias == 'delegate') {
+        return 'this.' + str;
+    }
+
+    str = gb + '.' + str;
+
+    for (var i = 0; i < arr.length; i++) {
+        result[i] = (i == 0 ? gb : result[i - 1]) + '.' + arr[i];
+    }
+    for (var i = 0; i < result.length; i++) {
+        code += (i ? '&&' : '') + result[i] + '!==null&&' + result[i] + '!==undefined';
+    }
+    return '((' + code + ')?' + str + ':"")';
 }
 
 function getVMFunctionArg(viewModel, element, snData) {
     var data = Object.assign({
         srcElement: element
-    }, Filters, viewModel.attributes);
+    }, utils, viewModel.attributes);
 
     if (snData) {
         for (var key in snData) {
@@ -287,30 +527,38 @@ function getVMFunctionArg(viewModel, element, snData) {
     return data
 }
 
-function executeFunction(viewModel, functionId, data) {
+function executeVMFunction(viewModel, functionId, data) {
     return viewModel.fns[functionId - 1].call(viewModel, data);
 }
 
-function checkOwnNode(viewModel, node) {
-    if (typeof node == 'string') {
-        node = viewModel.$el.find(node);
+function updateViewNextTick(model) {
+    if (model.changed) return;
+    model.changed = true;
 
-        if (!node.length)
-            throw new Error('is not own node');
-
-    } else {
-
-        viewModel.$el.each(function () {
-            if (!$.contains(this, node))
-                throw new Error('is not own node');
-        });
+    if (model.parent instanceof Collection) {
+        updateViewNextTick(model.parent);
     }
-    return node;
+
+    model.root.one(DATACHANGED_EVENT, function () {
+        model.changed = false;
+        model.key && model.root.trigger(new Event(DATACHANGED_EVENT + ":" + model.key, {
+            target: model
+        }));
+
+        while (model) {
+            if (model instanceof Model || model instanceof Collection) {
+                model._linkedParents &&
+                    model._linkedParents.length &&
+                    model.root.trigger(LINKSCHANGE_EVENT + ":" + model.cid);
+            }
+            model = model.parent;
+        }
+    }).render();
 }
 
 function updateRequiredView(viewModel, el) {
     var id = el.getAttribute('sn-data');
-    var data = !id ? null : executeFunction(viewModel, id, getVMFunctionArg(viewModel, el.snData, el));
+    var data = !id ? null : executeVMFunction(viewModel, id, getVMFunctionArg(viewModel, el.snData, el));
 
     if (el.snRequiredInstance) {
         el.snRequiredInstance.set(data);
@@ -336,35 +584,11 @@ function updateRequiredView(viewModel, el) {
     setRef(viewModel, el);
 }
 
-function isRepeatableNode(node) {
-    return node.nodeType === ELEMENT_NODE && node.getAttribute('sn-repeat');
-}
-
-function cloneRepeatElement(source, snData) {
-    return cloneElement(source, function (node, clone) {
-        clone.snData = snData;
-        clone.snIsRepeat = true;
-
-        if (node.snRepeatSource) {
-            clone.snRepeatSource = node.snRepeatSource;
-        }
-        if (node.snBinding) {
-            clone.snBinding = node.snBinding;
-        }
-        if (node.snIfOrigin) {
-            clone.snIfOrigin = cloneRepeatElement(node.snIfOrigin, snData);
-            clone.snIfType = clone.snIfOrigin.snIfType = node.snIfType;
-            clone.snIfOrigin.snIf = clone;
-        }
-    });
-}
-
-function updateRepeatElement(viewModel, el) {
+function updateRepeatView(viewModel, el) {
     var repeatSource = el.snRepeatSource;
     var collection = el.snCollection;
     var model;
     var offsetParent = repeatSource.offsetParent;
-    var orderBy = repeatSource.orderBy;
     var parentSNData = {};
 
     if (repeatSource.parent) {
@@ -379,7 +603,7 @@ function updateRepeatElement(viewModel, el) {
     var collectionData;
 
     if (repeatSource.isFn) {
-        collectionData = executeFunction(viewModel, repeatSource.fid, getVMFunctionArg(viewModel, parentSNData, el));
+        collectionData = executeVMFunction(viewModel, repeatSource.fid, getVMFunctionArg(viewModel, parentSNData, el));
     }
 
     if (!collection) {
@@ -417,7 +641,6 @@ function updateRepeatElement(viewModel, el) {
         var elem;
         var elemIndex = -1;
         var snData;
-        var isInData = true;
         var ifElement;
 
         for (var j = 0; j < elementsLength; j++) {
@@ -436,11 +659,8 @@ function updateRepeatElement(viewModel, el) {
             snData = elem.snData;
         }
 
-        if (repeatSource.filter) {
-            isInData = repeatSource.filter.call(viewModel, getVMFunctionArg(viewModel, elem, snData));
-        }
-
-        if (isInData) {
+        var pass = !repeatSource.filter || repeatSource.filter.call(viewModel, getVMFunctionArg(viewModel, elem, snData));
+        if (pass) {
             if (!elem) {
                 elem = cloneRepeatElement(repeatSource.source, snData);
 
@@ -457,44 +677,9 @@ function updateRepeatElement(viewModel, el) {
         } else if (elemIndex != -1) {
             elemContain[elemIndex] = false;
         }
-
     });
 
-    if (orderBy) {
-        if (typeof orderBy == 'string') {
-            // 排序方法
-            list.sort(viewModel[orderBy]);
-        } else {
-            // orderBy=['a',true,someFunctionId,false]
-            orderBy = orderBy.map(function (item) {
-                if (typeof item === 'number') {
-                    return executeFunction(viewModel, item, getVMFunctionArg(viewModel, parentSNData, el));
-                }
-                return item;
-            });
-
-            list.sort(function (am, bm) {
-                var ret = 0;
-                var isDesc;
-                var sort;
-                var a, b;
-
-                for (var i = 0; i < orderBy.length; i += 2) {
-                    sort = orderBy[i];
-                    isDesc = orderBy[i + 1] == false;
-
-                    a = am.model.attributes[sort];
-                    b = bm.model.attributes[sort];
-
-                    ret = isDesc ? (a > b ? -1 : a < b ? 1 : 0) : (a > b ? 1 : a < b ? -1 : 0);
-
-                    if (ret != 0) return ret;
-                }
-
-                return ret;
-            });
-        }
-    }
+    repeatSource.orderBy && sortRepeatList(viewModel, list, repeatSource.orderBy);
 
     list.forEach(function (item, index) {
         var elem = item.el;
@@ -516,57 +701,68 @@ function updateRepeatElement(viewModel, el) {
     return cursorElem;
 }
 
-function findModelByKey(model, key) {
-    if (model.key == key) return model;
-
-    var modelMap = model._model;
-    var model;
-
-    while (1) {
-        var flag = false;
-
-        for (var modelKey in modelMap) {
-            model = modelMap[modelKey];
-
-            if (model instanceof Model || model instanceof Collection) {
-                if (model.key == key) {
-                    return model;
-                } else {
-                    var linkedParents = model._linkedParents;
-                    if (linkedParents && linkedParents.length) {
-
-                        for (var i = 0, len = linkedParents.length; i < len; i++) {
-                            var childModelKey = linkedParents[i].childModelKey;
-                            if (key == childModelKey) {
-                                return model;
-                            } else if (key.indexOf(childModelKey + '.') == 0) {
-                                flag = true;
-                                key = key.substr(childModelKey.length + 1);
-                                break;
-                            }
-                        }
-
-                    } else if (key.indexOf(model.key + '.') == 0) {
-                        flag = true;
-                    }
-                }
-
-                if (flag && model._model) {
-                    modelMap = model._model;
-                    break;
-                }
+function sortRepeatList(viewModel, list, orderBy) {
+    if (typeof orderBy == 'string') {
+        // 排序方法
+        list.sort(viewModel[orderBy]);
+    } else {
+        // orderBy=['a',true,someFunctionId,false]
+        orderBy = orderBy.map(function (item) {
+            if (typeof item === 'number') {
+                return executeVMFunction(viewModel, item, getVMFunctionArg(viewModel, parentSNData, el));
             }
-        }
+            return item;
+        });
 
-        if (!flag) break;
+        list.sort(function (am, bm) {
+            var ret = 0;
+            var isDesc;
+            var sort;
+            var a, b;
+
+            for (var i = 0; i < orderBy.length; i += 2) {
+                sort = orderBy[i];
+                isDesc = orderBy[i + 1] == false;
+
+                a = am.model.attributes[sort];
+                b = bm.model.attributes[sort];
+
+                ret = isDesc ? (a > b ? -1 : a < b ? 1 : 0) : (a > b ? 1 : a < b ? -1 : 0);
+
+                if (ret != 0) return ret;
+            }
+
+            return ret;
+        });
     }
+}
 
-    return null;
+function isRepeatableNode(node) {
+    return node.nodeType === ELEMENT_NODE && node.getAttribute('sn-repeat');
+}
+
+function cloneRepeatElement(source, snData) {
+    return cloneElement(source, function (node, clone) {
+        clone.snData = snData;
+        clone.snIsRepeat = true;
+
+        if (node.snRepeatSource) {
+            clone.snRepeatSource = node.snRepeatSource;
+        }
+        if (node.snBinding) {
+            clone.snBinding = node.snBinding;
+        }
+        if (node.snIfOrigin) {
+            clone.snIfOrigin = cloneRepeatElement(node.snIfOrigin, snData);
+            clone.snIfType = clone.snIfOrigin.snIfType = node.snIfType;
+            clone.snIfOrigin.snIf = clone;
+        }
+    });
 }
 
 function updateNode(viewModel, el) {
     if (el.nodeType == COMMENT_NODE && el.snRepeatSource) {
-        updateRepeatElement(viewModel, el);
+        updateRepeatView(viewModel, el);
     } else if (el.snIfOrigin) {
         return {
             isSkipChildNodes: true,
@@ -626,39 +822,6 @@ function updateNode(viewModel, el) {
     }
 }
 
-util.style('.sn-display { opacity: 1; -webkit-transition: opacity 300ms ease-out 0ms; transition: opacity 300ms ease-out 0ms; }\
-.sn-display-show { opacity: 1; }\
-.sn-display-hide { opacity: 0; }');
-
-function setSNDisplay(el, val) {
-    var $el = $(el);
-    var isInitDisplay = true;
-    if (!$el.hasClass('sn-display')) {
-        isInitDisplay = false;
-        $el.addClass('sn-display')[0].clientHeight;
-    }
-    var display = util.isNo(val) ? 'none' : val == 'block' || val == 'inline' || val == 'inline-block' ? val : '';
-
-    if (display == 'none') {
-        if (!$el.hasClass('sn-display-hide')) {
-            var onHide = function () {
-                if ($el.hasClass('sn-display-hide'))
-                    $el.hide();
-            }
-            $el.addClass('sn-display-hide')
-                .one(TRANSITION_END, onHide);
-            setTimeout(onHide, 300);
-        }
-    } else if (!isInitDisplay || $el.hasClass('sn-display-hide')) {
-        $el.css({
-            display: display
-        });
-        el.clientHeight;
-
-        $el.removeClass('sn-display-hide');
-    }
-}
-
 function updateNodeAttributes(viewModel, el, attribute) {
     var attrsBinding;
     var data = getVMFunctionArg(viewModel, el, el.snData);
@@ -682,7 +845,7 @@ function updateNodeAttributes(viewModel, el, attribute) {
                 break;
             case "sn-if":
             case "sn-else-if":
-                var val = executeFunction(viewModel, attrsBinding[key], data);
+                var val = executeVMFunction(viewModel, attrsBinding[key], data);
 
                 if (util.isNo(val)) {
                     if (el.parentNode) {
@@ -705,7 +868,7 @@ function updateNodeAttributes(viewModel, el, attribute) {
 
     for (var i = 0, n = keys.length; i < n; i++) {
         var attr = keys[i];
-        var val = executeFunction(viewModel, attrsBinding[attr], data);
+        var val = executeVMFunction(viewModel, attrsBinding[attr], data);
 
         if (attrs[attr] === val) continue;
         attrs[attr] = val;
@@ -791,166 +954,54 @@ function updateNodeAttributes(viewModel, el, attribute) {
     }
 }
 
-var globalMethodsRE = /^((Math|JSON|Date|util|\$)\.|(encodeURIComponent|decodeURIComponent|parseInt|parseFloat)$)/;
+util.style('.sn-display { opacity: 1; -webkit-transition: opacity 300ms ease-out 0ms; transition: opacity 300ms ease-out 0ms; }\
+.sn-display-show { opacity: 1; }\
+.sn-display-hide { opacity: 0; }');
 
-function bindNodeAttributes(viewModel, el) {
-    if (el.nodeType === TEXT_NODE) {
-        var fid = createFunction(viewModel, el.textContent);
-        if (fid) {
-            el.snBinding = {
-                textContent: fid
-            };
-            el.textContent = '';
-        }
-        return;
-    } else if (el.nodeName.slice(0, 3) === 'SN-') {
-        el.setAttribute('sn-require', camelCase(el.nodeName.slice(3).toLowerCase()));
-        el.setAttribute('sn-data', el.getAttribute('props'));
-        el.removeAttribute('props');
+function setSNDisplay(el, val) {
+    var $el = $(el);
+    var isInitDisplay = true;
+    if (!$el.hasClass('sn-display')) {
+        isInitDisplay = false;
+        $el.addClass('sn-display')[0].clientHeight;
     }
+    var display = util.isNo(val) ? 'none' : val == 'block' || val == 'inline' || val == 'inline-block' ? val : '';
 
-    for (var j = el.attributes.length - 1; j >= 0; j--) {
-        var attr = el.attributes[j].name;
-        var val = el.attributes[j].value;
-
-        if (val || attr == 'sn-else') {
-            var attrName = attr.replace(snAttrRE, '');
-            switch (attr) {
-                case 'sn-if':
-                case 'sn-else':
-                case 'sn-else-if':
-                    var snIf = document.createComment(attr);
-                    snIf.snIfOrigin = el;
-                    el.snIf = snIf;
-                    el.snIfType = snIf.snIfType = attr;
-                    el.parentNode.insertBefore(snIf, el);
-                    el.parentNode.removeChild(el);
-
-                    if (attr == 'sn-else') {
-                        (el.snBinding || (el.snBinding = {}))[attr] = attr;
-                        break;
-                    }
-                case 'sn-src':
-                case 'sn-html':
-                case 'sn-display':
-                case 'sn-style':
-                case 'sn-css':
-                case "sn-data":
-                    if (val.indexOf("{") == -1 || val.indexOf("}") == -1) {
-                        val = '{' + val + '}';
-                    }
-                case attrName:
-                    var fid = createFunction(viewModel, val);
-
-                    if (attr == "sn-data" && fid) {
-                        el.setAttribute(attr, fid);
-                    } else if (fid) {
-                        (el.snBinding || (el.snBinding = {}))[attr] = fid;
-                        el.removeAttribute(attr);
-                    } else if (attr == "ref" && !el.getAttribute('sn-require')) {
-                        viewModel.refs[val] = el;
-                    }
-                    break;
-                case 'sn-model':
-                    el.removeAttribute(attr);
-                    el.setAttribute(viewModel.snModelKey, val);
-                    break;
-                case 'sn-require':
-                    el.snRequire = typeof viewModel.requires == 'function' ?
-                        viewModel.requires(val) :
-                        viewModel.requires[val];
-                    break;
-                default:
-                    //处理事件绑定
-                    var evt = EVENTS[attrName];
-
-                    if (evt) {
-                        el.removeAttribute(attr);
-                        attr = "sn-" + viewModel.cid + evt;
-
-                        if (testRegExp(setRE, val) || testRegExp(methodRE, val)) {
-                            var content = val.replace(methodRE, function (match, $1, $2) {
-                                if (globalMethodsRE.test($1)) {
-                                    return match;
-                                }
-                                return $1 + $2.slice(0, -1) + ($2.length == 2 ? '' : ',') + 'e)';
-                            }).replace(setRE, 'this.dataOfElement(e.currentTarget,"$1",$2)');
-
-                            var fid = createFunction(viewModel, '{' + content + '}');
-                            if (fid) {
-                                el.setAttribute(attr, fid);
-                            }
-                        } else {
-                            el.setAttribute(attr, val);
-                        }
-                    }
-                    break;
+    if (display == 'none') {
+        if (!$el.hasClass('sn-display-hide')) {
+            var onHide = function () {
+                if ($el.hasClass('sn-display-hide'))
+                    $el.hide();
             }
+            $el.addClass('sn-display-hide')
+                .one(TRANSITION_END, onHide);
+            setTimeout(onHide, 300);
         }
+    } else if (!isInitDisplay || $el.hasClass('sn-display-hide')) {
+        $el.css({
+            display: display
+        });
+        el.clientHeight;
+
+        $el.removeClass('sn-display-hide');
     }
 }
 
-function bindNewElement(viewModel, newNode) {
-    newNode = $(newNode);
-    newNode.each(function () {
-        if (this.snViewModel) throw new Error("can not insert or append binded node!");
-    });
+function setRef(viewModel, el) {
+    var refName = el.getAttribute('ref');
 
-    bindElement(viewModel, newNode);
+    if (refName && !el.snRequire) {
+        var ref = el.snRequiredInstance || el;
+        var refs = viewModel.refs[refName];
 
-    viewModel.render();
-
-    return newNode;
-}
-
-function bindElement(viewModel, $el) {
-    viewModel._codes = [];
-
-    eachElement($el, function (node) {
-        if (node.snViewModel) return false;
-
-        if (node.nodeType != COMMENT_NODE)
-            bindNodeAttributes(viewModel, node);
-
-        var parentRepeatSource;
-        for (var parentNode = (node.snIf || node).parentNode;
-            parentNode && !parentNode.snViewModel;
-            parentNode = (parentNode.snIf || parentNode).parentNode) {
-
-            if (parentNode.snRepeatSource) {
-                parentRepeatSource = parentNode.snRepeatSource;
-                break;
-            }
+        if (!refs) {
+            viewModel.refs[refName] = el.snIsRepeat ? [ref] : ref;
+        } else if (refs.nodeType) {
+            viewModel.refs[refName] = [refs, ref];
+        } else {
+            refs.push(ref);
         }
-
-        if (isRepeatableNode(node)) {
-            if (node.snIf) throw new Error('can not use sn-if and sn-repeat at the same time!!please use filter instead!!');
-
-            var nextSibling = node.nextSibling;
-            var repeatSource = new RepeatSource(viewModel, node, parentRepeatSource);
-
-            node.snRepeatSource = repeatSource;
-
-            return nextSibling;
-        } else if (node.snIf) {
-            return node.snIf.nextSibling;
-        }
-    });
-
-    for (var key in EVENTS) {
-        var eventName = EVENTS[key];
-        var attr = '[sn-' + viewModel.cid + eventName + ']';
-
-        $el.on(eventName, attr, viewModel._handleSNEvent)
-            .filter(attr)
-            .on(eventName, viewModel._handleSNEvent);
     }
-
-    var fns = new Function('return [' + viewModel._codes.join(',') + ']')();
-
-    fns.forEach(function (fn) {
-        viewModel.fns.push(fn);
-    });
 }
 
 function linkModels(model, value, key) {
@@ -976,7 +1027,7 @@ function unlinkModels(model, value) {
     var link;
     var linkedModels = root._linkedModels;
     var linkedParents = value._linkedParents;
-    
+
     if (linkedModels && linkedParents) {
         for (var i = linkedModels.length - 1; i >= 0; i--) {
             link = linkedModels[i];
@@ -988,92 +1039,6 @@ function unlinkModels(model, value) {
             }
         }
     }
-}
-
-function createFunction(viewModel, expression) {
-    if (!expression) return null;
-    expression = expression.replace(/^\s+|\s+$/g, '');
-    if (!expression) return null;
-
-    var expId = viewModel._expressions[expression];
-    if (expId !== undefined) return expId;
-
-    var res = genFunction(expression);
-    if (!res) return null;
-
-    viewModel._codes.push('function($data){' + res.code + '}');
-    expId = viewModel._expressions.id++;
-    viewModel._expressions[expression] = expId;
-
-    return expId;
-}
-
-var expressionRE = /(?:\{|,)\s*[\w$]+\s*:|'(?:(?:\\{2})+|\\'|[^'])*'|\bvar\s+('(?:(?:\\{2})+|\\'|[^'])*'|[^;]+);|(^|[!=><?\s:(),%&|+*\-\/\[\]]+)([$a-zA-Z_][\w$]*(?:\.[\w$]+)*(?![\w$]*\())/g;
-var varsRE = /([\w$]+)\s*(?:=(?:'(?:\\'|[^'])*'|[^;,]+))?/g;
-
-function replaceQuote(str) {
-    return str.replace(/\\/g, '\\\\').replace(/'/g, '\\\'');
-}
-
-// 测试代码
-// console.log('{var a=2,c=2;b=4,t$y_p0e=type_$==1?2:1}'.match(expressionRE))
-// var match = 'a=34,c';
-// var m;
-// while (m = varsRE.exec(match)) {
-//     console.log(m);
-// }
-// console.log(genFunction('{var a=2,c;b=4,t$y_p0e=type_$==1?2:1}').code)
-/**
- * 将字符串转为function
- * 
- * @param {string} expression 转化为function的表达式，如：
- *      {user.name+user.age} 或 
- *      {var a=2,c=2,b;b=name+tt,t$y_p0e=type_$==1?2:1}
- */
-function genFunction(expression) {
-    if (!testRegExp(matchExpressionRE, expression)) return;
-
-    var variables;
-    var content = FILTERS_VARS + 'try{return \'';
-
-    matchExpressionRE.lastIndex = 0;
-
-    var start = 0;
-    var exp;
-    var m;
-    while (m = matchExpressionRE.exec(expression)) {
-        exp = m[0].slice(1, -1);
-        content += replaceQuote(expression.substr(start, m.index - start))
-            + '\'+('
-            + exp.replace(expressionRE, function (match, vars, prefix, name) {
-                if (vars) {
-                    var mVar;
-                    while (mVar = varsRE.exec(vars)) {
-                        (variables || (variables = [])).push(mVar[1]);
-                    }
-                    return vars + ',';
-                } else if (!name) {
-                    return match;
-                }
-
-                return prefix + valueExpression(name, variables);
-            })
-            + ')+\'';
-
-        start = m.index + m[0].length;
-    }
-    content += replaceQuote(expression.substr(start))
-    content += '\';}catch(e){console.error(e);return \'\';}';
-    content = content.replace('return \'\'+', 'return ').replace(/\+\'\'/g, '');
-
-    if (variables && variables.length) {
-        content = 'var ' + variables.join(',') + ';' + content
-    }
-
-    return {
-        code: content,
-        variables: variables
-    };
 }
 
 function updateParentReferenceOf(model) {
@@ -1088,6 +1053,54 @@ function updateParentReferenceOf(model) {
     } else {
         parent.attributes[model._key] = model.attributes;
     }
+}
+
+function findModelByKey(model, key) {
+    if (model.key == key) return model;
+
+    var modelMap = model._model;
+    var model;
+
+    while (1) {
+        var flag = false;
+
+        for (var modelKey in modelMap) {
+            model = modelMap[modelKey];
+
+            if (model instanceof Model || model instanceof Collection) {
+                if (model.key == key) {
+                    return model;
+                } else {
+                    var linkedParents = model._linkedParents;
+                    if (linkedParents && linkedParents.length) {
+
+                        for (var i = 0, len = linkedParents.length; i < len; i++) {
+                            var childModelKey = linkedParents[i].childModelKey;
+                            if (key == childModelKey) {
+                                return model;
+                            } else if (key.indexOf(childModelKey + '.') == 0) {
+                                flag = true;
+                                key = key.substr(childModelKey.length + 1);
+                                break;
+                            }
+                        }
+
+                    } else if (key.indexOf(model.key + '.') == 0) {
+                        flag = true;
+                    }
+                }
+
+                if (flag && model._model) {
+                    modelMap = model._model;
+                    break;
+                }
+            }
+        }
+
+        if (!flag) break;
+    }
+
+    return null;
 }
 
 function updateModelByKeys(model, renew, keys, val) {
@@ -1108,33 +1121,6 @@ function updateModelByKeys(model, renew, keys, val) {
     }
     return model.set(renew, lastKey, val);
 }
-
-function updateViewNextTick(model) {
-    if (model.changed) return;
-
-    model.changed = true;
-
-    if (model.parent instanceof Collection) {
-        updateViewNextTick(model.parent);
-    }
-
-    model.root.one(DATACHANGED_EVENT, function () {
-        model.changed = false;
-        model.key && model.root.trigger(new Event(DATACHANGED_EVENT + ":" + model.key, {
-            target: model
-        }));
-
-        while (model) {
-            if (model instanceof Model || model instanceof Collection) {
-                model._linkedParents &&
-                    model._linkedParents.length &&
-                    model.root.trigger(LINKSCHANGE_EVENT + ":" + model.cid);
-            }
-            model = model.parent;
-        }
-    }).render();
-}
-
 
 // var a = util.query("attr^='somevalue'|c1=1,att2!=2")({
 //     attr: 'somevalue11'
@@ -1327,10 +1313,12 @@ var Model = util.createClass({
                 (attrs = {})[key] = val;
             }
         }
+        var hasChange = false;
 
         if (this.attributes === null || !isPlainObject(this.attributes)) {
             this.attributes = {};
             updateParentReferenceOf(this);
+            hasChange = true;
         }
 
         var attributes = this.attributes;
@@ -1344,7 +1332,6 @@ var Model = util.createClass({
             }
         }
 
-        var hasChange = false;
         var valueType;
         var changes = [];
         var origin;
@@ -1619,7 +1606,6 @@ Collection.prototype = {
                 }
             }
             return results;
-
         } else if (index === undefined) {
             // 根据条件查询
             var results = [];
@@ -1629,7 +1615,6 @@ Collection.prototype = {
                 }
             }
             return results;
-
         } else {
             // 根据条件查询，并返回第n个结果
             var j = 0;
@@ -1793,7 +1778,6 @@ Collection.prototype = {
 
         if (!length) {
             (updateType !== CollectionUpdateType.UPDATE_ONLY_MATCHED) && this.add(arr);
-
             return this;
         }
 
@@ -1885,7 +1869,6 @@ Collection.prototype = {
             }
 
             Array.prototype.splice.call(this, count, 0, model)
-
             this.array.splice(count, 0, model.attributes);
         }
 
@@ -1930,7 +1913,7 @@ Collection.prototype = {
             }
         } else if (key instanceof Model) {
             fn = function (item, i) {
-                return this[i] == key;
+                return this[i] === key;
             }
         } else fn = key;
 
@@ -1996,7 +1979,6 @@ Collection.prototype = {
 
 Collection.prototype.toArray = Collection.prototype.toJSON;
 
-
 function RepeatSource(viewModel, el, parent) {
     var self = this;
     var attrRepeat = el.getAttribute('sn-repeat');
@@ -2008,7 +1990,6 @@ function RepeatSource(viewModel, el, parent) {
 
     if (filter) {
         var res = genFunction('{' + filter + '}');
-
         if (res) {
             this.filter = new Function('$data', res.code);
         }
@@ -2022,33 +2003,11 @@ function RepeatSource(viewModel, el, parent) {
     this.children = [];
     this.attrs = attrs;
     this.parentAlias = parentAlias;
+    this.vm = viewModel;
 
     var orderByCode = match[5];
     if (orderByCode) {
-        if (orderByCode.indexOf('this.') == 0) {
-            self.orderBy = orderByCode.substr(5).replace(/\(.*\)/, '');
-        } else {
-            self.orderBy = [];
-
-            //@orderByCode=date desc,{somedata} {somevalue}
-            orderByCode.split(/\s*,\s*/).forEach(function (sort) {
-                sort = sort.split(' ');
-                var sortKey = sort[0];
-                var sortType = sort[1];
-
-                if (sortKey.charAt(0) == '{' && sortKey.charAt(sortKey.length - 1) == '}') {
-                    sortKey = createFunction(viewModel, sortKey);
-                }
-
-                if (sortType.charAt(0) == '{' && sortType.charAt(sortType.length - 1) == '}') {
-                    sortType = createFunction(viewModel, sortType);
-                } else {
-                    sortType = sortType == 'desc' ? false : true;
-                }
-
-                self.orderBy.push(sortKey, sortType);
-            });
-        }
+        this.compileOrderBy(orderByCode)
     }
 
     var replacement = document.createComment(collectionKey);
@@ -2061,7 +2020,7 @@ function RepeatSource(viewModel, el, parent) {
 
     if (parentAlias == 'this') {
         this.isFn = true;
-        this.fid = createFunction(viewModel, '{' + collectionKey + '}');
+        this.fid = createVMFunction(viewModel, '{' + collectionKey + '}');
 
         collectionKey = collectionKey.replace(/\./g, '/');
     } else {
@@ -2077,6 +2036,34 @@ function RepeatSource(viewModel, el, parent) {
     }
 
     this.collectionKey = collectionKey;
+}
+
+RepeatSource.prototype.compileOrderBy = function (orderByCode) {
+    if (orderByCode.indexOf('this.') == 0) {
+        this.orderBy = orderByCode.substr(5).replace(/\(.*\)/, '');
+    } else {
+        this.orderBy = [];
+
+        var self = this;
+        //@orderByCode=date desc,{somedata} {somevalue}
+        orderByCode.split(/\s*,\s*/).forEach(function (sort) {
+            sort = sort.split(' ');
+            var sortKey = sort[0];
+            var sortType = sort[1];
+
+            if (sortKey.charAt(0) == '{' && sortKey.charAt(sortKey.length - 1) == '}') {
+                sortKey = createVMFunction(self.vm, sortKey);
+            }
+
+            if (sortType.charAt(0) == '{' && sortType.charAt(sortType.length - 1) == '}') {
+                sortType = createVMFunction(self.vm, sortType);
+            } else {
+                sortType = sortType == 'desc' ? false : true;
+            }
+
+            self.orderBy.push(sortKey, sortType);
+        });
+    }
 }
 
 RepeatSource.prototype.appendChild = function (child) {
@@ -2142,7 +2129,7 @@ var ViewModel = Event.mixin(
             template && this.template(template);
 
             attributes = extend({}, this.attributes, attributes);
-            this.attributes = {};
+            this.attributes = null;
             this.set(attributes);
             this.initialize.call(this, attributes);
         },
@@ -2165,7 +2152,7 @@ var ViewModel = Event.mixin(
                 var snData = getVMFunctionArg(this, target, target.snData);
                 snData.e = e;
 
-                return executeFunction(this, eventCode, snData);
+                return executeVMFunction(this, eventCode, snData);
             }
         },
 
@@ -2198,9 +2185,7 @@ var ViewModel = Event.mixin(
                 self.dataOfElement(target, target.getAttribute(self.snModelKey), target.value);
             });
 
-            bindElement(this, $el);
-
-            this.$el = (this.$el || $()).add($el);
+            this.$el = (this.$el || $()).add(compileElement(this, $el));
 
             $el.each(function () {
                 this.snViewModel = self;
@@ -2271,36 +2256,36 @@ var ViewModel = Event.mixin(
             }
         },
 
-        before: function (newNode, referenceNode) {
+        before: function (template, referenceNode) {
             referenceNode = checkOwnNode(this, referenceNode);
 
-            return bindNewElement(this, newNode)
+            return compileNewTemplate(this, template)
                 .insertBefore(referenceNode);
         },
 
         after: function (newNode, referenceNode) {
             referenceNode = checkOwnNode(this, referenceNode);
 
-            return bindNewElement(this, newNode)
+            return compileNewTemplate(this, newNode)
                 .insertAfter(referenceNode);
         },
 
         append: function (newNode, parentNode) {
             parentNode = checkOwnNode(this, parentNode);
 
-            return bindNewElement(this, newNode)
+            return compileNewTemplate(this, newNode)
                 .appendTo(parentNode);
         },
 
         prepend: function (newNode, parentNode) {
             parentNode = checkOwnNode(this, parentNode);
 
-            return bindNewElement(this, newNode)
+            return compileNewTemplate(this, newNode)
                 .prependTo(parentNode);
         },
 
         nextTick: function (cb) {
-            return this._nextTick ? this.one('viewDidUpdate', cb) : cb.call(this);
+            return this._nextTick || this._rendering ? this.one('viewDidUpdate', cb) : cb.call(this);
         },
 
         render: function () {
@@ -2311,7 +2296,6 @@ var ViewModel = Event.mixin(
 
         _render: function () {
             this._rendering = true;
-
             this.viewWillUpdate && this.viewWillUpdate();
 
             console.time('render-' + this.cid);
@@ -2326,7 +2310,7 @@ var ViewModel = Event.mixin(
                 this._nextTick = null;
                 this.refs = {};
 
-                eachElement(this.$el, function (el) {
+                this.$el && eachElement(this.$el, function (el) {
                     if (el.snViewModel && el.snViewModel != self || self._nextTick) return false;
 
                     return updateNode(self, el);
@@ -2351,7 +2335,6 @@ var ViewModel = Event.mixin(
             for (var key in EVENTS) {
                 var eventName = EVENTS[key];
                 var attr = '[sn-' + this.cid + eventName + ']';
-
                 this.$el.off(eventName, attr, this._handleSNEvent);
             }
 
