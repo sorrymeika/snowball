@@ -201,11 +201,19 @@ var util = {
         return data ? func(data) : func;
     },
 
-    style: function (css) {
+    style: function (id, css) {
         var doc = document,
-            head = doc.getElementsByTagName("head")[0],
-            style = doc.createElement("style");
+            head = doc.getElementsByTagName("head")[0];
 
+        if (css === undefined) {
+            css = id;
+            id = "style" + this.guid();
+        }
+        var style = document.getElementById(id);
+        if (style) return style;
+
+        style = doc.createElement("style");
+        style.id = id;
         style.type = "text/css";
         try {
             style.appendChild(doc.createTextNode(css));

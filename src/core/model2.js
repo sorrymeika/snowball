@@ -317,9 +317,14 @@ function compileNodeAttributes(viewModel, el) {
                     el.setAttribute(viewModel.snModelKey, val);
                     break;
                 case 'sn-require':
-                    el.snRequire = typeof viewModel.requires == 'function' ?
+                    var req = typeof viewModel.requires == 'function' ?
                         viewModel.requires(val) :
                         viewModel.requires[val];
+                    if (req instanceof Model) {
+                        el.snRequiredInstance = req;
+                    } else {
+                        el.snRequire = req;
+                    }
                     break;
                 default:
                     //处理事件绑定
@@ -419,14 +424,6 @@ function createVMFunction(viewModel, expression) {
     return expId;
 }
 
-// 测试代码
-// console.log('{var a=2,c=2;b=4,t$y_p0e=type_$==1?2:1}'.match(expressionRE))
-// var match = 'a=34,c';
-// var m;
-// while (m = varsRE.exec(match)) {
-//     console.log(m);
-// }
-// console.log(genFunction('{var a=2,c;b=4,t$y_p0e=type_$==1?2:1}').code)
 /**
  * 将字符串转为function
  * 
@@ -1122,27 +1119,6 @@ function updateModelByKeys(model, renew, keys, val) {
     return model.set(renew, lastKey, val);
 }
 
-// var a = util.query("attr^='somevalue'|c1=1,att2!=2")({
-//     attr: 'somevalue11'
-// });
-
-// console.log(a);
-
-// var a = "someattr.collection[attr^='somevalue',att2=2][1].aaa[333]";
-
-// var attr;
-// var query;
-
-// RE_QUERY.lastIndex = 0;
-// for (var m = RE_QUERY.exec(a); m; m = RE_QUERY.exec(a)) {
-//     attr = m[1];
-//     query = m[2];
-
-//     console.log(attr, query, a.substr(m.index + m[0].length))
-// }
-
-// console.log("[attr^='somevalue',att2=2][+1].aaa[333]".match(RE_COLL_QUERY));
-// console.log(util.query("[attr!=undefined]", [{ attr: 1 }]))
 var RE_QUERY = /(?:^|\.)([_a-zA-Z0-9]+)(\[(?:'(?:\\'|[^'])*'|"(?:\\"|[^"])*"|[^\]])+\](?:\[[\+\-]?\d*\])?)?/g;
 var RE_COLL_QUERY = /\[((?:'(?:\\'|[^'])*'|"(?:\\"|[^"])*"|[^\]])+)\](?:\[([\+\-]?)(\d+)?\])?(?:\.(.*))?/;
 
