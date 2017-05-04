@@ -202,8 +202,10 @@ function compileNewTemplate(viewModel, template) {
     return $element;
 }
 
+var vmCodes;
+
 function compileElement(viewModel, $element) {
-    viewModel._codes = [];
+    vmCodes = '';
 
     eachElement($element, function (node) {
         if (node.snViewModel) return false;
@@ -245,11 +247,13 @@ function compileElement(viewModel, $element) {
             .on(eventName, viewModel._handleSNEvent);
     }
 
-    var fns = new Function('return [' + viewModel._codes.join(',') + ']')();
-
-    fns.forEach(function (fn) {
-        viewModel.fns.push(fn);
-    });
+    if (vmCodes) {
+        var fns = new Function('return {' + vmCodes.slice(0, -1) + '}')();
+        for (var expId in fns) {
+            vmFunctions[expId] = viewModel.fns[expId] = fns[expId];
+        }
+        vmCodes = null;
+    }
 
     return $element;
 }
@@ -265,8 +269,8 @@ function compileNodeAttributes(viewModel, el) {
         }
         return;
     } else if (el.nodeName.slice(0, 3) === 'SN-') {
-        el.setAttribute('sn-require', camelCase(el.nodeName.slice(3).toLowerCase()));
-        el.setAttribute('sn-data', el.getAttribute('props'));
+        el.setAttribute('sn-component', camelCase(el.nodeName.slice(3).toLowerCase()));
+        el.setAttribute('sn-props', el.getAttribute('props'));
         el.removeAttribute('props');
     }
 
@@ -296,19 +300,19 @@ function compileNodeAttributes(viewModel, el) {
                 case 'sn-display':
                 case 'sn-style':
                 case 'sn-css':
-                case "sn-data":
+                case "sn-props":
                     if (val.indexOf("{") == -1 || val.indexOf("}") == -1) {
                         val = '{' + val + '}';
                     }
                 case attrName:
                     var fid = createVMFunction(viewModel, val);
 
-                    if (attr == "sn-data" && fid) {
+                    if (attr == "sn-props" && fid) {
                         el.setAttribute(attr, fid);
                     } else if (fid) {
                         (el.snBinding || (el.snBinding = {}))[attr] = fid;
                         el.removeAttribute(attr);
-                    } else if (attr == "ref" && !el.getAttribute('sn-require')) {
+                    } else if (attr == "ref" && !el.getAttribute('sn-component')) {
                         viewModel.refs[val] = el;
                     }
                     break;
@@ -316,15 +320,10 @@ function compileNodeAttributes(viewModel, el) {
                     el.removeAttribute(attr);
                     el.setAttribute(viewModel.snModelKey, val);
                     break;
-                case 'sn-require':
-                    var req = typeof viewModel.requires == 'function' ?
-                        viewModel.requires(val) :
-                        viewModel.requires[val];
-                    if (req instanceof Model) {
-                        el.snRequiredInstance = req;
-                    } else {
-                        el.snRequire = req;
-                    }
+                case 'sn-component':
+                    el.snComponent = typeof viewModel.components == 'function' ?
+                        viewModel.components(val) :
+                        viewModel.components[val];
                     break;
                 default:
                     //处理事件绑定
@@ -406,23 +405,32 @@ function createRegExp(exp, flags, deep) {
     return new RegExp(result, flags);
 }
 
+var vmExpressionsId = 1;
+var vmExpressionsMap = {};
+var vmFunctions = {};
+
 function createVMFunction(viewModel, expression) {
     if (!expression) return null;
     expression = expression.replace(/^\s+|\s+$/g, '');
     if (!expression) return null;
 
-    var expId = viewModel._expressions[expression];
-    if (expId !== undefined) return expId;
+    var expId = vmExpressionsMap[expression];
+    if (expId !== undefined) {
+        viewModel.fns[expId] = vmFunctions[expId];
+        return expId;
+    }
 
     var res = genFunction(expression);
     if (!res) return null;
 
-    viewModel._codes.push('function($data){' + res.code + '}');
-    expId = viewModel._expressions.id++;
-    viewModel._expressions[expression] = expId;
+    expId = vmExpressionsId++;
+    vmExpressionsMap[expression] = expId;
+
+    vmCodes += expId + ':function($data){' + res.code + '},';
 
     return expId;
 }
+
 
 /**
  * 将字符串转为function
@@ -525,7 +533,7 @@ function getVMFunctionArg(viewModel, element, snData) {
 }
 
 function executeVMFunction(viewModel, functionId, data) {
-    return viewModel.fns[functionId - 1].call(viewModel, data);
+    return viewModel.fns[functionId].call(viewModel, data);
 }
 
 function updateViewNextTick(model) {
@@ -553,15 +561,16 @@ function updateViewNextTick(model) {
     }).render();
 }
 
-function updateRequiredView(viewModel, el) {
-    var id = el.getAttribute('sn-data');
+function updateComponent(viewModel, el) {
+    var id = el.getAttribute('sn-props');
     var data = !id ? null : executeVMFunction(viewModel, id, getVMFunctionArg(viewModel, el.snData, el));
 
-    if (el.snRequiredInstance) {
-        el.snRequiredInstance.set(data);
+    if (el.snComponentInstance) {
+        el.snComponentInstance.set(data);
     } else {
         var children = [];
         var node;
+        var snComponent = el.snComponent;
         var instance;
 
         for (var i = 0, j = el.childNodes.length - 1; i < j; i++) {
@@ -573,10 +582,18 @@ function updateRequiredView(viewModel, el) {
                 viewModel.$el.push(node);
             }
         }
-
-        instance = el.snRequiredInstance = new el.snRequire(data, children);
+        if (typeof snComponent === 'function') {
+            instance = new snComponent(data, children);
+        } else {
+            instance = snComponent;
+            if (typeof instance.snChildren === 'function') {
+                instance.snChildren(children);
+            }
+        }
         instance.$el.appendTo(el);
-        delete el.snRequire;
+
+        el.snComponentInstance = instance;
+        delete el.snComponent;
     }
     setRef(viewModel, el);
 }
@@ -776,7 +793,7 @@ function updateNode(viewModel, el) {
                         nextSibling: el.snIf.nextSibling
                     };
                 } else {
-                    if (el.snRequiredInstance || el.snRequire) updateRequiredView(viewModel, el);
+                    if (el.snComponentInstance || el.snComponent) updateComponent(viewModel, el);
                     else setRef(viewModel, el);
 
                     var nextElement = el.nextSibling;
@@ -810,8 +827,8 @@ function updateNode(viewModel, el) {
 
                     return currentElement.nextSibling;
                 }
-            } else if (el.snRequiredInstance || el.snRequire) {
-                updateRequiredView(viewModel, el);
+            } else if (el.snComponentInstance || el.snComponent) {
+                updateComponent(viewModel, el);
             } else {
                 setRef(viewModel, el);
             }
@@ -987,8 +1004,8 @@ function setSNDisplay(el, val) {
 function setRef(viewModel, el) {
     var refName = el.getAttribute('ref');
 
-    if (refName && !el.snRequire) {
-        var ref = el.snRequiredInstance || el;
+    if (refName && !el.snComponent) {
+        var ref = el.snComponentInstance || el;
         var refs = viewModel.refs[refName];
 
         if (!refs) {
@@ -2056,7 +2073,7 @@ var ViewModel = Event.mixin(
          * 
          * // 初始化一个 ViewModel
          * new ViewModel({
-         *     requires: {},
+         *     components: {},
          *     el: template,
          *     attributes: {
          *     }
@@ -2071,7 +2088,7 @@ var ViewModel = Event.mixin(
                 children = template.children;
                 attributes = template.attributes;
 
-                this.requires = template.requires;
+                this.components = template.components;
                 this.delegate = template.delegate;
 
                 template = template.el;
@@ -2098,7 +2115,7 @@ var ViewModel = Event.mixin(
             this._expressions = {
                 id: 1
             };
-            this.fns = [];
+            this.fns = {};
             this.refs = {};
             this.root = this;
 
@@ -2332,7 +2349,6 @@ var ViewModel = Event.mixin(
 ViewModel.prototype.next = ViewModel.prototype.nextTick;
 
 exports.ViewModel = exports.Model = ViewModel;
-
 exports.createModel = function (props) {
     var attributes;
     if (props.attributes) {
@@ -2343,7 +2359,6 @@ exports.createModel = function (props) {
 }
 
 exports.Collection = Collection;
-
 exports.createCollection = function (props) {
     var array;
     if (props.array) {

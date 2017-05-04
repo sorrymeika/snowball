@@ -225,13 +225,13 @@ var model = new ViewModel(this.$el, {
 ```
 
 
-* `sn-require` 引入其他组建
+* `sn-component` 引入其他组建
 
 ```js
 
 var model = new ViewModel({
 
-    requires: {
+    components: {
         tab: require('widget/tab')
     },
 
@@ -256,7 +256,9 @@ var model = new ViewModel({
 
 ```html
 
-<div class="tab" sn-require="tab" sn-data="{{items:['生活服务','通信服务']}}"></div>
+<div class="tab" sn-component="tab" sn-props="{{items:['生活服务','通信服务']}}"></div>
+或
+<sn-tab class="tab" props="{{items:['生活服务','通信服务']}}"></sn-tab>
 ```
 
 
