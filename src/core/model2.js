@@ -370,7 +370,7 @@ var repeatRE = /([\w$]+)(?:\s*,(\s*[\w$]+)){0,1}\s+in\s+([\w$]+(?:\.[\w$\(,\)]+)
 var matchExpressionRE = createRegExp("{...}", 'g');
 var setRE = createRegExp("([\\w$]+(?:\\.[\\w$]+)*)\\s*=\\s*((?:(...)|" + stringRE + "|[\\w$][!=]==?|[^;=])+?)(?=;|,|\\)|$)", 'g', 4);
 var methodRE = createRegExp("\\b((?:this\\.){0,1}[\\.\\w$]+)((...))", 'g', 4);
-var expressionRE = /'(?:(?:\\{2})+|\\'|[^'])*'|\bvar\s+('(?:(?:\\{2})+|\\'|[^'])*'|[^;]+);|((?:\{|,)\s*[\w$]+\s*:\s*|^|[!=><?\s:(),%&|+*\-\/\[\]]+)([\w$]*(?:\.[\w$]+)*(?![\w$]*\())/g;
+var expressionRE = /'(?:(?:\\{2})+|\\'|[^'])*'|\bvar\s+('(?:(?:\\{2})+|\\'|[^'])*'|[^;]+);|((?:\{|,)\s*[\w$]+\s*:\s*|[!=><?\s:(),%&|+*\-\/\[\]]+|^)([\w$]*(?:\.[\w$]+)*(?![\w$]*\())/g;
 var varsRE = /([\w$]+)\s*(?:=(?:'(?:\\'|[^'])*'|[^;,]+))?/g;
 var globalMethodsRE = /^((Math|JSON|Date|util|\$)\.|(encodeURIComponent|decodeURIComponent|parseInt|parseFloat)$)/;
 
@@ -436,7 +436,6 @@ function createVMFunction(viewModel, expression) {
 
     return expId;
 }
-
 
 /**
  * 将字符串转为function
