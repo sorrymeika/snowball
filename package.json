@@ -26,7 +26,6 @@
         "hiredis": "",
         "async": "",
         "canvas": "~1.6.5",
-        // "gm": "~1.23.0",
         "node-sass": "~4.5.2"
     },
     "author": "SL",

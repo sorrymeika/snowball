@@ -1,0 +1,8 @@
+/node_modules
+/.vs
+/**/dest
+/**/*.zip
+/**/*.xlsx
+/dest*
+.DS_Store
+*.DS_Store

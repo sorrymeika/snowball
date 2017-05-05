@@ -104,7 +104,7 @@ $.extend(Slider.prototype, {
     itemTemplate: '<a href="<%=url%>" forward><img src="<%=src%>" /></a>',
     template: util.template('<div class="slider"><ul class="js_slider slider-con"></ul><ol class="js_slide_navs slider-nav"></ol></div>'),
 
-   _loadImage: function () {
+    _loadImage: function () {
         var self = this;
         var $item = self.$items.eq(self.loop ? self.options.index + 1 : self.options.index);
         if (!$item.prop('_detected')) {
@@ -130,7 +130,7 @@ $.extend(Slider.prototype, {
             children = slider.children(),
             length = children.length;
 
-        self.containerW = self.el.clientWidth;
+        self.containerW = self.el.clientWidth || self.options.containerWidth || window.innerWidth;
         self.wrapperW = self.containerW * self.width / 100;
         self.scrollerW = self.wrapperW * length;
 

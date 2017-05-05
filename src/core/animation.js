@@ -1,8 +1,8 @@
 ﻿var $ = require("$");
 var LinkList = require("./linklist");
-var Matrix2D = require("graphics/matrix2d");
-var tween = require("graphics/tween");
-var CubicBezier = require("graphics/cubicBezier");
+var Matrix2D = require("../graphics/matrix2d");
+var tween = require("../graphics/tween");
+var CubicBezier = require("../graphics/cubicBezier");
 var util = require("util");
 
 var TRANSFORM = $.fx.cssPrefix + 'transform';
