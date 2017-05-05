@@ -496,7 +496,7 @@ function valueExpression(str, variables) {
     var code = '';
     var gb = '$data';
 
-    if (!alias || GLOBAL_VARIABLES[alias] || valueRE.test(str) || (variables && variables.indexOf(alias) != -1) || utils[alias] !== undefined) {
+    if (!alias || GLOBAL_VARIABLES[alias] || valueRE.test(str) || (variables && variables.indexOf(alias) !== -1) || utils[alias] !== undefined) {
         return str;
     } else if (alias == 'delegate') {
         return 'this.' + str;
@@ -806,7 +806,7 @@ function updateNode(viewModel, el) {
                             continue;
                         }
 
-                        if (!nextElement.snIf && !nextElement.snIfOrigin || nextElement.snIfType == 'sn-if') {
+                        if ((!nextElement.snIf && !nextElement.snIfOrigin) || nextElement.snIfType == 'sn-if') {
                             break;
                         }
 
@@ -890,46 +890,39 @@ function updateNodeAttributes(viewModel, el, attribute) {
 
         switch (attr) {
             case 'textContent':
-                var removableTails;
-                if (typeof val === 'object') {
-                    if (val.nodeType) {
-                        val = [val];
-                    }
-                    removableTails = el.snTails;
+                var removableTails = el.snTails;
+                if (isArray(val) || (typeof val === 'object' && val.nodeType && (val = [val]))) {
+                    var node = el;
+                    var newTails = [];
 
-                    if (isArray(val)) {
-                        var node = el;
-                        var newTails = [];
+                    val.forEach(function (item) {
+                        if (node.nextSibling !== item) {
+                            if (
+                                item.nodeType || (
+                                    (!node.nextSibling ||
+                                        node.nextSibling.nodeType !== TEXT_NODE ||
+                                        node.nextSibling.textContent !== "" + item) &&
+                                    (item = document.createTextNode(item))
+                                )
+                            ) {
+                                $(item).insertAfter(node);
+                            } else {
+                                item = node.nextSibling;
+                            }
+                        }
+                        if (removableTails) {
+                            var index = removableTails.indexOf(item);
+                            if (index !== -1) {
+                                removableTails.splice(index, 1);
+                            }
+                        }
+                        node = item;
+                        newTails.push(item);
+                    });
 
-                        val.forEach(function (item) {
-                            if (node.nextSibling !== item) {
-                                if (
-                                    item.nodeType || (
-                                        (!node.nextSibling ||
-                                            node.nextSibling.nodeType !== TEXT_NODE ||
-                                            node.nextSibling.textContent !== "" + item) &&
-                                        (item = document.createTextNode(item))
-                                    )
-                                ) {
-                                    $(item).insertAfter(node);
-                                }
-                            }
-                            if (removableTails) {
-                                var index = removableTails.indexOf(item);
-                                if (index !== -1) {
-                                    removableTails.splice(index, 1);
-                                }
-                            }
-                            node = item;
-                            newTails.push(item);
-                        });
-                        el.snTails = newTails;
-                        el.textContent = '';
-                    } else {
-                        el.textContent = val;
-                    }
+                    el.textContent = '';
+                    el.snTails = newTails;
                 } else {
-                    removableTails = el.snTails;
                     el.textContent = val;
                     el.snTails = null;
                 }
