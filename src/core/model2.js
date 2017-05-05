@@ -364,7 +364,7 @@ var matchExpressionRE = createRegExp("{...}", 'g');
 var setRE = createRegExp("([\\w$]+(?:\\.[\\w$]+)*)\\s*=\\s*((?:(...)|" + stringRE + "|[\\w$][!=]==?|[^;=])+?)(?=;|,|\\)|$)", 'g', 4);
 var methodRE = createRegExp("\\b((?:this\\.){0,1}[\\.\\w$]+)((...))", 'g', 4);
 var snAttrRE = /^sn-/;
-var expressionRE = /(?:\{|,)\s*[\w$]+\s*:|'(?:(?:\\{2})+|\\'|[^'])*'|\bvar\s+('(?:(?:\\{2})+|\\'|[^'])*'|[^;]+);|(^|[!=><?\s:(),%&|+*\-\/\[\]]+)([$a-zA-Z_][\w$]*(?:\.[\w$]+)*(?![\w$]*\())/g;
+var expressionRE = /'(?:(?:\\{2})+|\\'|[^'])*'|\bvar\s+('(?:(?:\\{2})+|\\'|[^'])*'|[^;]+);|((?:\{|,)\s*[\w$]+\s*:\s*|^|[!=><?\s:(),%&|+*\-\/\[\]]+)([\w$]*(?:\.[\w$]+)*(?![\w$]*\())/g;
 var varsRE = /([\w$]+)\s*(?:=(?:'(?:\\'|[^'])*'|[^;,]+))?/g;
 var globalMethodsRE = /^((Math|JSON|Date|util|\$)\.|(encodeURIComponent|decodeURIComponent|parseInt|parseFloat)$)/;
 
