@@ -576,7 +576,7 @@ function updateComponent(viewModel, el) {
         for (var i = 0, j = el.childNodes.length - 1; i < j; i++) {
             node = el.childNodes[i];
 
-            if (node.nodeType !== TEXT_NODE) {
+            if (node.nodeType !== TEXT_NODE || !/^\s*$/.test(node.textContent)) {
                 children.push(node);
                 node.snViewModel = viewModel;
                 viewModel.$el.push(node);
@@ -586,9 +586,10 @@ function updateComponent(viewModel, el) {
             instance = new snComponent(data, children);
         } else {
             instance = snComponent;
-            if (typeof instance.snChildren === 'function') {
-                instance.snChildren(children);
+            if (typeof instance.children === 'function') {
+                instance.children(children);
             }
+            instance.set(data);
         }
         instance.$el.appendTo(el);
 
@@ -889,24 +890,58 @@ function updateNodeAttributes(viewModel, el, attribute) {
 
         switch (attr) {
             case 'textContent':
-                if (typeof val == 'object') {
+                var removableTails;
+                if (typeof val === 'object') {
                     if (val.nodeType) {
-                        if (el.nextSibling != val) {
-                            $(val).insertAfter(el);
-                        }
-                    } else if (isArray(val)) {
-                        var firstChild = val[0];
-                        if (firstChild && el.nextSibling != firstChild)
-                            val.forEach(function (item) {
-                                $(item).insertAfter(el);
-                            });
+                        val = [val];
                     }
-                } else
+                    removableTails = el.snTails;
+
+                    if (isArray(val)) {
+                        var node = el;
+                        var newTails = [];
+
+                        val.forEach(function (item) {
+                            if (node.nextSibling !== item) {
+                                if (
+                                    item.nodeType || (
+                                        (!node.nextSibling ||
+                                            node.nextSibling.nodeType !== TEXT_NODE ||
+                                            node.nextSibling.textContent !== "" + item) &&
+                                        (item = document.createTextNode(item))
+                                    )
+                                ) {
+                                    $(item).insertAfter(node);
+                                }
+                            }
+                            if (removableTails) {
+                                var index = removableTails.indexOf(item);
+                                if (index !== -1) {
+                                    removableTails.splice(index, 1);
+                                }
+                            }
+                            node = item;
+                            newTails.push(item);
+                        });
+                        el.snTails = newTails;
+                        el.textContent = '';
+                    } else {
+                        el.textContent = val;
+                    }
+                } else {
+                    removableTails = el.snTails;
                     el.textContent = val;
+                    el.snTails = null;
+                }
+                if (removableTails) {
+                    removableTails.forEach(function (tail) {
+                        if (tail.parentNode) tail.parentNode.removeChild(tail);
+                    });
+                }
                 break;
             case 'value':
-                if (el.tagName == 'INPUT' || el.tagName == 'SELECT' || el.tagName == 'TEXTAREA') {
-                    if (el.value != val || el.value === '' && val === 0) {
+                if (el.tagName === 'INPUT' || el.tagName === 'SELECT' || el.tagName === 'TEXTAREA') {
+                    if (el.value != val || (el.value === '' && val === 0)) {
                         el.value = val;
                     }
                 } else
