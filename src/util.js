@@ -7,7 +7,7 @@ var ArrayProto = Array.prototype,
     slice = ArrayProto.slice,
     concat = ArrayProto.concat,
     hasOwnProperty = Object.prototype.hasOwnProperty;
-
+var toString = Object.prototype.toString;
 var guid = 0;
 
 var ua = typeof navigator == 'undefined' ? '' : navigator.userAgent,
@@ -86,11 +86,16 @@ var util = {
     },
 
     isNo: function (value) {
-        return !value || (Array.isArray(value) && !value.length) || (typeof value == 'object' && this.isEmptyObject(value));
+        return value == false || (toString.call(value) == '[object Object]' && this.isEmptyObject(value));
     },
 
     isYes: function (value) {
         return !this.isNo(value);
+    },
+
+    isPlainObject: function (value) {
+        return value &&
+            (value.constructor === Object || value.constructor === undefined);
     },
 
     isEmptyObject: function (obj) {
@@ -104,7 +109,7 @@ var util = {
 
     log: function (msg) {
         if (!this.$log) {
-            this.$log = $('<div style="height:40px;position:fixed;top:0;left:0;right:0;z-index:100000;background:#fff;overflow-y:scroll;word-break:break-all;word-wrap:break-word;"></div>').appendTo('body');
+            this.$log = window.$('<div style="height:40px;position:fixed;top:0;left:0;right:0;z-index:100000;background:#fff;overflow-y:scroll;word-break:break-all;word-wrap:break-word;"></div>').appendTo('body');
         }
         if (arguments.length > 1) {
             msg += ArrayProto.slice.call(arguments, 1).join(' ');
@@ -226,13 +231,13 @@ var util = {
     },
 
     cookie: function (a, b, c, p) {
-        if (typeof b === 'undefined') {
+        if (b === undefined) {
             var res = document.cookie.match(new RegExp("(^| )" + a + "=([^;]*)(;|$)"));
             if (res != null)
                 return unescape(res[2]);
             return null;
         } else {
-            if (typeof b === null) {
+            if (b === null) {
                 b = this.cookie(name);
                 if (b != null) c = -1;
                 else return;
@@ -315,18 +320,27 @@ util.formatDate = function (d, f) {
     if (typeof d === "string" && /^\/Date\(\d+\)\/$/.test(d)) {
         d = new Function("return new " + d.replace(/\//g, ''))();
     } else if (typeof d === 'string' && !f) {
-        f = d, d = new Date;
+        f = d;
+        d = new Date;
     } else if (typeof d === 'number') {
         d = new Date(d);
     } else if (!(d instanceof Date)) {
         return '';
     }
-    var pad = util.pad;
+
+    var pad = this.pad;
+    var now;
+    var today;
+    var date;
+    var initDate = function () {
+        now = new Date();
+        today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        date = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    }
 
     if (f === 'minutes') {
-        var now = new Date();
-        var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        var date = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        initDate();
+
         var res = '';
         if (today - date == 86400000) {
             res += '昨天 ';
@@ -337,11 +351,9 @@ util.formatDate = function (d, f) {
         }
         res += pad(d.getHours()) + ':' + pad(d.getMinutes());
         return res;
-
     } else if (f === 'short') {
-        var now = new Date();
-        var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        var date = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        initDate();
+
         if (today - date == 86400000) {
             return '昨天' + pad(d.getHours()) + ':' + pad(d.getMinutes());
         } else if (today - date == 0) {
@@ -349,10 +361,8 @@ util.formatDate = function (d, f) {
 
             if (minutes <= 2) {
                 return '刚刚';
-
             } else if (minutes < 60) {
                 return minutes + '分钟前';
-
             } else {
                 var hours = Math.round(minutes / 60);
                 if (hours < 12) {
@@ -413,10 +423,10 @@ function classExtend(proto) {
     for (var key in proto)
         child.prototype[key] = proto[key];
 
-    for (var key in parent)
-        child[key] = parent[key];
+    for (var keyOfSuper in parent)
+        child[keyOfSuper] = parent[keyOfSuper];
 
-    child.__super__ = parent.prototype;
+    child.prototype.__super__ = parent.prototype;
 
     return child;
 }
@@ -465,41 +475,36 @@ function equals(a, b, identical) {
 
     var typeA = toString.call(a);
     var typeB = toString.call(b);
+    var i;
 
     if (typeA !== typeB) return false;
 
     switch (typeA) {
         case '[object Object]':
             var keysA = Object.keys(a);
-
             if (keysA.length != Object.keys(b).length) {
                 return false;
             }
-            var key;
 
-            for (var i = keysA.length; i >= 0; i--) {
+            var key;
+            for (i = keysA.length; i >= 0; i--) {
                 key = keysA[i];
 
                 if (!equals(a[key], b[key], identical)) return false;
             }
             break;
-
         case '[object Array]':
             if (a.length != b.length) {
                 return true;
             }
-
-            for (var i = a.length; i >= 0; i--) {
+            for (i = a.length; i >= 0; i--) {
                 if (!equals(a[i], b[i], identical)) return false;
             }
             break;
-
         case '[object Date]':
             return +a == +b;
-
         case '[object RegExp]':
             return ('' + a) === ('' + b);
-
         default:
             if (identical ? a !== b : a != b) return false;
     }
@@ -521,26 +526,24 @@ util.identifyWith = function (a, b) {
  */
 function contains(parent, obj) {
     var typeA = toString.call(parent);
+    var i;
 
     switch (typeA) {
         case '[object Object]':
             var keys = Object.keys(obj);
-
-            for (var i = keys.length; i >= 0; i--) {
+            for (i = keys.length; i >= 0; i--) {
                 var key = keys[i];
 
                 if (obj[key] != parent[key]) return false;
             }
             break;
-
         case '[object Array]':
             if (!Array.isArray(obj)) return parent.indexOf(obj[i]) != -1;
 
-            for (var i = obj.length; i >= 0; i--) {
+            for (i = obj.length; i >= 0; i--) {
                 if (parent.indexOf(obj[i]) == -1) return false;
             }
             break;
-
         default:
             return obj == parent;
     }
@@ -548,7 +551,6 @@ function contains(parent, obj) {
 }
 
 util.contains = contains;
-
 
 /**
  * 将数组分组
@@ -568,14 +570,11 @@ function groupBy(query, data) {
 
     query.split(/\s*,\s*/).forEach(function (item) {
         var m = /(sum|avg)\(([^\)]+)\)/.exec(item);
-        console.log(m);
-
         if (m) {
             operations.push({
                 operation: m[1],
                 key: m[2]
             })
-
         } else {
             keys.push(item);
         }
@@ -589,7 +588,9 @@ function groupBy(query, data) {
             key[keys[j]] = item[keys[j]];
         }
 
-        for (var i = 0, n = results.length; i < n; i++) {
+        var i = 0;
+        var n = results.length
+        for (; i < n; i++) {
             if (equals(results[i].key, key)) {
                 group = results[i];
                 break;
@@ -605,7 +606,7 @@ function groupBy(query, data) {
             results.push(group);
         }
 
-        for (var i = 0, n = operations.length; i < n; i++) {
+        for (i = 0, n = operations.length; i < n; i++) {
             var okey = operations[i].key;
 
             switch (operations[i].operation) {
@@ -640,7 +641,6 @@ function groupBy(query, data) {
 util.groupBy = groupBy;
 
 function sum(arr, key) {
-    var fn;
     var result = 0;
     var i = 0, n = arr.length;
 
@@ -684,7 +684,6 @@ function indexOf(arr, key, val) {
 util.indexOf = indexOf;
 
 function lastIndexOf(arr, key, val) {
-    var length = arr.length;
     var keyType = typeof key;
     var i = arr.length - 1;
 
@@ -759,7 +758,6 @@ function compileQuery(query) {
  */
 function matchObject(queryGroups, obj) {
     var result = true;
-    var flag;
     var val;
     var group;
     var item;
@@ -995,26 +993,22 @@ ArrayQuery.prototype.find = function (key, val) {
  * @param {any} [val] 
  */
 function remove(arr, key, val) {
-    var length = arr.length;
     var keyType = typeof key;
     var result = [];
+    var length = arr.length;
+    var i = length - 1;
 
     if (keyType === 'string' && arguments.length == 3) {
-        for (var i = length - 1; i >= 0; i--) {
-            if (arr[i][key] == val)
-                arr.splice(i, 1);
+        for (; i >= 0; i--) {
+            if (arr[i][key] == val) arr.splice(i, 1);
         }
-
     } else if (keyType === 'function') {
-        for (var i = length - 1; i >= 0; i--) {
-            if (key(arr[i], i))
-                arr.splice(i, 1);
+        for (; i >= 0; i--) {
+            if (key(arr[i], i)) arr.splice(i, 1);
         }
-
     } else {
-        for (var i = length - 1; i >= 0; i--) {
-            if (contains(arr[i], key))
-                arr.splice(i, 1);
+        for (; i >= 0; i--) {
+            if (contains(arr[i], key)) arr.splice(i, 1);
         }
     }
 
@@ -1039,23 +1033,19 @@ function exclude(arr, key, val) {
     var length = arr.length;
     var keyType = typeof key;
     var result = [];
+    var i = 0;
 
     if (keyType === 'string' && arguments.length == 3) {
-        for (var i = 0; i < length; i++) {
-            if (arr[i][key] != val)
-                result.push(arr[i]);
+        for (; i < length; i++) {
+            if (arr[i][key] != val) result.push(arr[i]);
         }
-
     } else if (keyType === 'function') {
-        for (var i = 0; i < length; i++) {
-            if (!key(arr[i], i))
-                result.push(arr[i]);
+        for (; i < length; i++) {
+            if (!key(arr[i], i)) result.push(arr[i]);
         }
-
     } else {
-        for (var i = 0; i < length; i++) {
-            if (!contains(arr[i], key))
-                result.push(arr[i]);
+        for (; i < length; i++) {
+            if (!contains(arr[i], key)) result.push(arr[i]);
         }
     }
 

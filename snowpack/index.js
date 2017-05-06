@@ -6,10 +6,41 @@ var _ = require('lodash');
 var tools = require('./tools');
 var sass = require('node-sass');
 var sprity = require('./sprity');
-var util = require('./util');
 var httpProxy = require('./http-proxy');
 
-var getModuleId = function () {
+function pad(num, n) {
+    var a = '0000000000000000' + num;
+    return a.substr(a.length - (n || 2));
+}
+
+function formatDate(d, f) {
+    if (typeof d === "string" && /^\/Date\(\d+\)\/$/.test(d)) {
+        d = new Function("return new " + d.replace(/\//g, ''))();
+    } else if (typeof d === 'string') {
+        f = d, d = new Date;
+    } else if (typeof d === 'number' || !d) {
+        d = new Date(d);
+    }
+
+    var y = d.getFullYear() + "", M = d.getMonth() + 1, D = d.getDate(), H = d.getHours(), m = d.getMinutes(), s = d.getSeconds(), mill = d.getMilliseconds() + "0000";
+    return (f || 'yyyy-MM-dd HH:mm:ss').replace(/\y{4}/, y)
+        .replace(/y{2}/, y.substr(2, 2))
+        .replace(/M{2}/, pad(M))
+        .replace(/M/, M)
+        .replace(/d{2,}/, pad(D))
+        .replace(/d/, d)
+        .replace(/H{2,}/i, pad(H))
+        .replace(/H/i, H)
+        .replace(/m{2,}/, pad(m))
+        .replace(/m/, m)
+        .replace(/s{2,}/, pad(s))
+        .replace(/s/, s)
+        .replace(/f+/, function (w) {
+            return mill.substr(0, w.length)
+        })
+}
+
+function getModuleId() {
     var args = [].slice.apply(arguments);
     var result = args.join('/').replace(/[\\]+/g, '/').replace(/([^\:\/]|^)[\/]{2,}/g, '$1/').replace(/([^\.]|^)\.\//g, '$1');
     var flag = true;
@@ -340,7 +371,7 @@ for (var i = 2, arg, length = argv.length; i < length; i++) {
 if (args.build) {
 
     exports.loadConfig(function (config) {
-        console.log("start:", util.formatDate(new Date()));
+        console.log("start:", formatDate(new Date()));
 
         _.extend(config, config.env[args.build === true ? 'production' : args.build], {
             debug: false

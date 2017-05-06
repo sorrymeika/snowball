@@ -1,7 +1,7 @@
 Snowball
 =======
 
-简洁又强大的mvvm前端框架
+强大的前端mvvm框架<br>
 核心文件 https://github.com/sorrymeika/snowball/blob/master/src/core/model2.js
 
 

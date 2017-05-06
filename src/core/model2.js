@@ -166,7 +166,6 @@ function eachElement(el, fn) {
                 stack.push(nextSibling);
             }
             el = el.firstChild;
-
         } else if (nextSibling) {
             el = nextSibling;
         } else {
@@ -1928,22 +1927,21 @@ Collection.prototype = {
      * @param {any} val
      */
     remove: function (key, val) {
-        var fn;
-
-        if (typeof key === 'string' && val !== undefined) {
-            fn = function (item) {
-                return item[key] == val;
-            }
-        } else if (key instanceof Model) {
-            fn = function (item, i) {
-                return this[i] === key;
-            }
-        } else fn = key;
+        var array = this.array;
+        var fn = typeof key === 'function'
+            ? key
+            : key instanceof Model
+                ? function (item, i) {
+                    return this[i] === key;
+                }
+                : function (item) {
+                    return item[key] == val;
+                };
 
         for (var i = this.length - 1; i >= 0; i--) {
-            if (fn.call(this, this.array[i], i)) {
+            if (fn.call(this, array[i], i)) {
                 Array.prototype.splice.call(this, i, 1);
-                this.array.splice(i, 1);
+                array.splice(i, 1);
             }
         }
 
@@ -1975,17 +1973,16 @@ Collection.prototype = {
     },
 
     find: function (key, val) {
-        var fn;
+        var i = 0;
+        var n = this.array.length;
 
-        if (typeof key === 'string' && val !== undefined) {
-            fn = function (item) {
-                return item[key] == val;
+        if (typeof key === 'function') {
+            for (; i < n; i++) {
+                if (key.call(this, this.array[i], i)) return this[i];
             }
-        } else fn = key;
-
-        for (var i = 0; i < this.length; i++) {
-            if (fn.call(this, this.array[i], i)) {
-                return this[i];
+        } else {
+            for (; i < n; i++) {
+                if (this.array[i][key] == val) return this[i];
             }
         }
         return null;
@@ -2141,9 +2138,6 @@ var ViewModel = Event.mixin(
             this.repeats = {};
 
             this._model = {};
-            this._expressions = {
-                id: 1
-            };
             this.fns = {};
             this.refs = {};
             this.root = this;
