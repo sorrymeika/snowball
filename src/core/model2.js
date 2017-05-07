@@ -262,9 +262,7 @@ function compileNodeAttributes(viewModel, el) {
     if (el.nodeType === TEXT_NODE) {
         fid = createVMFunction(viewModel, el.textContent);
         if (fid) {
-            el.snBinding = {
-                textContent: fid
-            };
+            el.snAttributes = ['textContent', fid, undefined];
             el.textContent = '';
         }
         return;
@@ -278,22 +276,16 @@ function compileNodeAttributes(viewModel, el) {
         var attr = el.attributes[j].name;
         var val = el.attributes[j].value;
 
-        if (val || attr == 'sn-else') {
+        if (attr == 'sn-else') {
+            initIfConditionElement(el, attr);
+        } else if (val) {
             var shouldCompile = false;
             if (attr.slice(0, 3) === "sn-") {
                 switch (attr) {
                     case 'sn-if':
-                    case 'sn-else':
                     case 'sn-else-if':
-                        var snIf = document.createComment(attr);
-                        snIf.snIfOrigin = el;
-                        el.snIf = snIf;
-                        el.snIfType = snIf.snIfType = attr;
-                        el.parentNode.insertBefore(snIf, el);
-                        el.parentNode.removeChild(el);
-                        if (attr == 'sn-else') {
-                            (el.snBinding || (el.snBinding = {}))[attr] = attr;
-                        } else shouldCompile = true;
+                        initIfConditionElement(el, attr);
+                        shouldCompile = true;
                         break;
                     case 'sn-src':
                     case 'sn-html':
@@ -347,18 +339,35 @@ function compileNodeAttributes(viewModel, el) {
 
             if (shouldCompile) {
                 fid = createVMFunction(viewModel, val);
+                if (fid) {
+                    if (attr == "sn-props") {
+                        el.setAttribute(attr, fid);
+                    } else if (el.snIf) {
+                        el.snIfFid = fid;
+                    } else {
+                        el.snAttributes
+                            ? el.snAttributes.push(attr, fid, undefined)
+                            : (el.snAttributes = [attr, fid, undefined]);
 
-                if (attr == "sn-props" && fid) {
-                    el.setAttribute(attr, fid);
-                } else if (fid) {
-                    (el.snBinding || (el.snBinding = {}))[attr] = fid;
-                    el.removeAttribute(attr);
-                } else if (attr == "ref" && !el.getAttribute('sn-component')) {
-                    viewModel.refs[val] = el;
+                        el.removeAttribute(attr);
+                    }
+                    continue;
                 }
+            }
+            if (attr == "ref" && !el.getAttribute('sn-component')) {
+                viewModel.refs[val] = el;
             }
         }
     }
+}
+
+function initIfConditionElement(el, type) {
+    var snIf = document.createComment(type);
+    snIf.snIfSource = el;
+    el.snIf = snIf;
+    el.snIfType = snIf.snIfType = type;
+    el.parentNode.insertBefore(snIf, el);
+    el.parentNode.removeChild(el);
 }
 
 // var stringRE = "'(?:(?:\\\\{2})+|\\\\'|[^'])*'|\"(?:(?:\\\\{2})+|\\\\\"|[^\"])*\"";
@@ -766,13 +775,15 @@ function cloneRepeatElement(source, snData) {
         if (node.snRepeatSource) {
             clone.snRepeatSource = node.snRepeatSource;
         }
-        if (node.snBinding) {
-            clone.snBinding = node.snBinding;
+        if (node.snAttributes) {
+            clone.snAttributes = node.snAttributes;
         }
-        if (node.snIfOrigin) {
-            clone.snIfOrigin = cloneRepeatElement(node.snIfOrigin, snData);
-            clone.snIfType = clone.snIfOrigin.snIfType = node.snIfType;
-            clone.snIfOrigin.snIf = clone;
+        if (node.snIfSource) {
+            var snIfSource = cloneRepeatElement(node.snIfSource, snData);
+            clone.snIfSource = snIfSource;
+            clone.snIfType = snIfSource.snIfType = node.snIfSource.snIfType;
+            clone.snIfFid = snIfSource.snIfFid = node.snIfSource.snIfFid;
+            snIfSource.snIf = clone;
         }
     });
 }
@@ -780,13 +791,13 @@ function cloneRepeatElement(source, snData) {
 function updateNode(viewModel, el) {
     if (el.nodeType == COMMENT_NODE && el.snRepeatSource) {
         updateRepeatView(viewModel, el);
-    } else if (el.snIfOrigin) {
+    } else if (el.snIfSource) {
         return {
             isSkipChildNodes: true,
-            nextSibling: el.snIfOrigin
+            nextSibling: el.snIfSource
         };
     } else {
-        el.snBinding && updateNodeAttributes(viewModel, el);
+        updateNodeAttributes(viewModel, el);
 
         if (el.nodeType == ELEMENT_NODE) {
             if (el.snIf) {
@@ -808,7 +819,7 @@ function updateNode(viewModel, el) {
                             continue;
                         }
 
-                        if ((!nextElement.snIf && !nextElement.snIfOrigin) || nextElement.snIfType == 'sn-if') {
+                        if ((!nextElement.snIf && !nextElement.snIfSource) || nextElement.snIfType == 'sn-if') {
                             break;
                         }
 
@@ -839,58 +850,40 @@ function updateNode(viewModel, el) {
     }
 }
 
-function updateNodeAttributes(viewModel, el, attribute) {
-    var attrsBinding;
-    var data = getVMFunctionArg(viewModel, el, el.snData);
-
-    if (attribute)
-        (attrsBinding = {})[attribute] = el.snBinding[attribute];
-    else
-        attrsBinding = el.snBinding;
-
-    var attrs = el.snAttrs || (el.snAttrs = {});
-    var keys = [];
-
-    for (var key in attrsBinding) {
-        switch (key) {
-            case "sn-else":
-                if (!el.parentNode) {
-                    el.snIf.nextSibling ?
-                        el.snIf.parentNode.insertBefore(el, el.snIf.nextSibling) :
-                        el.snIf.parentNode.appendChild(el);
+function updateNodeAttributes(viewModel, el) {
+    var data;
+    switch (el.snIfType) {
+        case "sn-else":
+            insertBeforeIfElement(el);
+            break;
+        case "sn-if":
+        case "sn-else-if":
+            data = getVMFunctionArg(viewModel, el, el.snData);
+            var is = executeVMFunction(viewModel, el.snIfFid, data);
+            if (util.isNo(is)) {
+                if (el.parentNode) {
+                    el.parentNode.removeChild(el);
                 }
-                break;
-            case "sn-if":
-            case "sn-else-if":
-                var is = executeVMFunction(viewModel, attrsBinding[key], data);
-
-                if (util.isNo(is)) {
-                    if (el.parentNode) {
-                        el.parentNode.removeChild(el);
-                    }
-                    return;
-                } else {
-                    if (!el.parentNode) {
-                        el.snIf.nextSibling ?
-                            el.snIf.parentNode.insertBefore(el, el.snIf.nextSibling) :
-                            el.snIf.parentNode.appendChild(el);
-                    }
-                }
-                break;
-            default:
-                keys.push(key);
-                break;
-        }
+                return;
+            } else {
+                insertBeforeIfElement(el);
+            }
+            break;
     }
 
-    for (var i = 0, n = keys.length; i < n; i++) {
-        var attr = keys[i];
-        var val = executeVMFunction(viewModel, attrsBinding[attr], data);
+    var snAttributes = el.snAttributes;
+    if (!snAttributes) return;
 
-        if (attrs[attr] === val) continue;
-        attrs[attr] = val;
+    if (!data) data = getVMFunctionArg(viewModel, el, el.snData);
 
-        switch (attr) {
+    for (var i = 0, n = snAttributes.length; i < n; i += 3) {
+        var attrName = snAttributes[i];
+        var val = executeVMFunction(viewModel, snAttributes[i + 1], data);
+
+        if (snAttributes[i + 2] === val) continue;
+        snAttributes[i + 2] = val;
+
+        switch (attrName) {
             case 'textContent':
                 var removableTails = el.snTails;
                 if (isArray(val) || (typeof val === 'object' && val.nodeType && (val = [val]))) {
@@ -940,7 +933,7 @@ function updateNodeAttributes(viewModel, el, attribute) {
                         el.value = val;
                     }
                 } else
-                    el.setAttribute(attr, val);
+                    el.setAttribute(attrName, val);
                 break;
             case 'html':
             case 'sn-html':
@@ -967,7 +960,7 @@ function updateNodeAttributes(viewModel, el, attribute) {
             case 'checked':
             case 'selected':
             case 'disabled':
-                (el[attr] = !!val) ? el.setAttribute(attr, attr) : el.removeAttribute(attr);
+                (el[attrName] = !!val) ? el.setAttribute(attrName, attrName) : el.removeAttribute(attrName);
                 break;
             case 'src':
                 el.src = val;
@@ -976,7 +969,6 @@ function updateNodeAttributes(viewModel, el, attribute) {
                 if (el.getAttribute('sn-' + viewModel.cid + 'load') || el.getAttribute('sn-' + viewModel.cid + 'error')) {
                     $(el).one('load error', viewModel._handleSNEvent);
                 }
-
                 if (el.src) {
                     el.src = val;
                 } else {
@@ -992,9 +984,17 @@ function updateNodeAttributes(viewModel, el, attribute) {
                 }
                 break;
             default:
-                val === null ? el.removeAttribute(attr) : el.setAttribute(attr, val);
+                val === null ? el.removeAttribute(attrName) : el.setAttribute(attrName, val);
                 break;
         }
+    }
+}
+
+function insertBeforeIfElement(el) {
+    if (!el.parentNode) {
+        el.snIf.nextSibling ?
+            el.snIf.parentNode.insertBefore(el, el.snIf.nextSibling) :
+            el.snIf.parentNode.appendChild(el);
     }
 }
 
