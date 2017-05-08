@@ -9,6 +9,10 @@ var $ = require('$');
 var util = require('util');
 var Event = require('./event');
 
+util.style('sn-model', '.sn-display { opacity: 1; -webkit-transition: opacity 300ms ease-out 0ms; transition: opacity 300ms ease-out 0ms; }\
+.sn-display-show { opacity: 1; }\
+.sn-display-hide { opacity: 0; }');
+
 var isArray = Array.isArray;
 var isPlainObject = $.isPlainObject;
 var extend = $.extend;
@@ -195,7 +199,7 @@ function compileNewTemplate(viewModel, template) {
         if (this.snViewModel) throw new Error("can not insert or append binded node!");
     });
 
-    compileElement(viewModel, $element);
+    compileTemplate(viewModel, $element);
     viewModel.render();
 
     return $element;
@@ -203,7 +207,7 @@ function compileNewTemplate(viewModel, template) {
 
 var vmCodes;
 
-function compileElement(viewModel, $element) {
+function compileTemplate(viewModel, $element) {
     vmCodes = '';
 
     eachElement($element, function (node) {
@@ -574,6 +578,68 @@ function updateViewNextTick(model) {
     }).render();
 }
 
+function updateNode(viewModel, el) {
+    if (el.nodeType == COMMENT_NODE && el.snRepeatSource) {
+        updateRepeatView(viewModel, el);
+    } else if (el.snIfSource) {
+        return {
+            isSkipChildNodes: true,
+            nextSibling: el.snIfSource
+        };
+    } else {
+        updateNodeAttributes(viewModel, el);
+
+        if (el.nodeType == ELEMENT_NODE) {
+            if (el.snIf) {
+                if (!el.parentNode) {
+                    return {
+                        isSkipChildNodes: true,
+                        nextSibling: el.snIf.nextSibling
+                    };
+                } else {
+                    if (el.snComponentInstance || el.snComponent) updateComponent(viewModel, el);
+                    else setRef(viewModel, el);
+
+                    var nextElement = el.nextSibling;
+                    var currentElement = el;
+
+                    while (nextElement) {
+                        if (nextElement.nodeType === TEXT_NODE) {
+                            nextElement = nextElement.nextSibling;
+                            continue;
+                        }
+
+                        if ((!nextElement.snIf && !nextElement.snIfSource) || nextElement.snIfType == 'sn-if') {
+                            break;
+                        }
+
+                        switch (nextElement.snIfType) {
+                            case 'sn-else':
+                            case 'sn-else-if':
+                                if (nextElement.snIf) {
+                                    nextElement.parentNode.removeChild(nextElement);
+                                    currentElement = nextElement.snIf;
+                                } else {
+                                    currentElement = nextElement;
+                                }
+                                break;
+                            default:
+                                throw new Error(nextElement.snIfType, ':snIfType not available');
+                        }
+                        nextElement = currentElement.nextSibling;
+                    }
+
+                    return currentElement.nextSibling;
+                }
+            } else if (el.snComponentInstance || el.snComponent) {
+                updateComponent(viewModel, el);
+            } else {
+                setRef(viewModel, el);
+            }
+        }
+    }
+}
+
 function updateComponent(viewModel, el) {
     var id = el.getAttribute('sn-props');
     var data = !id ? null : executeVMFunction(viewModel, id, getVMFunctionArg(viewModel, el.snData, el));
@@ -771,13 +837,8 @@ function cloneRepeatElement(source, snData) {
     return cloneElement(source, function (node, clone) {
         clone.snData = snData;
         clone.snIsRepeat = true;
-
-        if (node.snRepeatSource) {
-            clone.snRepeatSource = node.snRepeatSource;
-        }
-        if (node.snAttributes) {
-            clone.snAttributes = node.snAttributes;
-        }
+        if (node.snRepeatSource) clone.snRepeatSource = node.snRepeatSource;
+        if (node.snAttributes) clone.snAttributes = node.snAttributes;
         if (node.snIfSource) {
             var snIfSource = cloneRepeatElement(node.snIfSource, snData);
             clone.snIfSource = snIfSource;
@@ -786,68 +847,6 @@ function cloneRepeatElement(source, snData) {
             snIfSource.snIf = clone;
         }
     });
-}
-
-function updateNode(viewModel, el) {
-    if (el.nodeType == COMMENT_NODE && el.snRepeatSource) {
-        updateRepeatView(viewModel, el);
-    } else if (el.snIfSource) {
-        return {
-            isSkipChildNodes: true,
-            nextSibling: el.snIfSource
-        };
-    } else {
-        updateNodeAttributes(viewModel, el);
-
-        if (el.nodeType == ELEMENT_NODE) {
-            if (el.snIf) {
-                if (!el.parentNode) {
-                    return {
-                        isSkipChildNodes: true,
-                        nextSibling: el.snIf.nextSibling
-                    };
-                } else {
-                    if (el.snComponentInstance || el.snComponent) updateComponent(viewModel, el);
-                    else setRef(viewModel, el);
-
-                    var nextElement = el.nextSibling;
-                    var currentElement = el;
-
-                    while (nextElement) {
-                        if (nextElement.nodeType === TEXT_NODE) {
-                            nextElement = nextElement.nextSibling;
-                            continue;
-                        }
-
-                        if ((!nextElement.snIf && !nextElement.snIfSource) || nextElement.snIfType == 'sn-if') {
-                            break;
-                        }
-
-                        switch (nextElement.snIfType) {
-                            case 'sn-else':
-                            case 'sn-else-if':
-                                if (nextElement.snIf) {
-                                    nextElement.parentNode.removeChild(nextElement);
-                                    currentElement = nextElement.snIf;
-                                } else {
-                                    currentElement = nextElement;
-                                }
-                                break;
-                            default:
-                                throw new Error(nextElement.snIfType, ':snIfType not available');
-                        }
-                        nextElement = currentElement.nextSibling;
-                    }
-
-                    return currentElement.nextSibling;
-                }
-            } else if (el.snComponentInstance || el.snComponent) {
-                updateComponent(viewModel, el);
-            } else {
-                setRef(viewModel, el);
-            }
-        }
-    }
 }
 
 function updateNodeAttributes(viewModel, el) {
@@ -873,7 +872,6 @@ function updateNodeAttributes(viewModel, el) {
 
     var snAttributes = el.snAttributes;
     if (!snAttributes) return;
-
     if (!data) data = getVMFunctionArg(viewModel, el, el.snData);
 
     for (var i = 0, n = snAttributes.length; i < n; i += 3) {
@@ -998,10 +996,6 @@ function insertBeforeIfElement(el) {
     }
 }
 
-util.style('.sn-display { opacity: 1; -webkit-transition: opacity 300ms ease-out 0ms; transition: opacity 300ms ease-out 0ms; }\
-.sn-display-show { opacity: 1; }\
-.sn-display-hide { opacity: 0; }');
-
 function setSNDisplay(el, val) {
     var $el = $(el);
     var isInitDisplay = true;
@@ -1010,7 +1004,6 @@ function setSNDisplay(el, val) {
         $el.addClass('sn-display')[0].clientHeight;
     }
     var display = util.isNo(val) ? 'none' : val == 'block' || val == 'inline' || val == 'inline-block' ? val : '';
-
     if (display == 'none') {
         if (!$el.hasClass('sn-display-hide')) {
             var onHide = function () {
@@ -1026,14 +1019,12 @@ function setSNDisplay(el, val) {
             display: display
         });
         el.clientHeight;
-
         $el.removeClass('sn-display-hide');
     }
 }
 
 function setRef(viewModel, el) {
     var refName = el.getAttribute('ref');
-
     if (refName && !el.snComponent) {
         var ref = el.snComponentInstance || el;
         var refs = viewModel.refs[refName];
@@ -1088,7 +1079,6 @@ function unlinkModels(model, value) {
 function updateParentReferenceOf(model) {
     var parent = model.parent;
     if (!parent) return;
-
     if (parent instanceof Collection) {
         var index = parent.indexOf(model);
         if (index != -1) {
@@ -2199,7 +2189,7 @@ var ViewModel = Event.mixin(
                 self.dataOfElement(target, target.getAttribute(self.snModelKey), target.value);
             });
 
-            this.$el = (this.$el || $()).add(compileElement(this, $el));
+            this.$el = (this.$el || $()).add(compileTemplate(this, $el));
 
             $el.each(function () {
                 this.snViewModel = self;
