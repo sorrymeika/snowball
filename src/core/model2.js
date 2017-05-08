@@ -1635,7 +1635,11 @@ Collection.prototype = {
                     j++;
                 }
             }
-            return operation == '+' ? this.add(def ? def : {}) : null;
+            if (operation == '+') {
+                if (!def) throw new Error("`+` operation must include default value");
+                return this.add(def);
+            }
+            return null;
         }
     },
 
@@ -1655,6 +1659,11 @@ Collection.prototype = {
     lastIndexOf: function (key, val) {
         return key instanceof Model ? Array.prototype.lastIndexOf.call(this, key) :
             util.lastIndexOf(this.array, key, val);
+    },
+
+    getOrCreate: function (obj) {
+        var index = util.indexOf(this.array, obj);
+        return ~index ? this[index] : this.add(obj);
     },
 
     get: function (i) {
