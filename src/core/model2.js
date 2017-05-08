@@ -266,7 +266,7 @@ function compileNodeAttributes(viewModel, el) {
     if (el.nodeType === TEXT_NODE) {
         fid = createVMFunction(viewModel, el.textContent);
         if (fid) {
-            el.snAttributes = ['textContent', fid, undefined];
+            el.snAttributes = ['textContent', fid];
             el.textContent = '';
         }
         return;
@@ -284,12 +284,14 @@ function compileNodeAttributes(viewModel, el) {
             initIfConditionElement(el, attr);
         } else if (val) {
             var shouldCompile = false;
+            var isIfAttr = false;
             if (attr.slice(0, 3) === "sn-") {
                 switch (attr) {
                     case 'sn-if':
                     case 'sn-else-if':
                         initIfConditionElement(el, attr);
                         shouldCompile = true;
+                        isIfAttr = true;
                         break;
                     case 'sn-src':
                     case 'sn-html':
@@ -325,9 +327,7 @@ function compileNodeAttributes(viewModel, el) {
                                 }).replace(setRE, 'this.dataOfElement(e.currentTarget,"$1",$2)');
 
                                 fid = createVMFunction(viewModel, '{' + content + '}');
-                                if (fid) {
-                                    el.setAttribute(attr, fid);
-                                }
+                                if (fid) el.setAttribute(attr, fid);
                             } else {
                                 el.setAttribute(attr, val);
                             }
@@ -346,13 +346,10 @@ function compileNodeAttributes(viewModel, el) {
                 if (fid) {
                     if (attr == "sn-props") {
                         el.setAttribute(attr, fid);
-                    } else if (el.snIf) {
+                    } else if (isIfAttr) {
                         el.snIfFid = fid;
                     } else {
-                        el.snAttributes
-                            ? el.snAttributes.push(attr, fid, undefined)
-                            : (el.snAttributes = [attr, fid, undefined]);
-
+                        (el.snAttributes || (el.snAttributes = [])).push(attr, fid);
                         el.removeAttribute(attr);
                     }
                     continue;
@@ -443,7 +440,6 @@ function createVMFunction(viewModel, expression) {
 
     expId = vmExpressionsId++;
     vmExpressionsMap[expression] = expId;
-
     vmCodes += expId + ':function($data){' + res.code + '},';
 
     return expId;
@@ -873,13 +869,14 @@ function updateNodeAttributes(viewModel, el) {
     var snAttributes = el.snAttributes;
     if (!snAttributes) return;
     if (!data) data = getVMFunctionArg(viewModel, el, el.snData);
+    var snAttrValues = (el.snAttrValues || (el.snAttrValues = []));
 
-    for (var i = 0, n = snAttributes.length; i < n; i += 3) {
+    for (var i = 0, n = snAttributes.length; i < n; i += 2) {
         var attrName = snAttributes[i];
         var val = executeVMFunction(viewModel, snAttributes[i + 1], data);
 
-        if (snAttributes[i + 2] === val) continue;
-        snAttributes[i + 2] = val;
+        if (snAttrValues[i / 2] === val) continue;
+        snAttrValues[i / 2] = val;
 
         switch (attrName) {
             case 'textContent':
