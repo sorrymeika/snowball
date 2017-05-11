@@ -206,7 +206,7 @@ var util = {
         return data ? func(data) : func;
     },
 
-    style: function (id, css) {
+    style: function (id, css, isReplace) {
         var doc = document,
             head = doc.getElementsByTagName("head")[0];
 
@@ -215,7 +215,13 @@ var util = {
             id = "style" + this.guid();
         }
         var style = document.getElementById(id);
-        if (style) return style;
+        if (style) {
+            if (isReplace) {
+                style.parentNode.removeChild(style);
+            } else {
+                return style;
+            }
+        }
 
         style = doc.createElement("style");
         style.id = id;

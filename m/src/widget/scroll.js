@@ -280,6 +280,7 @@ function Scroll(el, options) {
     if (iOS) {
         $el.css({
             '-webkit-overflow-scrolling': 'touch',
+            'overflow-scrolling': 'touch',
             overflowY: options.vScroll ? 'scroll' : '',
             overflowX: options.hScroll ? 'scroll' : ''
         })
@@ -421,7 +422,7 @@ exports.bind = function (selector, options) {
             scrollView,
             ret;
 
-        if (el.scroll) return;
+        if (el.__widget_scroll__) return;
 
         var $el = $(el).addClass('scrollview');
 
@@ -432,7 +433,7 @@ exports.bind = function (selector, options) {
             ret = new Scroll(el, options);
         }
 
-        el.scroll = ret;
+        el.__widget_scroll__ = ret;
 
         result.add(ret);
 

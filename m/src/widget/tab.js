@@ -102,7 +102,7 @@ var Tab = Model.extend({
             this.next(function () {
 
                 this.refs.items.forEach(function (item) {
-                    if (!item.scroll)
+                    if (!item.__widget_scroll__)
                         self.bindScrollTo(item);
                 });
 

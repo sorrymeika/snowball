@@ -82,7 +82,7 @@ module.exports = Model.extend({
         var self = this;
 
         this.refs.items && this.refs.items.forEach(function (item) {
-            if (!item.scroll) {
+            if (!item.__widget_scroll__) {
                 self.bindScrollTo(item, {
                     hScroll: true,
                     vScroll: true

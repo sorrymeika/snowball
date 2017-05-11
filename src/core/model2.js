@@ -40,7 +40,10 @@ var EVENTS = {
     change: 'change',
     input: 'input',
     focus: 'focus',
-    blur: 'blur'
+    blur: 'blur',
+    submit: 'submit',
+    scroll: 'scroll',
+    scrollstop: 'scrollStop'
 };
 
 var GLOBAL_VARIABLES = {
@@ -72,13 +75,12 @@ var utils = {
     util: util
 };
 
-var UTILS_VARS = "";
-for (var varName in utils) {
-    UTILS_VARS += 'var ' + varName + '=$data.' + varName + ';';
-}
-
 function isThenable(thenable) {
     return thenable && typeof thenable === 'object' && typeof thenable.then === 'function';
+}
+
+function testRegExp(regExp, val) {
+    return regExp.lastIndex != 0 && (regExp.lastIndex = 0) || regExp.test(val);
 }
 
 function insertElementAfter(cursorElem, elem) {
@@ -178,31 +180,41 @@ function eachElement(el, fn) {
     }
 }
 
-function checkOwnNode(viewModel, node) {
-    if (typeof node == 'string') {
-        node = viewModel.$el.find(node);
+// var regExpRE = "\/(?:(?:\\{2})+|\\\/|[^\/\r\n])+\/[img]*(?=[\)|\.|,])"
+// var stringRE = "'(?:(?:\\\\{2})+|\\\\'|[^'])*'|\"(?:(?:\\\\{2})+|\\\\\"|[^\"])*\"";
+var stringRE = "'(?:(?:\\\\{2})+|\\\\'|[^'])*'";
 
-        if (!node.length)
-            throw new Error('is not own node');
-    } else {
-        viewModel.$el.each(function () {
-            if (!$.contains(this, node))
-                throw new Error('is not own node');
-        });
+function createRegExp(exp, flags, deep) {
+    if (typeof flags === 'number') {
+        deep = flags;
+        flags = undefined;
+    } else if (!deep) deep = 6;
+
+    var expArr = exp.split('...');
+    if (expArr.length < 2) return new RegExp(exp, flags);
+
+    var result = "";
+    var lastIndex = expArr.length - 1;
+    for (var i = 0; i <= lastIndex; i++) {
+        if (i == lastIndex) {
+            result += expArr[i].substr(1);
+        } else {
+            var pre = expArr[i].slice(-1);
+            var suf = expArr[i + 1].charAt(0);
+            var parenthesisREStart = '\\' + pre + '(?:' + stringRE + '|';
+            var parenthesisREEnd = '[^\\' + suf + '])*\\' + suf;
+
+            var before = "";
+            var after = "";
+            for (var j = 0; j <= deep; j++) {
+                before += '(?:' + parenthesisREStart;
+                after += parenthesisREEnd + ')|';
+            }
+
+            result += expArr[i].slice(0, -1) + parenthesisREStart + before + after + parenthesisREEnd;
+        }
     }
-    return node;
-}
-
-function compileNewTemplate(viewModel, template) {
-    var $element = $(template);
-    $element.each(function () {
-        if (this.snViewModel) throw new Error("can not insert or append binded node!");
-    });
-
-    compileTemplate(viewModel, $element);
-    viewModel.render();
-
-    return $element;
+    return new RegExp(result, flags);
 }
 
 var vmCodes;
@@ -241,13 +253,20 @@ function compileTemplate(viewModel, $element) {
         }
     });
 
+    var eventName;
+    var eventAttr;
+    var eventFn = viewModel._handleEvent;
     for (var key in EVENTS) {
-        var eventName = EVENTS[key];
-        var attr = '[sn-' + viewModel.cid + eventName + ']';
-
-        $element.on(eventName, attr, viewModel._handleSNEvent)
-            .filter(attr)
-            .on(eventName, viewModel._handleSNEvent);
+        switch (key) {
+            case 'scroll':
+            case 'scrollStop':
+                break;
+            default:
+                eventName = EVENTS[key];
+                eventAttr = '[sn-' + viewModel.cid + eventName + ']';
+                $element.on(eventName, eventAttr, eventFn)
+                    .filter(eventAttr).on(eventName, eventFn);
+        }
     }
 
     if (vmCodes) {
@@ -313,24 +332,9 @@ function compileNodeAttributes(viewModel, el) {
                     default:
                         //处理事件绑定
                         var evt = EVENTS[attr.slice(3)];
-
                         if (evt) {
                             el.removeAttribute(attr);
-                            attr = "sn-" + viewModel.cid + evt;
-
-                            if (testRegExp(setRE, val) || testRegExp(methodRE, val)) {
-                                var content = val.replace(methodRE, function (match, $1, $2) {
-                                    if (globalMethodsRE.test($1)) {
-                                        return match;
-                                    }
-                                    return $1 + $2.slice(0, -1) + ($2.length == 2 ? '' : ',') + 'e)';
-                                }).replace(setRE, 'this.dataOfElement(e.currentTarget,"$1",$2)');
-
-                                fid = createVMFunction(viewModel, '{' + content + '}');
-                                if (fid) el.setAttribute(attr, fid);
-                            } else {
-                                el.setAttribute(attr, val);
-                            }
+                            compileElementEvent(viewModel, el, evt, val);
                         }
                         break;
                 }
@@ -371,53 +375,33 @@ function initIfConditionElement(el, type) {
     el.parentNode.removeChild(el);
 }
 
-// var stringRE = "'(?:(?:\\\\{2})+|\\\\'|[^'])*'|\"(?:(?:\\\\{2})+|\\\\\"|[^\"])*\"";
-// var regExpRE = "\/(?:(?:\\{2})+|\\\/|[^\/\r\n])+\/[img]*(?=[\)|\.|,])"
-var stringRE = "'(?:(?:\\\\{2})+|\\\\'|[^'])*'";
-var valueRE = /^((-)?\d+|true|false|undefined|null|'(?:\\'|[^'])*')$/;
-var repeatRE = /([\w$]+)(?:\s*,(\s*[\w$]+)){0,1}\s+in\s+([\w$]+(?:\.[\w$\(,\)]+){0,})(?:\s*\|\s*filter\s*:\s*(.+?)){0,1}(?:\s*\|\s*orderBy:(.+)){0,1}(\s|$)/;
-var matchExpressionRE = createRegExp("{...}", 'g');
 var setRE = createRegExp("([\\w$]+(?:\\.[\\w$]+)*)\\s*=\\s*((?:(...)|" + stringRE + "|[\\w$][!=]==?|[^;=])+?)(?=;|,|\\)|$)", 'g', 4);
 var methodRE = createRegExp("\\b((?:this\\.){0,1}[\\.\\w$]+)((...))", 'g', 4);
-var expressionRE = /'(?:(?:\\{2})+|\\'|[^'])*'|\bvar\s+('(?:(?:\\{2})+|\\'|[^'])*'|[^;]+);|((?:\{|,)\s*[\w$]+\s*:\s*|[!=><?\s:(),%&|+*\-\/\[\]]+|^)([\w$]*(?:\.[\w$]+)*(?![\w$]*\())/g;
-var varsRE = /([\w$]+)\s*(?:=(?:'(?:\\'|[^'])*'|[^;,]+))?/g;
 var globalMethodsRE = /^((Math|JSON|Date|util|\$)\.|(encodeURIComponent|decodeURIComponent|parseInt|parseFloat)$)/;
 
-function testRegExp(regExp, val) {
-    return regExp.lastIndex != 0 && (regExp.lastIndex = 0) || regExp.test(val);
-}
-
-function createRegExp(exp, flags, deep) {
-    if (typeof flags === 'number') {
-        deep = flags;
-        flags = undefined;
-    } else if (!deep) deep = 6;
-
-    var expArr = exp.split('...');
-    if (expArr.length < 2) return new RegExp(exp, flags);
-
-    var result = "";
-    var lastIndex = expArr.length - 1;
-    for (var i = 0; i <= lastIndex; i++) {
-        if (i == lastIndex) {
-            result += expArr[i].substr(1);
-        } else {
-            var pre = expArr[i].slice(-1);
-            var suf = expArr[i + 1].charAt(0);
-            var parenthesisREStart = '\\' + pre + '(?:' + stringRE + '|';
-            var parenthesisREEnd = '[^\\' + suf + '])*\\' + suf;
-
-            var before = "";
-            var after = "";
-            for (var j = 0; j <= deep; j++) {
-                before += '(?:' + parenthesisREStart;
-                after += parenthesisREEnd + ')|';
+function compileElementEvent(viewModel, el, evt, val) {
+    var attr = "sn-" + viewModel.cid + evt;
+    if (testRegExp(setRE, val) || testRegExp(methodRE, val)) {
+        var content = val.replace(methodRE, function (match, $1, $2) {
+            if (globalMethodsRE.test($1)) {
+                return match;
             }
+            return $1 + $2.slice(0, -1) + ($2.length == 2 ? '' : ',') + 'e)';
+        }).replace(setRE, 'this.dataOfElement(e.currentTarget,"$1",$2)');
 
-            result += expArr[i].slice(0, -1) + parenthesisREStart + before + after + parenthesisREEnd;
-        }
+        var fid = createVMFunction(viewModel, '{' + content + '}');
+        if (fid) el.setAttribute(attr, fid);
+    } else {
+        el.setAttribute(attr, val);
     }
-    return new RegExp(result, flags);
+
+    switch (evt) {
+        case 'scroll':
+        case 'scrollStop':
+            (el.snEvents || (el.snEvents = [])).push(evt);
+            $(el).on(evt, viewModel._handleEvent);
+            break;
+    }
 }
 
 var vmExpressionsId = 1;
@@ -444,6 +428,14 @@ function createVMFunction(viewModel, expression) {
 
     return expId;
 }
+
+var UTILS_VARS = "";
+for (var varName in utils) {
+    UTILS_VARS += 'var ' + varName + '=$data.$utils.' + varName + ';';
+}
+var matchExpressionRE = createRegExp("{...}", 'g');
+var expressionRE = /'(?:(?:\\{2})+|\\'|[^'])*'|\bvar\s+('(?:(?:\\{2})+|\\'|[^'])*'|[^;]+);|((?:\{|,)\s*[\w$]+\s*:\s*|[!=><?\s:(),%&|+*\-\/\[\]]+|^)([\w$]*(?:\.[\w$]+)*(?![\w$]*\())/g;
+var varsRE = /([\w$]+)\s*(?:=(?:'(?:\\'|[^'])*'|[^;,]+))?/g;
 
 /**
  * 将字符串转为function
@@ -502,6 +494,8 @@ function replaceQuote(str) {
     return str.replace(/\\/g, '\\\\').replace(/'/g, '\\\'');
 }
 
+var valueRE = /^((-)?\d+|true|false|undefined|null|'(?:\\'|[^'])*')$/;
+
 function valueExpression(str, variables) {
     var arr = str.split('.');
     var alias = arr[0];
@@ -528,8 +522,9 @@ function valueExpression(str, variables) {
 
 function getVMFunctionArg(viewModel, element, snData) {
     var data = Object.assign({
-        srcElement: element
-    }, utils, viewModel.attributes);
+        srcElement: element,
+        $utils: utils
+    }, viewModel.attributes);
 
     if (snData) {
         for (var key in snData) {
@@ -587,52 +582,56 @@ function updateNode(viewModel, el) {
 
         if (el.nodeType == ELEMENT_NODE) {
             if (el.snIf) {
-                if (!el.parentNode) {
-                    return {
-                        isSkipChildNodes: true,
-                        nextSibling: el.snIf.nextSibling
-                    };
-                } else {
-                    if (el.snComponentInstance || el.snComponent) updateComponent(viewModel, el);
-                    else setRef(viewModel, el);
-
-                    var nextElement = el.nextSibling;
-                    var currentElement = el;
-
-                    while (nextElement) {
-                        if (nextElement.nodeType === TEXT_NODE) {
-                            nextElement = nextElement.nextSibling;
-                            continue;
-                        }
-
-                        if ((!nextElement.snIf && !nextElement.snIfSource) || nextElement.snIfType == 'sn-if') {
-                            break;
-                        }
-
-                        switch (nextElement.snIfType) {
-                            case 'sn-else':
-                            case 'sn-else-if':
-                                if (nextElement.snIf) {
-                                    nextElement.parentNode.removeChild(nextElement);
-                                    currentElement = nextElement.snIf;
-                                } else {
-                                    currentElement = nextElement;
-                                }
-                                break;
-                            default:
-                                throw new Error(nextElement.snIfType, ':snIfType not available');
-                        }
-                        nextElement = currentElement.nextSibling;
-                    }
-
-                    return currentElement.nextSibling;
-                }
+                return updateIfElement(viewModel, el);
             } else if (el.snComponentInstance || el.snComponent) {
                 updateComponent(viewModel, el);
             } else {
                 setRef(viewModel, el);
             }
         }
+    }
+}
+
+function updateIfElement(viewModel, el) {
+    if (!el.parentNode) {
+        return {
+            isSkipChildNodes: true,
+            nextSibling: el.snIf.nextSibling
+        };
+    } else {
+        if (el.snComponentInstance || el.snComponent) updateComponent(viewModel, el);
+        else setRef(viewModel, el);
+
+        var nextElement = el.nextSibling;
+        var currentElement = el;
+
+        while (nextElement) {
+            if (nextElement.nodeType === TEXT_NODE) {
+                nextElement = nextElement.nextSibling;
+                continue;
+            }
+
+            if ((!nextElement.snIf && !nextElement.snIfSource) || nextElement.snIfType == 'sn-if') {
+                break;
+            }
+
+            switch (nextElement.snIfType) {
+                case 'sn-else':
+                case 'sn-else-if':
+                    if (nextElement.snIf) {
+                        nextElement.parentNode.removeChild(nextElement);
+                        currentElement = nextElement.snIf;
+                    } else {
+                        currentElement = nextElement;
+                    }
+                    break;
+                default:
+                    throw new Error(nextElement.snIfType, ':snIfType not available');
+            }
+            nextElement = currentElement.nextSibling;
+        }
+
+        return currentElement.nextSibling;
     }
 }
 
@@ -751,7 +750,7 @@ function updateRepeatView(viewModel, el) {
         var pass = !repeatSource.filter || repeatSource.filter.call(viewModel, getVMFunctionArg(viewModel, elem, snData));
         if (pass) {
             if (!elem) {
-                elem = cloneRepeatElement(repeatSource.source, snData);
+                elem = cloneRepeatElement(viewModel, repeatSource.source, snData);
 
                 elem.snRepeatSource = repeatSource;
                 elem.snModel = model;
@@ -829,14 +828,20 @@ function isRepeatableNode(node) {
     return node.nodeType === ELEMENT_NODE && node.getAttribute('sn-repeat');
 }
 
-function cloneRepeatElement(source, snData) {
+function cloneRepeatElement(viewModel, source, snData) {
     return cloneElement(source, function (node, clone) {
         clone.snData = snData;
         clone.snIsRepeat = true;
-        if (node.snRepeatSource) clone.snRepeatSource = node.snRepeatSource;
+
         if (node.snAttributes) clone.snAttributes = node.snAttributes;
+        if (node.snEvents) {
+            node.snEvents.forEach(function (evt) {
+                $(clone).on(evt, viewModel._handleEvent);
+            })
+        }
+        if (node.snRepeatSource) clone.snRepeatSource = node.snRepeatSource;
         if (node.snIfSource) {
-            var snIfSource = cloneRepeatElement(node.snIfSource, snData);
+            var snIfSource = cloneRepeatElement(viewModel, node.snIfSource, snData);
             clone.snIfSource = snIfSource;
             clone.snIfType = snIfSource.snIfType = node.snIfSource.snIfType;
             clone.snIfFid = snIfSource.snIfFid = node.snIfSource.snIfFid;
@@ -869,58 +874,18 @@ function updateNodeAttributes(viewModel, el) {
     var snAttributes = el.snAttributes;
     if (!snAttributes) return;
     if (!data) data = getVMFunctionArg(viewModel, el, el.snData);
-    var snAttrValues = (el.snAttrValues || (el.snAttrValues = []));
+    var snValues = (el.snValues || (el.snValues = []));
 
     for (var i = 0, n = snAttributes.length; i < n; i += 2) {
         var attrName = snAttributes[i];
         var val = executeVMFunction(viewModel, snAttributes[i + 1], data);
 
-        if (snAttrValues[i / 2] === val) continue;
-        snAttrValues[i / 2] = val;
+        if (snValues[i / 2] === val) continue;
+        snValues[i / 2] = val;
 
         switch (attrName) {
             case 'textContent':
-                var removableTails = el.snTails;
-                if (isArray(val) || (typeof val === 'object' && val.nodeType && (val = [val]))) {
-                    var node = el;
-                    var newTails = [];
-
-                    val.forEach(function (item) {
-                        if (node.nextSibling !== item) {
-                            if (
-                                item.nodeType || (
-                                    (!node.nextSibling ||
-                                        node.nextSibling.nodeType !== TEXT_NODE ||
-                                        node.nextSibling.textContent !== "" + item) &&
-                                    (item = document.createTextNode(item))
-                                )
-                            ) {
-                                $(item).insertAfter(node);
-                            } else {
-                                item = node.nextSibling;
-                            }
-                        }
-                        if (removableTails) {
-                            var index = removableTails.indexOf(item);
-                            if (index !== -1) {
-                                removableTails.splice(index, 1);
-                            }
-                        }
-                        node = item;
-                        newTails.push(item);
-                    });
-
-                    el.textContent = '';
-                    el.snTails = newTails;
-                } else {
-                    el.textContent = val;
-                    el.snTails = null;
-                }
-                if (removableTails) {
-                    removableTails.forEach(function (tail) {
-                        if (tail.parentNode) tail.parentNode.removeChild(tail);
-                    });
-                }
+                updateTextNode(el, val);
                 break;
             case 'value':
                 if (el.tagName === 'INPUT' || el.tagName === 'SELECT' || el.tagName === 'TEXTAREA') {
@@ -939,7 +904,7 @@ function updateNodeAttributes(viewModel, el) {
                 el.style.display = util.isNo(val) ? 'none' : val == 'block' || val == 'inline' || val == 'inline-block' ? val : '';
                 break;
             case 'sn-display':
-                setSNDisplay(el, val);
+                fade(el, val);
                 break;
             case 'classname':
             case 'class':
@@ -962,7 +927,7 @@ function updateNodeAttributes(viewModel, el) {
                 break;
             case 'sn-src':
                 if (el.getAttribute('sn-' + viewModel.cid + 'load') || el.getAttribute('sn-' + viewModel.cid + 'error')) {
-                    $(el).one('load error', viewModel._handleSNEvent);
+                    $(el).one('load error', viewModel._handleEvent);
                 }
                 if (el.src) {
                     el.src = val;
@@ -993,7 +958,51 @@ function insertBeforeIfElement(el) {
     }
 }
 
-function setSNDisplay(el, val) {
+function updateTextNode(el, val) {
+    var removableTails = el.snTails;
+    if (isArray(val) || (typeof val === 'object' && val.nodeType && (val = [val]))) {
+        var node = el;
+        var newTails = [];
+
+        val.forEach(function (item) {
+            if (node.nextSibling !== item) {
+                if (
+                    item.nodeType || (
+                        (!node.nextSibling ||
+                            node.nextSibling.nodeType !== TEXT_NODE ||
+                            node.nextSibling.textContent !== "" + item) &&
+                        (item = document.createTextNode(item))
+                    )
+                ) {
+                    $(item).insertAfter(node);
+                } else {
+                    item = node.nextSibling;
+                }
+            }
+            if (removableTails) {
+                var index = removableTails.indexOf(item);
+                if (index !== -1) {
+                    removableTails.splice(index, 1);
+                }
+            }
+            node = item;
+            newTails.push(item);
+        });
+
+        el.textContent = '';
+        el.snTails = newTails;
+    } else {
+        el.textContent = val;
+        el.snTails = null;
+    }
+    if (removableTails) {
+        removableTails.forEach(function (tail) {
+            if (tail.parentNode) tail.parentNode.removeChild(tail);
+        });
+    }
+}
+
+function fade(el, val) {
     var $el = $(el);
     var isInitDisplay = true;
     if (!$el.hasClass('sn-display')) {
@@ -1995,6 +2004,9 @@ Collection.prototype = {
 
 Collection.prototype.toArray = Collection.prototype.toJSON;
 
+
+var repeatRE = /([\w$]+)(?:\s*,(\s*[\w$]+)){0,1}\s+in\s+([\w$]+(?:\.[\w$\(,\)]+){0,})(?:\s*\|\s*filter\s*:\s*(.+?)){0,1}(?:\s*\|\s*orderBy:(.+)){0,1}(\s|$)/;
+
 function RepeatSource(viewModel, el, parent) {
     var attrRepeat = el.getAttribute('sn-repeat');
     var match = attrRepeat.match(repeatRE);
@@ -2085,6 +2097,7 @@ RepeatSource.prototype.appendChild = function (child) {
     this.children.push(child);
 }
 
+
 var ViewModel = Event.mixin(
     Model.extend({
 
@@ -2126,7 +2139,7 @@ var ViewModel = Event.mixin(
             this.children = children ? [].concat(children) : [];
 
             this._render = this._render.bind(this);
-            this._handleSNEvent = this._handleSNEvent.bind(this);
+            this._handleEvent = this._handleEvent.bind(this);
 
             this.cid = util.guid();
             this.snModelKey = 'sn-' + this.cid + 'model';
@@ -2149,7 +2162,7 @@ var ViewModel = Event.mixin(
         initialize: util.noop,
 
         //事件处理
-        _handleSNEvent: function (e) {
+        _handleEvent: function (e) {
             if (e.type == TRANSITION_END && e.target != e.currentTarget) {
                 return;
             }
@@ -2254,46 +2267,6 @@ var ViewModel = Event.mixin(
             }
         },
 
-        isOwnNode: function (node) {
-            if (typeof node == 'string') {
-                return !this.$el.find(node).length;
-            } else {
-                var flag = true;
-                this.$el.each(function () {
-                    if (!$.contains(this, node)) return false;
-                });
-                return flag;
-            }
-        },
-
-        before: function (template, referenceNode) {
-            referenceNode = checkOwnNode(this, referenceNode);
-
-            return compileNewTemplate(this, template)
-                .insertBefore(referenceNode);
-        },
-
-        after: function (newNode, referenceNode) {
-            referenceNode = checkOwnNode(this, referenceNode);
-
-            return compileNewTemplate(this, newNode)
-                .insertAfter(referenceNode);
-        },
-
-        append: function (newNode, parentNode) {
-            parentNode = checkOwnNode(this, parentNode);
-
-            return compileNewTemplate(this, newNode)
-                .appendTo(parentNode);
-        },
-
-        prepend: function (newNode, parentNode) {
-            parentNode = checkOwnNode(this, parentNode);
-
-            return compileNewTemplate(this, newNode)
-                .prependTo(parentNode);
-        },
-
         nextTick: function (cb) {
             return this._nextTick || this._rendering ? this.one('viewDidUpdate', cb) : cb.call(this);
         },
@@ -2342,10 +2315,22 @@ var ViewModel = Event.mixin(
                     this.snViewModel = null;
                 });
 
+            var eventName;
+            var eventAttr;
+            var eventFn = this._handleEvent;
             for (var key in EVENTS) {
-                var eventName = EVENTS[key];
-                var attr = '[sn-' + this.cid + eventName + ']';
-                this.$el.off(eventName, attr, this._handleSNEvent);
+                eventName = EVENTS[key];
+                eventAttr = '[sn-' + this.cid + eventName + ']';
+
+                switch (eventName) {
+                    case "scroll":
+                    case "scrollStop":
+                        this.$el.find(eventAttr).off(eventName, eventFn);
+                        break
+                    default:
+                        this.$el.off(eventName, eventAttr, eventFn);
+                }
+                this.$el.filter(eventAttr).off(eventName, eventFn)
             }
 
             var children = this._linkedModels;
@@ -2364,6 +2349,76 @@ var ViewModel = Event.mixin(
 );
 
 ViewModel.prototype.next = ViewModel.prototype.nextTick;
+
+function checkOwnNode(viewModel, node) {
+    if (typeof node == 'string') {
+        node = viewModel.$el.find(node);
+
+        if (!node.length)
+            throw new Error('is not own node');
+    } else {
+        viewModel.$el.each(function () {
+            if (!$.contains(this, node))
+                throw new Error('is not own node');
+        });
+    }
+    return node;
+}
+
+function compileNewTemplate(viewModel, template) {
+    var $element = $(template);
+    $element.each(function () {
+        if (this.snViewModel) throw new Error("can not insert or append binded node!");
+    });
+
+    compileTemplate(viewModel, $element);
+    viewModel.render();
+
+    return $element;
+}
+
+Object.assign(ViewModel.prototype, {
+    isOwnNode: function (node) {
+        if (typeof node == 'string') {
+            return !this.$el.find(node).length;
+        } else {
+            var flag = true;
+            this.$el.each(function () {
+                if (!$.contains(this, node)) return false;
+            });
+            return flag;
+        }
+    },
+
+    before: function (template, referenceNode) {
+        referenceNode = checkOwnNode(this, referenceNode);
+
+        return compileNewTemplate(this, template)
+            .insertBefore(referenceNode);
+    },
+
+    after: function (newNode, referenceNode) {
+        referenceNode = checkOwnNode(this, referenceNode);
+
+        return compileNewTemplate(this, newNode)
+            .insertAfter(referenceNode);
+    },
+
+    append: function (newNode, parentNode) {
+        parentNode = checkOwnNode(this, parentNode);
+
+        return compileNewTemplate(this, newNode)
+            .appendTo(parentNode);
+    },
+
+    prepend: function (newNode, parentNode) {
+        parentNode = checkOwnNode(this, parentNode);
+
+        return compileNewTemplate(this, newNode)
+            .prependTo(parentNode);
+    }
+});
+
 
 exports.ViewModel = exports.Model = ViewModel;
 exports.createModel = function (props) {
