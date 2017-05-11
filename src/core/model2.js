@@ -153,21 +153,19 @@ function eachElement(el, fn) {
     var firstLoop = true;
 
     while (el) {
-        var flag = fn(el);
+        var res = fn(el);
         var nextSibling;
 
-        if (flag && flag.nodeType) {
-            nextSibling = flag;
-        } else if (flag && flag.nextSibling) {
-            nextSibling = flag.nextSibling;
-            flag = flag.isSkipChildNodes === true ? false : true;
+        if (res && res.nextSibling) {
+            nextSibling = res.nextSibling;
+            res = res.isSkipChildNodes === true ? false : true;
         } else if (!firstLoop) {
             nextSibling = el.nextSibling;
         }
 
         if (firstLoop) firstLoop = false;
 
-        if (flag !== false && el.firstChild) {
+        if (res !== false && el.firstChild) {
             if (nextSibling) {
                 stack.push(nextSibling);
             }
@@ -239,18 +237,16 @@ function compileTemplate(viewModel, $element) {
             }
         }
 
+        var nextSibling;
         if (isRepeatableNode(node)) {
             if (node.snIf) throw new Error('can not use sn-if and sn-repeat at the same time!!please use filter instead!!');
 
-            var nextSibling = node.nextSibling;
-            var repeatSource = new RepeatSource(viewModel, node, parentRepeatSource);
-
-            node.snRepeatSource = repeatSource;
-
-            return nextSibling;
+            node.snRepeatSource = new RepeatSource(viewModel, node, parentRepeatSource);
+            nextSibling = node.nextSibling;
         } else if (node.snIf) {
-            return node.snIf.nextSibling;
+            nextSibling = node.snIf.nextSibling
         }
+        return { nextSibling: nextSibling };
     });
 
     var eventName;
@@ -570,7 +566,8 @@ function updateViewNextTick(model) {
 }
 
 function updateNode(viewModel, el) {
-    if (el.nodeType == COMMENT_NODE && el.snRepeatSource) {
+    var nodeType = el.nodeType;
+    if (nodeType == COMMENT_NODE && el.snRepeatSource) {
         updateRepeatView(viewModel, el);
     } else if (el.snIfSource) {
         return {
@@ -580,7 +577,7 @@ function updateNode(viewModel, el) {
     } else {
         updateNodeAttributes(viewModel, el);
 
-        if (el.nodeType == ELEMENT_NODE) {
+        if (nodeType == ELEMENT_NODE) {
             if (el.snIf) {
                 return updateIfElement(viewModel, el);
             } else if (el.snComponentInstance || el.snComponent) {
@@ -631,7 +628,7 @@ function updateIfElement(viewModel, el) {
             nextElement = currentElement.nextSibling;
         }
 
-        return currentElement.nextSibling;
+        return { nextSibling: currentElement.nextSibling };
     }
 }
 
