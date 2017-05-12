@@ -29,7 +29,9 @@ var ELEMENT_NODE = document.ELEMENT_NODE || 1;
 
 var EVENTS = {
     tap: 'tap',
+    longtap: 'longTap',
     'long-tap': 'longTap',
+    transitionend: TRANSITION_END,
     'transition-end': TRANSITION_END,
     touchstart: 'touchstart',
     touchend: 'touchend',
@@ -46,7 +48,7 @@ var EVENTS = {
     scrollstop: 'scrollStop'
 };
 
-var GLOBAL_VARIABLES = {
+var KEYWORDS = {
     'new': true,
     'this': true,
     '$': true,
@@ -224,7 +226,7 @@ function compileTemplate(viewModel, $element) {
         if (node.snViewModel) return false;
 
         if (node.nodeType != COMMENT_NODE)
-            compileNodeAttributes(viewModel, node);
+            compileNode(viewModel, node);
 
         var parentRepeatSource;
         for (var parentNode = (node.snIf || node).parentNode;
@@ -276,8 +278,10 @@ function compileTemplate(viewModel, $element) {
     return $element;
 }
 
-function compileNodeAttributes(viewModel, el) {
+function compileNode(viewModel, el) {
     var fid;
+    var componentName;
+
     if (el.nodeType === TEXT_NODE) {
         fid = createVMFunction(viewModel, el.textContent);
         if (fid) {
@@ -285,26 +289,46 @@ function compileNodeAttributes(viewModel, el) {
             el.textContent = '';
         }
         return;
-    } else if (el.nodeName.slice(0, 3) === 'SN-') {
-        el.setAttribute('sn-component', camelCase(el.nodeName.slice(3).toLowerCase()));
-        el.setAttribute('sn-props', el.getAttribute('props'));
-        el.removeAttribute('props');
+    } else {
+        var propsVal;
+        if (el.nodeName.slice(0, 3) === 'SN-') {
+            componentName = camelCase(el.nodeName.slice(3).toLowerCase());
+            propsVal = el.getAttribute('props');
+            el.removeAttribute('props');
+        } else if ((componentName = el.getAttribute('sn-component'))) {
+            propsVal = el.getAttribute('sn-props');
+            el.removeAttribute('sn-component');
+            el.removeAttribute('sn-props');
+        }
+        if (componentName) {
+            el.snComponent = typeof viewModel.components == 'function' ?
+                viewModel.components(componentName) :
+                viewModel.components[componentName];
+            el.snProps = createVMFunction(viewModel, propsVal);
+        }
     }
 
-    for (var j = el.attributes.length - 1; j >= 0; j--) {
-        var attr = el.attributes[j].name;
-        var val = el.attributes[j].value;
+    compileElementAttributes(viewModel, el, !!componentName);
+}
+
+function compileElementAttributes(viewModel, el, isComponent) {
+    var fid;
+    var attr;
+    var val;
+
+    for (var i = el.attributes.length - 1; i >= 0; i--) {
+        attr = el.attributes[i].name;
 
         if (attr == 'sn-else') {
-            initIfConditionElement(el, attr);
-        } else if (val) {
+            initIfElement(el, attr);
+        } else if ((val = el.attributes[i].value)) {
             var shouldCompile = false;
             var isIfAttr = false;
             if (attr.slice(0, 3) === "sn-") {
                 switch (attr) {
                     case 'sn-if':
                     case 'sn-else-if':
-                        initIfConditionElement(el, attr);
+                        initIfElement(el, attr);
                         shouldCompile = true;
                         isIfAttr = true;
                         break;
@@ -313,17 +337,11 @@ function compileNodeAttributes(viewModel, el) {
                     case 'sn-display':
                     case 'sn-style':
                     case 'sn-css':
-                    case "sn-props":
                         shouldCompile = true;
                         break;
                     case 'sn-model':
                         el.removeAttribute(attr);
                         el.setAttribute(viewModel.snModelKey, val);
-                        break;
-                    case 'sn-component':
-                        el.snComponent = typeof viewModel.components == 'function' ?
-                            viewModel.components(val) :
-                            viewModel.components[val];
                         break;
                     default:
                         //处理事件绑定
@@ -337,32 +355,25 @@ function compileNodeAttributes(viewModel, el) {
                 if (shouldCompile && (val.indexOf("{") == -1 || val.indexOf("}") == -1)) {
                     val = '{' + val + '}';
                 }
+            } else if (attr == "ref" && !isComponent) {
+                viewModel.refs[val] = el;
             } else {
                 shouldCompile = true;
             }
 
-            if (shouldCompile) {
-                fid = createVMFunction(viewModel, val);
-                if (fid) {
-                    if (attr == "sn-props") {
-                        el.setAttribute(attr, fid);
-                    } else if (isIfAttr) {
-                        el.snIfFid = fid;
-                    } else {
-                        (el.snAttributes || (el.snAttributes = [])).push(attr, fid);
-                        el.removeAttribute(attr);
-                    }
-                    continue;
+            if (shouldCompile && (fid = createVMFunction(viewModel, val))) {
+                if (isIfAttr) {
+                    el.snIfFid = fid;
+                } else {
+                    (el.snAttributes || (el.snAttributes = [])).push(attr, fid);
+                    el.removeAttribute(attr);
                 }
-            }
-            if (attr == "ref" && !el.getAttribute('sn-component')) {
-                viewModel.refs[val] = el;
             }
         }
     }
 }
 
-function initIfConditionElement(el, type) {
+function initIfElement(el, type) {
     var snIf = document.createComment(type);
     snIf.snIfSource = el;
     el.snIf = snIf;
@@ -499,10 +510,15 @@ function valueExpression(str, variables) {
     var code = '';
     var gb = '$data';
 
-    if (!alias || GLOBAL_VARIABLES[alias] || valueRE.test(str) || (variables && variables.indexOf(alias) !== -1) || utils[alias] !== undefined) {
+    if (!alias || KEYWORDS[alias] || valueRE.test(str) || (variables && variables.indexOf(alias) !== -1) || utils[alias] !== undefined) {
         return str;
-    } else if (alias == 'delegate') {
-        return 'this.' + str;
+    } else {
+        switch (alias) {
+            case 'delegate':
+                return 'this.' + str;
+            case 'srcElement':
+                return gb + '.' + str;
+        }
     }
 
     str = gb + '.' + str;
@@ -633,11 +649,11 @@ function updateIfElement(viewModel, el) {
 }
 
 function updateComponent(viewModel, el) {
-    var id = el.getAttribute('sn-props');
-    var data = !id ? null : executeVMFunction(viewModel, id, getVMFunctionArg(viewModel, el.snData, el));
+    var fid = el.snProps;
+    var props = !fid ? null : executeVMFunction(viewModel, fid, getVMFunctionArg(viewModel, el.snData, el));
 
     if (el.snComponentInstance) {
-        el.snComponentInstance.set(data);
+        el.snComponentInstance.set(props);
     } else {
         var children = [];
         var node;
@@ -654,13 +670,13 @@ function updateComponent(viewModel, el) {
             }
         }
         if (typeof snComponent === 'function') {
-            instance = new snComponent(data, children);
+            instance = new snComponent(props, children);
         } else {
             instance = snComponent;
             if (typeof instance.children === 'function') {
                 instance.children(children);
             }
-            instance.set(data);
+            instance.set(props);
         }
         instance.$el.appendTo(el);
 
