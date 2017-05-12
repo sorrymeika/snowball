@@ -243,8 +243,8 @@ function compileTemplate(viewModel, $element) {
         if (isRepeatableNode(node)) {
             if (node.snIf) throw new Error('can not use sn-if and sn-repeat at the same time!!please use filter instead!!');
 
-            node.snRepeatSource = new RepeatSource(viewModel, node, parentRepeatSource);
             nextSibling = node.nextSibling;
+            node.snRepeatSource = new RepeatSource(viewModel, node, parentRepeatSource);
         } else if (node.snIf) {
             nextSibling = node.snIf.nextSibling
         }
