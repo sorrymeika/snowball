@@ -388,6 +388,9 @@ ScrollBindResult.prototype = {
     }
 }
 
+exports.get = function (el) {
+    return el.__widget_scroll__;
+}
 
 /**
  * 给Element元素绑定Scroll

@@ -898,15 +898,16 @@ function updateRepeatView(viewModel, el) {
 
     var orderBy = repeatSource.orderBy;
     if (orderBy) {
+        var sortFn;
         switch (repeatSource.orderByType) {
             case ORDER_BY_TYPES.THIS_FUNCTION:
-                list.sort(util.value(viewModel, orderBy));
+                sortFn = util.value(viewModel, orderBy);
                 break;
             case ORDER_BY_TYPES.DELEGATE_FUNCTION:
-                list.sort(util.value(viewModel.delegate, orderBy));
+                sortFn = util.value(viewModel.delegate, orderBy);
                 break;
             case ORDER_BY_TYPES.ATTRIBUTES_FUNCTION:
-                list.sort(util.value(viewModel.attributes, orderBy));
+                sortFn = util.value(viewModel.attributes, orderBy);
                 break;
             default:
                 // orderBy=['a',true,someFunctionId,false]
@@ -917,7 +918,7 @@ function updateRepeatView(viewModel, el) {
                     return item;
                 });
 
-                list.sort(function (am, bm) {
+                sortFn = function (am, bm) {
                     var ret = 0;
                     var isDesc;
                     var sort;
@@ -927,9 +928,10 @@ function updateRepeatView(viewModel, el) {
                         sort = orderBy[i];
                         isDesc = orderBy[i + 1] == false;
 
-                        a = am.model.attributes[sort];
-                        b = bm.model.attributes[sort];
+                        a = am[sort];
+                        b = bm[sort];
 
+                        // 中文排序需使用 localeCompare
                         // ret = isDesc ? (a > b ? -1 : a < b ? 1 : 0) : (a > b ? 1 : a < b ? -1 : 0);
                         ret = ((a === undefined || a === null) ? '' : (a + '')).localeCompare(b);
                         isDesc && (ret = !ret);
@@ -938,8 +940,11 @@ function updateRepeatView(viewModel, el) {
                     }
 
                     return ret;
-                });
+                };
         }
+        sortFn && list.sort(function (a, b) {
+            return sortFn(a.model.attributes, b.model.attributes);
+        });
     }
 
     list.forEach(function (item, index) {
