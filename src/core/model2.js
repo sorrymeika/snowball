@@ -221,11 +221,9 @@ function isRepeatableNode(node) {
     return node.nodeType === ELEMENT_NODE && node.getAttribute('sn-repeat');
 }
 
-var ORDER_BY_TYPES = {
-    THIS_FUNCTION: 1,
-    DELEGATE_FUNCTION: 2,
-    ATTRIBUTES_FUNCTION: 3
-}
+var ORDER_BY_THIS_FUNCTION = 1;
+var ORDER_BY_DELEGATE_FUNCTION = 2;
+var ORDER_BY_ATTRIBUTES_FUNCTION = 3;
 var repeatRE = /([\w$]+)(?:\s*,(\s*[\w$]+)){0,1}\s+in\s+([\w$]+(?:\.[\w$\(,\)]+){0,})(?:\s*\|\s*filter\s*:\s*(.+?)){0,1}(?:\s*\|\s*orderBy:(.+)){0,1}(\s|$)/;
 
 function RepeatSource(viewModel, el, parent) {
@@ -296,15 +294,15 @@ RepeatSource.prototype.compileOrderBy = function (orderByCode) {
     if (/^([\w$]+)\.([\w$]+(\.[\w$]+)*)$/.test(orderByCode)) {
         switch (RegExp.$1) {
             case 'this':
-                this.orderByType = ORDER_BY_TYPES.THIS_FUNCTION;
+                this.orderByType = ORDER_BY_THIS_FUNCTION;
                 this.orderBy = RegExp.$2;
                 break;
             case 'delegate':
-                this.orderByType = ORDER_BY_TYPES.DELEGATE_FUNCTION;
+                this.orderByType = ORDER_BY_DELEGATE_FUNCTION;
                 this.orderBy = RegExp.$2;
                 break;
             default:
-                this.orderByType = ORDER_BY_TYPES.ATTRIBUTES_FUNCTION;
+                this.orderByType = ORDER_BY_ATTRIBUTES_FUNCTION;
                 this.orderBy = orderByCode;
         }
     } else {
@@ -900,13 +898,13 @@ function updateRepeatView(viewModel, el) {
     if (orderBy) {
         var sortFn;
         switch (repeatSource.orderByType) {
-            case ORDER_BY_TYPES.THIS_FUNCTION:
+            case ORDER_BY_THIS_FUNCTION:
                 sortFn = util.value(viewModel, orderBy);
                 break;
-            case ORDER_BY_TYPES.DELEGATE_FUNCTION:
+            case ORDER_BY_DELEGATE_FUNCTION:
                 sortFn = util.value(viewModel.delegate, orderBy);
                 break;
-            case ORDER_BY_TYPES.ATTRIBUTES_FUNCTION:
+            case ORDER_BY_ATTRIBUTES_FUNCTION:
                 sortFn = util.value(viewModel.attributes, orderBy);
                 break;
             default:
@@ -1675,11 +1673,8 @@ function Collection(parent, attributeName, array) {
     if (array) this.add(array);
 }
 
-var CollectionUpdateType = {
-    DEFAULT: 1,
-    UPDATE_ONLY_MATCHED: 2,
-    UPDATE_MATCHED_AND_REMOVE_UNMATCHED: 3
-};
+var COLLECTION_UPDATE_ONLY_MATCHED = 2;
+var COLLECTION_MATCHED_AND_REMOVE_UNMATCHED = 3;
 
 Collection.prototype = {
 
@@ -1929,10 +1924,10 @@ Collection.prototype = {
      * 
      * @param {Array} arr 需要更新的数组
      * @param {String|Function} primaryKey 唯一健 或 (a, b)=>boolean
-     * @param {CollectionUpdateType} [updateType] 更新类型
-     * CollectionUpdateType.DEFAULT - collection中存在既覆盖，不存在既添加
-     * CollectionUpdateType.UPDATE_MATCHED_AND_REMOVE_UNMATCHED - 根据arr更新，不在arr中的项将被删除
-     * CollectionUpdateType.UPDATE_ONLY_MATCHED - 只更新collection中存在的
+     * @param {number} [updateType] 更新类型
+     * COLLECTION_UPDATE_DEFAULT - collection中存在既覆盖，不存在既添加
+     * COLLECTION_UPDATE_MATCHED_AND_REMOVE_UNMATCHED - 根据arr更新，不在arr中的项将被删除
+     * COLLECTION_UPDATE_ONLY_MATCHED - 只更新collection中存在的
      * 
      * @return {Collection} self
      */
@@ -1943,7 +1938,7 @@ Collection.prototype = {
         var length = this.length;
 
         if (!length) {
-            (updateType !== CollectionUpdateType.UPDATE_ONLY_MATCHED) && this.add(arr);
+            (updateType !== COLLECTION_UPDATE_ONLY_MATCHED) && this.add(arr);
             return this;
         }
 
@@ -1980,12 +1975,12 @@ Collection.prototype = {
                 }
             }
 
-            if (updateType === CollectionUpdateType.UPDATE_MATCHED_AND_REMOVE_UNMATCHED && !exists) {
+            if (updateType === COLLECTION_MATCHED_AND_REMOVE_UNMATCHED && !exists) {
                 this.splice(i, 1);
             }
         }
 
-        if (updateType !== CollectionUpdateType.UPDATE_ONLY_MATCHED) {
+        if (updateType !== COLLECTION_UPDATE_ONLY_MATCHED) {
             var appends = [];
             for (i = 0; i < n; i++) {
                 if (arr[i] !== undefined) {
@@ -2003,12 +1998,12 @@ Collection.prototype = {
 
     // 已有项将被增量覆盖，不在arr中的项将被删除
     updateTo: function (arr, primaryKey) {
-        return this.update(arr, primaryKey, CollectionUpdateType.UPDATE_MATCHED_AND_REMOVE_UNMATCHED);
+        return this.update(arr, primaryKey, COLLECTION_MATCHED_AND_REMOVE_UNMATCHED);
     },
 
     // 只更新collection中匹配到的
     updateMatched: function (arr, primaryKey) {
-        return this.update(arr, primaryKey, CollectionUpdateType.UPDATE_ONLY_MATCHED);
+        return this.update(arr, primaryKey, COLLECTION_UPDATE_ONLY_MATCHED);
     },
 
     unshift: function (data) {
