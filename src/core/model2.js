@@ -226,7 +226,7 @@ var ORDER_BY_DELEGATE_FUNCTION = 2;
 var ORDER_BY_ATTRIBUTES_FUNCTION = 3;
 var repeatRE = /([\w$]+)(?:\s*,(\s*[\w$]+)){0,1}\s+in\s+([\w$]+(?:\.[\w$\(,\)]+){0,})(?:\s*\|\s*filter\s*:\s*(.+?)){0,1}(?:\s*\|\s*orderBy:(.+)){0,1}(\s|$)/;
 
-function RepeatSource(viewModel, el, parent) {
+function RepeatCompiler(viewModel, el, parent) {
     var attrRepeat = el.getAttribute('sn-repeat');
     var match = attrRepeat.match(repeatRE);
     var collectionKey = match[3];
@@ -257,7 +257,7 @@ function RepeatSource(viewModel, el, parent) {
     }
 
     var replacement = document.createComment(collectionKey);
-    replacement.snRepeatSource = this;
+    replacement.snRepeatCompiler = this;
     el.parentNode.replaceChild(replacement, el);
 
     this.replacement = replacement;
@@ -290,7 +290,7 @@ function RepeatSource(viewModel, el, parent) {
  * 
  * @param {String} orderByCode
  */
-RepeatSource.prototype.compileOrderBy = function (orderByCode) {
+RepeatCompiler.prototype.compileOrderBy = function (orderByCode) {
     if (/^([\w$]+)\.([\w$]+(\.[\w$]+)*)$/.test(orderByCode)) {
         switch (RegExp.$1) {
             case 'this':
@@ -325,7 +325,7 @@ RepeatSource.prototype.compileOrderBy = function (orderByCode) {
     }
 }
 
-RepeatSource.prototype.appendChild = function (child) {
+RepeatCompiler.prototype.appendChild = function (child) {
     this.children.push(child);
 }
 
@@ -340,13 +340,13 @@ function compileTemplate(viewModel, $element) {
         if (node.nodeType != COMMENT_NODE)
             compileNode(viewModel, node);
 
-        var parentRepeatSource;
+        var parentRepeatCompiler;
         for (var parentNode = (node.snIf || node).parentNode;
             parentNode && !parentNode.snViewModel;
             parentNode = (parentNode.snIf || parentNode).parentNode) {
 
-            if (parentNode.snRepeatSource) {
-                parentRepeatSource = parentNode.snRepeatSource;
+            if (parentNode.snRepeatCompiler) {
+                parentRepeatCompiler = parentNode.snRepeatCompiler;
                 break;
             }
         }
@@ -356,7 +356,7 @@ function compileTemplate(viewModel, $element) {
             if (node.snIf) throw new Error('can not use sn-if and sn-repeat at the same time!!please use filter instead!!');
 
             nextSibling = node.nextSibling;
-            node.snRepeatSource = new RepeatSource(viewModel, node, parentRepeatSource);
+            node.snRepeatCompiler = new RepeatCompiler(viewModel, node, parentRepeatCompiler);
         } else if (node.snIf) {
             nextSibling = node.snIf.nextSibling
         }
@@ -697,7 +697,7 @@ function updateViewNextTick(model) {
 
 function updateNode(viewModel, el) {
     var nodeType = el.nodeType;
-    if (nodeType == COMMENT_NODE && el.snRepeatSource) {
+    if (nodeType == COMMENT_NODE && el.snRepeatCompiler) {
         updateRepeatView(viewModel, el);
     } else if (el.snIfSource) {
         return {
@@ -801,15 +801,15 @@ function updateComponent(viewModel, el) {
 }
 
 function updateRepeatView(viewModel, el) {
-    var repeatSource = el.snRepeatSource;
+    var repeatCompiler = el.snRepeatCompiler;
     var collection = el.snCollection;
     var model;
-    var offsetParent = repeatSource.offsetParent;
+    var offsetParent = repeatCompiler.offsetParent;
     var parentSNData = {};
 
-    if (repeatSource.parent) {
+    if (repeatCompiler.parent) {
         closestElement(el, function (parentNode) {
-            if (parentNode.snRepeatSource == repeatSource.parent && parentNode.snData) {
+            if (parentNode.snRepeatCompiler == repeatCompiler.parent && parentNode.snData) {
                 Object.assign(parentSNData, parentNode.snData);
                 return true;
             }
@@ -818,8 +818,8 @@ function updateRepeatView(viewModel, el) {
 
     var collectionData;
 
-    if (repeatSource.isFn) {
-        collectionData = executeVMFunction(viewModel, repeatSource.fid, getVMFunctionArg(viewModel, parentSNData, el));
+    if (repeatCompiler.isFn) {
+        collectionData = executeVMFunction(viewModel, repeatCompiler.fid, getVMFunctionArg(viewModel, parentSNData, el));
     }
 
     if (!collection) {
@@ -827,23 +827,23 @@ function updateRepeatView(viewModel, el) {
             model = viewModel;
         } else {
             closestElement(el, function (parentNode) {
-                if (parentNode.snRepeatSource == offsetParent) {
+                if (parentNode.snRepeatCompiler == offsetParent) {
                     model = parentNode.snModel;
                     return true;
                 }
             })
         }
 
-        if (repeatSource.isFn) {
-            collection = new Collection(viewModel, repeatSource.collectionKey, collectionData);
+        if (repeatCompiler.isFn) {
+            collection = new Collection(viewModel, repeatCompiler.collectionKey, collectionData);
         } else {
-            collection = model && findModelByKey(model, repeatSource.collectionKey);
+            collection = model && findModelByKey(model, repeatCompiler.collectionKey);
         }
 
         if (!collection) return;
 
         el.snCollection = collection;
-    } else if (repeatSource.isFn) {
+    } else if (repeatCompiler.isFn) {
         collection.set(collectionData);
     }
 
@@ -869,17 +869,17 @@ function updateRepeatView(viewModel, el) {
 
         if (!elem) {
             snData = Object.assign({}, parentSNData);
-            snData[repeatSource.alias] = model;
+            snData[repeatCompiler.alias] = model;
         } else {
             snData = elem.snData;
         }
 
-        var pass = !repeatSource.filter || repeatSource.filter.call(viewModel, getVMFunctionArg(viewModel, elem, snData));
+        var pass = !repeatCompiler.filter || repeatCompiler.filter.call(viewModel, getVMFunctionArg(viewModel, elem, snData));
         if (pass) {
             if (!elem) {
-                elem = cloneRepeatElement(viewModel, repeatSource.source, snData);
+                elem = cloneRepeatElement(viewModel, repeatCompiler.source, snData);
 
-                elem.snRepeatSource = repeatSource;
+                elem.snRepeatCompiler = repeatCompiler;
                 elem.snModel = model;
 
                 elements.push(elem);
@@ -894,10 +894,10 @@ function updateRepeatView(viewModel, el) {
         }
     });
 
-    var orderBy = repeatSource.orderBy;
+    var orderBy = repeatCompiler.orderBy;
     if (orderBy) {
         var sortFn;
-        switch (repeatSource.orderByType) {
+        switch (repeatCompiler.orderByType) {
             case ORDER_BY_THIS_FUNCTION:
                 sortFn = util.value(viewModel, orderBy);
                 break;
@@ -951,7 +951,7 @@ function updateRepeatView(viewModel, el) {
         insertElementAfter(cursorElem, elem);
         cursorElem = elem;
 
-        repeatSource.loopIndexAlias && (elem.snData[repeatSource.loopIndexAlias] = index);
+        repeatCompiler.loopIndexAlias && (elem.snData[repeatCompiler.loopIndexAlias] = index);
     });
 
     // 移除过滤掉的element
@@ -976,7 +976,7 @@ function cloneRepeatElement(viewModel, source, snData) {
                 $(clone).on(evt, viewModel._handleEvent);
             })
         }
-        if (node.snRepeatSource) clone.snRepeatSource = node.snRepeatSource;
+        if (node.snRepeatCompiler) clone.snRepeatCompiler = node.snRepeatCompiler;
         if (node.snIfSource) {
             var snIfSource = cloneRepeatElement(viewModel, node.snIfSource, snData);
             clone.snIfSource = snIfSource;
