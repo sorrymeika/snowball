@@ -85,11 +85,11 @@ function testRegExp(regExp, val) {
     return regExp.lastIndex != 0 && (regExp.lastIndex = 0) || regExp.test(val);
 }
 
-function insertElementAfter(cursorElem, elem) {
-    if (cursorElem.nextSibling != elem) {
-        cursorElem.nextSibling ?
-            cursorElem.parentNode.insertBefore(elem, cursorElem.nextSibling) :
-            cursorElem.parentNode.appendChild(elem);
+function insertElementAfter(destElem, elem) {
+    if (destElem.nextSibling != elem) {
+        destElem.nextSibling ?
+            destElem.parentNode.insertBefore(elem, destElem.nextSibling) :
+            destElem.parentNode.appendChild(elem);
     }
 }
 
@@ -215,6 +215,120 @@ function createRegExp(exp, flags, deep) {
         }
     }
     return new RegExp(result, flags);
+}
+
+function isRepeatableNode(node) {
+    return node.nodeType === ELEMENT_NODE && node.getAttribute('sn-repeat');
+}
+
+var ORDER_BY_TYPES = {
+    THIS_FUNCTION: 1,
+    DELEGATE_FUNCTION: 2,
+    ATTRIBUTES_FUNCTION: 3
+}
+var repeatRE = /([\w$]+)(?:\s*,(\s*[\w$]+)){0,1}\s+in\s+([\w$]+(?:\.[\w$\(,\)]+){0,})(?:\s*\|\s*filter\s*:\s*(.+?)){0,1}(?:\s*\|\s*orderBy:(.+)){0,1}(\s|$)/;
+
+function RepeatSource(viewModel, el, parent) {
+    var attrRepeat = el.getAttribute('sn-repeat');
+    var match = attrRepeat.match(repeatRE);
+    var collectionKey = match[3];
+    var attrs = collectionKey.split('.');
+    var parentAlias = attrs[0];
+    var filter = match[4];
+
+    if (filter) {
+        var res = genFunction('{' + filter + '}');
+        if (res) {
+            this.filter = new Function('$data', res.code);
+        }
+    }
+
+    this.alias = match[1];
+    this.loopIndexAlias = match[2];
+    this.key = attrs[attrs.length - 1];
+    this.parent = parent;
+    this.source = el;
+    this.children = [];
+    this.attrs = attrs;
+    this.parentAlias = parentAlias;
+    this.vm = viewModel;
+
+    var orderByCode = match[5];
+    if (orderByCode) {
+        this.compileOrderBy(orderByCode)
+    }
+
+    var replacement = document.createComment(collectionKey);
+    replacement.snRepeatSource = this;
+    el.parentNode.replaceChild(replacement, el);
+
+    this.replacement = replacement;
+
+    parent && parent.appendChild(this);
+
+    if (parentAlias == 'this') {
+        this.isFn = true;
+        this.fid = createVMFunction(viewModel, '{' + collectionKey + '}');
+
+        collectionKey = collectionKey.replace(/\./g, '/');
+    } else {
+        while (parent) {
+            if (parent.alias == parentAlias) {
+                attrs[0] = parent.collectionKey + '^child';
+                collectionKey = attrs.join('.');
+                this.offsetParent = parent;
+                break;
+            }
+            parent = parent.parent;
+        }
+    }
+
+    this.collectionKey = collectionKey;
+}
+
+/**
+ * @example
+ * compileOrderBy('date desc,{somedata} {somevalue}')
+ * 
+ * @param {String} orderByCode
+ */
+RepeatSource.prototype.compileOrderBy = function (orderByCode) {
+    if (/^([\w$]+)\.([\w$]+(\.[\w$]+)*)$/.test(orderByCode)) {
+        switch (RegExp.$1) {
+            case 'this':
+                this.orderByType = ORDER_BY_TYPES.THIS_FUNCTION;
+                this.orderBy = RegExp.$2;
+                break;
+            case 'delegate':
+                this.orderByType = ORDER_BY_TYPES.DELEGATE_FUNCTION;
+                this.orderBy = RegExp.$2;
+                break;
+            default:
+                this.orderByType = ORDER_BY_TYPES.ATTRIBUTES_FUNCTION;
+                this.orderBy = orderByCode;
+        }
+    } else {
+        var orderBy = this.orderBy = [];
+        var viewModel = this.vm;
+
+        orderByCode.split(/\s*,\s*/).forEach(function (sort) {
+            var sortKey = (sort = sort.split(' '))[0];
+            var sortType = sort[1];
+
+            if (sortKey.charAt(0) == '{' && sortKey.slice(-1) == '}') {
+                sortKey = createVMFunction(viewModel, sortKey);
+            }
+            sortType = (sortType && sortType.charAt(0) == '{' && sortType.slice(-1) == '}')
+                ? createVMFunction(viewModel, sortType)
+                : sortType == 'desc' ? false : true;
+
+            orderBy.push(sortKey, sortType);
+        });
+    }
+}
+
+RepeatSource.prototype.appendChild = function (child) {
+    this.children.push(child);
 }
 
 var vmCodes;
@@ -501,27 +615,31 @@ function replaceQuote(str) {
     return str.replace(/\\/g, '\\\\').replace(/'/g, '\\\'');
 }
 
-var valueRE = /^((-)?\d+|true|false|undefined|null|'(?:\\'|[^'])*')$/;
+var valueRE = /^(-?\d+|true|false|undefined|null|'(?:\\'|[^'])*')$/;
 
 function valueExpression(str, variables) {
+    if (valueRE.test(str)) return str;
+
     var arr = str.split('.');
     var alias = arr[0];
-    var result = [];
     var code = '';
     var gb = '$data';
 
-    if (!alias || KEYWORDS[alias] || valueRE.test(str) || (variables && variables.indexOf(alias) !== -1) || utils[alias] !== undefined) {
+    if (!alias || KEYWORDS[alias] || (variables && variables.indexOf(alias) !== -1) || utils[alias] !== undefined) {
         return str;
     } else {
         switch (alias) {
             case 'delegate':
                 return 'this.' + str;
             case 'srcElement':
+            case '$utils':
                 return gb + '.' + str;
         }
     }
 
     str = gb + '.' + str;
+
+    var result = [];
     var i;
     for (i = 0; i < arr.length; i++) {
         result[i] = (i == 0 ? gb : result[i - 1]) + '.' + arr[i];
@@ -540,20 +658,18 @@ function getVMFunctionArg(viewModel, element, snData) {
 
     if (snData) {
         for (var key in snData) {
-            var model = snData[key];
-            if (model instanceof Model || model instanceof Collection) {
-                data[key] = model.attributes;
-            } else {
-                data[key] = model;
-            }
+            var val = snData[key];
+            data[key] = (val instanceof Model || val instanceof Collection)
+                ? val.attributes
+                : val;
         }
     }
 
-    return data
+    return data;
 }
 
-function executeVMFunction(viewModel, functionId, data) {
-    return viewModel.fns[functionId].call(viewModel, data);
+function executeVMFunction(viewModel, fid, data) {
+    return viewModel.fns[fid].call(viewModel, data);
 }
 
 function updateViewNextTick(model) {
@@ -782,38 +898,47 @@ function updateRepeatView(viewModel, el) {
 
     var orderBy = repeatSource.orderBy;
     if (orderBy) {
-        if (typeof orderBy == 'string') {
-            // 排序方法
-            list.sort(viewModel[orderBy]);
-        } else {
-            // orderBy=['a',true,someFunctionId,false]
-            orderBy = orderBy.map(function (item) {
-                if (typeof item === 'number') {
-                    return executeVMFunction(viewModel, item, getVMFunctionArg(viewModel, parentSNData, el));
-                }
-                return item;
-            });
+        switch (repeatSource.orderByType) {
+            case ORDER_BY_TYPES.THIS_FUNCTION:
+                list.sort(util.value(viewModel, orderBy));
+                break;
+            case ORDER_BY_TYPES.DELEGATE_FUNCTION:
+                list.sort(util.value(viewModel.delegate, orderBy));
+                break;
+            case ORDER_BY_TYPES.ATTRIBUTES_FUNCTION:
+                list.sort(util.value(viewModel.attributes, orderBy));
+                break;
+            default:
+                // orderBy=['a',true,someFunctionId,false]
+                orderBy = orderBy.map(function (item) {
+                    if (typeof item === 'number') {
+                        return executeVMFunction(viewModel, item, getVMFunctionArg(viewModel, parentSNData, el));
+                    }
+                    return item;
+                });
 
-            list.sort(function (am, bm) {
-                var ret = 0;
-                var isDesc;
-                var sort;
-                var a, b;
+                list.sort(function (am, bm) {
+                    var ret = 0;
+                    var isDesc;
+                    var sort;
+                    var a, b;
 
-                for (var i = 0; i < orderBy.length; i += 2) {
-                    sort = orderBy[i];
-                    isDesc = orderBy[i + 1] == false;
+                    for (var i = 0; i < orderBy.length; i += 2) {
+                        sort = orderBy[i];
+                        isDesc = orderBy[i + 1] == false;
 
-                    a = am.model.attributes[sort];
-                    b = bm.model.attributes[sort];
+                        a = am.model.attributes[sort];
+                        b = bm.model.attributes[sort];
 
-                    ret = isDesc ? (a > b ? -1 : a < b ? 1 : 0) : (a > b ? 1 : a < b ? -1 : 0);
+                        // ret = isDesc ? (a > b ? -1 : a < b ? 1 : 0) : (a > b ? 1 : a < b ? -1 : 0);
+                        ret = ((a === undefined || a === null) ? '' : (a + '')).localeCompare(b);
+                        isDesc && (ret = !ret);
 
-                    if (ret != 0) return ret;
-                }
+                        if (ret != 0) return ret;
+                    }
 
-                return ret;
-            });
+                    return ret;
+                });
         }
     }
 
@@ -835,10 +960,6 @@ function updateRepeatView(viewModel, el) {
     }
 
     return cursorElem;
-}
-
-function isRepeatableNode(node) {
-    return node.nodeType === ELEMENT_NODE && node.getAttribute('sn-repeat');
 }
 
 function cloneRepeatElement(viewModel, source, snData) {
@@ -987,7 +1108,7 @@ function updateTextNode(el, val) {
                         (item = document.createTextNode(item))
                     )
                 ) {
-                    $(item).insertAfter(node);
+                    insertElementAfter(node, item);
                 } else {
                     item = node.nextSibling;
                 }
@@ -2016,100 +2137,6 @@ Collection.prototype = {
 }
 
 Collection.prototype.toArray = Collection.prototype.toJSON;
-
-
-var repeatRE = /([\w$]+)(?:\s*,(\s*[\w$]+)){0,1}\s+in\s+([\w$]+(?:\.[\w$\(,\)]+){0,})(?:\s*\|\s*filter\s*:\s*(.+?)){0,1}(?:\s*\|\s*orderBy:(.+)){0,1}(\s|$)/;
-
-function RepeatSource(viewModel, el, parent) {
-    var attrRepeat = el.getAttribute('sn-repeat');
-    var match = attrRepeat.match(repeatRE);
-    var collectionKey = match[3];
-    var attrs = collectionKey.split('.');
-    var parentAlias = attrs[0];
-    var filter = match[4];
-
-    if (filter) {
-        var res = genFunction('{' + filter + '}');
-        if (res) {
-            this.filter = new Function('$data', res.code);
-        }
-    }
-
-    this.alias = match[1];
-    this.loopIndexAlias = match[2];
-    this.key = attrs[attrs.length - 1];
-    this.parent = parent;
-    this.source = el;
-    this.children = [];
-    this.attrs = attrs;
-    this.parentAlias = parentAlias;
-    this.vm = viewModel;
-
-    var orderByCode = match[5];
-    if (orderByCode) {
-        this.compileOrderBy(orderByCode)
-    }
-
-    var replacement = document.createComment(collectionKey);
-    replacement.snRepeatSource = this;
-    el.parentNode.replaceChild(replacement, el);
-
-    this.replacement = replacement;
-
-    parent && parent.appendChild(this);
-
-    if (parentAlias == 'this') {
-        this.isFn = true;
-        this.fid = createVMFunction(viewModel, '{' + collectionKey + '}');
-
-        collectionKey = collectionKey.replace(/\./g, '/');
-    } else {
-        while (parent) {
-            if (parent.alias == parentAlias) {
-                attrs[0] = parent.collectionKey + '^child';
-                collectionKey = attrs.join('.');
-                this.offsetParent = parent;
-                break;
-            }
-            parent = parent.parent;
-        }
-    }
-
-    this.collectionKey = collectionKey;
-}
-
-RepeatSource.prototype.compileOrderBy = function (orderByCode) {
-    if (orderByCode.indexOf('this.') == 0) {
-        this.orderBy = orderByCode.substr(5).replace(/\(.*\)/, '');
-    } else {
-        this.orderBy = [];
-
-        var self = this;
-        //@orderByCode=date desc,{somedata} {somevalue}
-        orderByCode.split(/\s*,\s*/).forEach(function (sort) {
-            sort = sort.split(' ');
-            var sortKey = sort[0];
-            var sortType = sort[1];
-
-            if (sortKey.charAt(0) == '{' && sortKey.charAt(sortKey.length - 1) == '}') {
-                sortKey = createVMFunction(self.vm, sortKey);
-            }
-
-            if (sortType.charAt(0) == '{' && sortType.charAt(sortType.length - 1) == '}') {
-                sortType = createVMFunction(self.vm, sortType);
-            } else {
-                sortType = sortType == 'desc' ? false : true;
-            }
-
-            self.orderBy.push(sortKey, sortType);
-        });
-    }
-}
-
-RepeatSource.prototype.appendChild = function (child) {
-    this.children.push(child);
-}
-
 
 var ViewModel = Event.mixin(
     Model.extend({

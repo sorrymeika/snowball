@@ -196,10 +196,10 @@ var model = new ViewModel(this.$el, {
 ```
 
 ```html
-<div class="item" sn-repeat="item,i in list|filter:like(item.name,'2')|orderBy:item.name">
+<div class="item" sn-repeat="item,i in list|filter:like(item.name,'2')|orderBy:name asc,id desc,{orderByWhat} {ascOrDesc}">
     <p>这是标题{title}，加上{item.name}</p>
     <ul>
-        <li sn-repeat="child in item.children">{i}/{child.name+child.age}</li>
+        <li sn-repeat="child in item.children|orderBy:this.orderByFunction">{i}/{child.name+child.age}</li>
     </ul>
 </div>
 ```
