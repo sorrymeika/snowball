@@ -291,9 +291,9 @@ function RepeatCompiler(viewModel, el, parent) {
 
     parent && parent.appendChild(this);
 
-    if (parentAlias == 'this') {
+    if (parentAlias == 'this' || parentAlias == 'delegate') {
         this.isFn = true;
-        this.fid = createVMFunction(viewModel, '{' + collectionKey + '}');
+        this.fid = createVMFunction(viewModel, collectionKey, false);
 
         collectionKey = collectionKey.replace(/\./g, '/');
     } else {
@@ -537,7 +537,7 @@ function compileElementEvent(viewModel, el, evt, val) {
                 : ($1 + $2.slice(0, -1) + ($2.length == 2 ? '' : ',') + 'e)');
         }).replace(setRE, 'this.dataOfElement(e.currentTarget,"$1",$2)');
 
-        var fid = createVMFunction(viewModel, '{' + content + '}');
+        var fid = createVMFunction(viewModel, content, false);
         fid && el.setAttribute(attr, fid);
     }
 
@@ -643,7 +643,6 @@ function formatExpression(expression, variables) {
         } else if (!name) {
             return match;
         }
-
         return prefix + valueExpression(name, variables);
     })
 }
