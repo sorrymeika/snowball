@@ -9,8 +9,10 @@ var $ = require('$');
 var util = require('util');
 var Event = require('./event');
 
+var isNo = util.isNo;
+var isThenable = util.isThenable;
 var isArray = Array.isArray;
-var isPlainObject = $.isPlainObject;
+var isPlainObject = util.isPlainObject;
 var extend = $.extend;
 var camelCase = $.camelCase;
 var ConstuctorOf$ = $.zepto ? $.zepto.Z : $.fn.constructor;
@@ -62,6 +64,7 @@ var KEYWORDS = {
 };
 
 var utils = {
+    util: util,
     contains: function (source, keywords) {
         return !keywords || source.indexOf(keywords) != -1;
     },
@@ -69,17 +72,8 @@ var utils = {
         source = source.toLowerCase();
         keywords = keywords.toLowerCase();
         return !keywords || source.indexOf(keywords) != -1 || keywords.indexOf(source) != -1;
-    },
-    util: util
+    }
 };
-
-function isThenable(thenable) {
-    return thenable && typeof thenable === 'object' && typeof thenable.then === 'function';
-}
-
-function testRegExp(regExp, val) {
-    return regExp.lastIndex != 0 && (regExp.lastIndex = 0) || regExp.test(val);
-}
 
 function insertElementAfter(destElem, elem) {
     if (destElem.nextSibling != elem) {
@@ -187,7 +181,7 @@ function fade(el, val) {
         isInitDisplay = false;
         $el.addClass('sn-display')[0].clientHeight;
     }
-    var display = util.isNo(val) ? 'none' : val == 'block' || val == 'inline' || val == 'inline-block' ? val : '';
+    var display = isNo(val) ? 'none' : val == 'block' || val == 'inline' || val == 'inline-block' ? val : '';
     if (display == 'none') {
         if (!$el.hasClass('sn-display-hide')) {
             var onHide = function () {
@@ -205,6 +199,10 @@ function fade(el, val) {
         el.clientHeight;
         $el.removeClass('sn-display-hide');
     }
+}
+
+function testRegExp(regExp, val) {
+    return regExp.lastIndex != 0 && (regExp.lastIndex = 0) || regExp.test(val);
 }
 
 // var regExpRE = "\/(?:(?:\\{2})+|\\\/|[^\/\r\n])+\/[img]*(?=[\)|\.|,])"
@@ -260,7 +258,7 @@ function RepeatCompiler(viewModel, el, parent) {
     var filter = match[4];
 
     if (filter) {
-        var res = genFunction(filter, false);
+        var res = compileExpression(filter, false);
         if (res) {
             this.filter = new Function('$data', res.code);
         }
@@ -288,7 +286,7 @@ function RepeatCompiler(viewModel, el, parent) {
 
     if (collectionKey.slice(-1) == ')') {
         this.isFn = true;
-        this.fid = createVMFunction(viewModel, collectionKey, false);
+        this.fid = compileToFunction(viewModel, collectionKey, false);
 
         collectionKey = collectionKey.replace(/\./g, '/');
     } else {
@@ -339,10 +337,10 @@ RepeatCompiler.prototype.compileOrderBy = function (orderByCode) {
             var sortType = sort[1];
 
             if (sortKey.charAt(0) == '{' && sortKey.slice(-1) == '}') {
-                sortKey = createVMFunction(viewModel, sortKey);
+                sortKey = compileToFunction(viewModel, sortKey);
             }
             sortType = (sortType && sortType.charAt(0) == '{' && sortType.slice(-1) == '}')
-                ? createVMFunction(viewModel, sortType)
+                ? compileToFunction(viewModel, sortType)
                 : sortType == 'desc' ? false : true;
 
             orderBy.push(sortKey, sortType);
@@ -420,7 +418,7 @@ function compileNode(viewModel, el) {
     var componentName;
 
     if (el.nodeType === TEXT_NODE) {
-        fid = createVMFunction(viewModel, el.textContent);
+        fid = compileToFunction(viewModel, el.textContent);
         if (fid) {
             el.snAttributes = ['textContent', fid];
             el.textContent = '';
@@ -441,7 +439,7 @@ function compileNode(viewModel, el) {
             el.snComponent = typeof viewModel.components == 'function' ?
                 viewModel.components(componentName) :
                 viewModel.components[componentName];
-            el.snProps = createVMFunction(viewModel, propsVal);
+            el.snProps = compileToFunction(viewModel, propsVal);
         }
     }
 
@@ -463,7 +461,7 @@ function compileElementAttributes(viewModel, el, isComponent) {
                     case 'sn-if':
                     case 'sn-else-if':
                         initIfElement(el, attr);
-                        el.snIfFid = createVMFunction(viewModel,
+                        el.snIfFid = compileToFunction(viewModel,
                             val.charAt(0) == '{' && val.slice(-1) == '}'
                                 ? val.slice(1, -1)
                                 : val,
@@ -499,7 +497,7 @@ function compileElementAttributes(viewModel, el, isComponent) {
 }
 
 function compileAttribute(viewModel, el, attr, val, withBraces) {
-    var fid = createVMFunction(viewModel, val, withBraces)
+    var fid = compileToFunction(viewModel, val, withBraces)
     if (fid) {
         (el.snAttributes || (el.snAttributes = [])).push(attr, fid);
         el.removeAttribute(attr);
@@ -530,7 +528,7 @@ function compileElementEvent(viewModel, el, evt, val) {
                 : ($1 + $2.slice(0, -1) + ($2.length == 2 ? '' : ',') + 'e)');
         }).replace(setRE, 'this.dataOfElement(e.currentTarget,"$1",$2)');
 
-        var fid = createVMFunction(viewModel, content, false);
+        var fid = compileToFunction(viewModel, content, false);
         fid && el.setAttribute(attr, fid);
     }
 
@@ -547,7 +545,7 @@ var vmExpressionsId = 1;
 var vmExpressionsMap = {};
 var vmFunctions = {};
 
-function createVMFunction(viewModel, expression, withBraces) {
+function compileToFunction(viewModel, expression, withBraces) {
     if (!expression) return null;
     expression = expression.replace(/^\s+|\s+$/g, '');
     if (!expression) return null;
@@ -558,7 +556,7 @@ function createVMFunction(viewModel, expression, withBraces) {
         return expId;
     }
 
-    var res = genFunction(expression, withBraces);
+    var res = compileExpression(expression, withBraces);
     if (!res) return null;
 
     expId = vmExpressionsId++;
@@ -577,14 +575,17 @@ var expressionRE = /'(?:(?:\\{2})+|\\'|[^'])*'|\bvar\s+('(?:(?:\\{2})+|\\'|[^'])
 var varsRE = /([\w$]+)\s*(?:=(?:'(?:\\'|[^'])*'|[^;,]+))?/g;
 
 /**
- * 将字符串转为function
+ * 将字符串表达式转为function code
+ * 
+ * @example
+ * compileExpression('name and age: {user.name+user.age}')
+ * compileExpression('user.name+user.age', false)
+ * compileExpression('{var a=2,c=2,b;b=name+tt,t$y_p0e=type_$==1?2:1}')
  * 
  * @param {string} expression 转化为function的表达式，如：
- *      {user.name+user.age} 或 
- *      {var a=2,c=2,b;b=name+tt,t$y_p0e=type_$==1?2:1}
  * @param {boolean} withBraces 语句中是否包含大括号
  */
-function genFunction(expression, withBraces) {
+function compileExpression(expression, withBraces) {
     if (withBraces === undefined) withBraces = true;
     if (withBraces && !testRegExp(matchExpressionRE, expression)) return;
 
@@ -603,13 +604,13 @@ function genFunction(expression, withBraces) {
             exp = m[0].slice(1, -1);
             content += replaceQuote(expression.substr(start, m.index - start))
                 + '\'+('
-                + formatExpression(exp, variables)
+                + parseExpression(exp, variables)
                 + ')+\'';
             start = m.index + m[0].length;
         }
         content += replaceQuote(expression.substr(start)) + '\'';
     } else {
-        content += formatExpression(expression, variables);
+        content += parseExpression(expression, variables);
     }
 
     content += ';}catch(e){console.error(e);return \'\';}';
@@ -625,7 +626,7 @@ function genFunction(expression, withBraces) {
     };
 }
 
-function formatExpression(expression, variables) {
+function parseExpression(expression, variables) {
     return expression.replace(expressionRE, function (match, vars, prefix, name) {
         if (vars) {
             var mVar;
@@ -1027,7 +1028,7 @@ function updateNodeAttributes(viewModel, el) {
         case "sn-else-if":
             data = getVMFunctionArg(viewModel, el, el.snData);
             var is = executeVMFunction(viewModel, el.snIfFid, data);
-            if (util.isNo(is)) {
+            if (isNo(is)) {
                 if (el.parentNode) {
                     el.parentNode.removeChild(el);
                 }
@@ -1068,7 +1069,7 @@ function updateNodeAttributes(viewModel, el) {
                 break;
             case 'sn-visible':
             case 'display':
-                el.style.display = util.isNo(val) ? 'none' : val == 'block' || val == 'inline' || val == 'inline-block' ? val : '';
+                el.style.display = isNo(val) ? 'none' : val == 'block' || val == 'inline' || val == 'inline-block' ? val : '';
                 break;
             case 'sn-display':
                 fade(el, val);

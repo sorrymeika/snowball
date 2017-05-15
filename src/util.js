@@ -54,7 +54,7 @@ var util = {
     },
 
     uuid: function () {
-        return this.randomString(36);
+        return util.randomString(36);
     },
 
     randomString: function (len) {
@@ -86,16 +86,19 @@ var util = {
     },
 
     isNo: function (value) {
-        return value == false || (toString.call(value) == '[object Object]' && this.isEmptyObject(value));
+        return !value || (Array.isArray(value) && !value.length) || (toString.call(value) == '[object Object]' && util.isEmptyObject(value));
     },
 
     isYes: function (value) {
-        return !this.isNo(value);
+        return !util.isNo(value);
+    },
+
+    isThenable: function (thenable) {
+        return thenable && typeof thenable === 'object' && typeof thenable.then === 'function';
     },
 
     isPlainObject: function (value) {
-        return value &&
-            (value.constructor === Object || value.constructor === undefined);
+        return value && (value.constructor === Object || value.constructor === undefined);
     },
 
     isEmptyObject: function (obj) {
@@ -154,7 +157,7 @@ var util = {
     },
 
     rmb: function (str) {
-        return this.currency('¥', str);
+        return util.currency('¥', str);
     },
 
     value: function (data, names) {
@@ -212,7 +215,7 @@ var util = {
 
         if (css === undefined) {
             css = id;
-            id = "style" + this.guid();
+            id = "style" + util.guid();
         }
         var style = document.getElementById(id);
         if (style) {
@@ -244,7 +247,7 @@ var util = {
             return null;
         } else {
             if (b === null) {
-                b = this.cookie(name);
+                b = util.cookie(name);
                 if (b != null) c = -1;
                 else return;
             }
@@ -282,7 +285,7 @@ var util = {
  * @param {number} timestamp
  */
 util.timeLeft = function (timestamp) {
-    var pad = this.pad;
+    var pad = util.pad;
     var days = Math.floor(timestamp / (1000 * 60 * 60 * 24));
     timestamp = timestamp % (1000 * 60 * 60 * 24);
 
@@ -334,7 +337,7 @@ util.formatDate = function (d, f) {
         return '';
     }
 
-    var pad = this.pad;
+    var pad = util.pad;
     var now;
     var today;
     var date;
