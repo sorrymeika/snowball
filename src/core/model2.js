@@ -9,10 +9,6 @@ var $ = require('$');
 var util = require('util');
 var Event = require('./event');
 
-util.style('sn-model', '.sn-display { opacity: 1; -webkit-transition: opacity 300ms ease-out 0ms; transition: opacity 300ms ease-out 0ms; }\
-.sn-display-show { opacity: 1; }\
-.sn-display-hide { opacity: 0; }');
-
 var isArray = Array.isArray;
 var isPlainObject = $.isPlainObject;
 var extend = $.extend;
@@ -180,6 +176,37 @@ function eachElement(el, fn) {
     }
 }
 
+util.style('sn-display', '.sn-display { opacity: 1; -webkit-transition: opacity 300ms ease-out 0ms; transition: opacity 300ms ease-out 0ms; }\
+.sn-display-show { opacity: 1; }\
+.sn-display-hide { opacity: 0; }');
+
+function fade(el, val) {
+    var $el = $(el);
+    var isInitDisplay = true;
+    if (!$el.hasClass('sn-display')) {
+        isInitDisplay = false;
+        $el.addClass('sn-display')[0].clientHeight;
+    }
+    var display = util.isNo(val) ? 'none' : val == 'block' || val == 'inline' || val == 'inline-block' ? val : '';
+    if (display == 'none') {
+        if (!$el.hasClass('sn-display-hide')) {
+            var onHide = function () {
+                if ($el.hasClass('sn-display-hide'))
+                    $el.hide();
+            }
+            $el.addClass('sn-display-hide')
+                .one(TRANSITION_END, onHide);
+            setTimeout(onHide, 300);
+        }
+    } else if (!isInitDisplay || $el.hasClass('sn-display-hide')) {
+        $el.css({
+            display: display
+        });
+        el.clientHeight;
+        $el.removeClass('sn-display-hide');
+    }
+}
+
 // var regExpRE = "\/(?:(?:\\{2})+|\\\/|[^\/\r\n])+\/[img]*(?=[\)|\.|,])"
 // var stringRE = "'(?:(?:\\\\{2})+|\\\\'|[^'])*'|\"(?:(?:\\\\{2})+|\\\\\"|[^\"])*\"";
 var stringRE = "'(?:(?:\\\\{2})+|\\\\'|[^'])*'";
@@ -235,7 +262,7 @@ function RepeatCompiler(viewModel, el, parent) {
     var filter = match[4];
 
     if (filter) {
-        var res = genFunction('{' + filter + '}');
+        var res = genFunction(filter, false);
         if (res) {
             this.filter = new Function('$data', res.code);
         }
@@ -494,24 +521,24 @@ function initIfElement(el, type) {
     el.parentNode.removeChild(el);
 }
 
-var setRE = createRegExp("([\\w$]+(?:\\.[\\w$]+)*)\\s*=\\s*((?:(...)|" + stringRE + "|[\\w$][!=]==?|[^;=])+?)(?=;|,|\\)|$)", 'g', 4);
+
 var methodRE = createRegExp("\\b((?:this\\.){0,1}[\\.\\w$]+)((...))", 'g', 4);
 var globalMethodsRE = /^((Math|JSON|Date|util|\$)\.|(encodeURIComponent|decodeURIComponent|parseInt|parseFloat)$)/;
+var setRE = createRegExp("([\\w$]+(?:\\.[\\w$]+)*)\\s*=\\s*((?:(...)|" + stringRE + "|[\\w$][!=]==?|[^;=])+?)(?=;|,|\\)|$)", 'g', 4);
 
 function compileElementEvent(viewModel, el, evt, val) {
     var attr = "sn-" + viewModel.cid + evt;
-    if (testRegExp(setRE, val) || testRegExp(methodRE, val)) {
+    if (val == 'false') {
+        el.setAttribute(attr, val);
+    } else {
         var content = val.replace(methodRE, function (match, $1, $2) {
-            if (globalMethodsRE.test($1)) {
-                return match;
-            }
-            return $1 + $2.slice(0, -1) + ($2.length == 2 ? '' : ',') + 'e)';
+            return globalMethodsRE.test($1)
+                ? match
+                : ($1 + $2.slice(0, -1) + ($2.length == 2 ? '' : ',') + 'e)');
         }).replace(setRE, 'this.dataOfElement(e.currentTarget,"$1",$2)');
 
         var fid = createVMFunction(viewModel, '{' + content + '}');
-        if (fid) el.setAttribute(attr, fid);
-    } else {
-        el.setAttribute(attr, val);
+        fid && el.setAttribute(attr, fid);
     }
 
     switch (evt) {
@@ -527,7 +554,7 @@ var vmExpressionsId = 1;
 var vmExpressionsMap = {};
 var vmFunctions = {};
 
-function createVMFunction(viewModel, expression) {
+function createVMFunction(viewModel, expression, withBraces) {
     if (!expression) return null;
     expression = expression.replace(/^\s+|\s+$/g, '');
     if (!expression) return null;
@@ -538,7 +565,7 @@ function createVMFunction(viewModel, expression) {
         return expId;
     }
 
-    var res = genFunction(expression);
+    var res = genFunction(expression, withBraces);
     if (!res) return null;
 
     expId = vmExpressionsId++;
@@ -562,44 +589,40 @@ var varsRE = /([\w$]+)\s*(?:=(?:'(?:\\'|[^'])*'|[^;,]+))?/g;
  * @param {string} expression 转化为function的表达式，如：
  *      {user.name+user.age} 或 
  *      {var a=2,c=2,b;b=name+tt,t$y_p0e=type_$==1?2:1}
+ * @param {boolean} withBraces 语句中是否包含大括号
  */
-function genFunction(expression) {
-    if (!testRegExp(matchExpressionRE, expression)) return;
+function genFunction(expression, withBraces) {
+    if (withBraces === undefined) withBraces = true;
+    if (withBraces && !testRegExp(matchExpressionRE, expression)) return;
 
-    var variables;
-    var content = UTILS_VARS + 'try{return \'';
+    var variables = [];
+    var content = UTILS_VARS + 'try{return ';
 
-    matchExpressionRE.lastIndex = 0;
+    if (withBraces) {
+        var exp;
+        var start = 0;
+        var m;
 
-    var start = 0;
-    var exp;
-    var m;
-    while ((m = matchExpressionRE.exec(expression))) {
-        exp = m[0].slice(1, -1);
-        content += replaceQuote(expression.substr(start, m.index - start))
-            + '\'+('
-            + exp.replace(expressionRE, function (match, vars, prefix, name) {
-                if (vars) {
-                    var mVar;
-                    while ((mVar = varsRE.exec(vars))) {
-                        (variables || (variables = [])).push(mVar[1]);
-                    }
-                    return vars + ',';
-                } else if (!name) {
-                    return match;
-                }
+        content += '\'';
+        matchExpressionRE.lastIndex = 0;
 
-                return prefix + valueExpression(name, variables);
-            })
-            + ')+\'';
-
-        start = m.index + m[0].length;
+        while ((m = matchExpressionRE.exec(expression))) {
+            exp = m[0].slice(1, -1);
+            content += replaceQuote(expression.substr(start, m.index - start))
+                + '\'+('
+                + formatExpression(exp, variables)
+                + ')+\'';
+            start = m.index + m[0].length;
+        }
+        content += replaceQuote(expression.substr(start)) + '\'';
+    } else {
+        content += formatExpression(expression, variables);
     }
-    content += replaceQuote(expression.substr(start))
-    content += '\';}catch(e){console.error(e);return \'\';}';
+
+    content += ';}catch(e){console.error(e);return \'\';}';
     content = content.replace('return \'\'+', 'return ').replace(/\+\'\'/g, '');
 
-    if (variables && variables.length) {
+    if (variables.length) {
         content = 'var ' + variables.join(',') + ';' + content
     }
 
@@ -607,6 +630,22 @@ function genFunction(expression) {
         code: content,
         variables: variables
     };
+}
+
+function formatExpression(expression, variables) {
+    return expression.replace(expressionRE, function (match, vars, prefix, name) {
+        if (vars) {
+            var mVar;
+            while ((mVar = varsRE.exec(vars))) {
+                variables.push(mVar[1]);
+            }
+            return vars + ',';
+        } else if (!name) {
+            return match;
+        }
+
+        return prefix + valueExpression(name, variables);
+    })
 }
 
 function replaceQuote(str) {
@@ -623,7 +662,7 @@ function valueExpression(str, variables) {
     var code = '';
     var gb = '$data';
 
-    if (!alias || KEYWORDS[alias] || (variables && variables.indexOf(alias) !== -1) || utils[alias] !== undefined) {
+    if (!alias || KEYWORDS[alias] || (variables.length && variables.indexOf(alias) !== -1) || utils[alias] !== undefined) {
         return str;
     } else {
         switch (alias) {
@@ -678,18 +717,17 @@ function updateViewNextTick(model) {
         updateViewNextTick(model.parent);
     }
 
-    model.root.one(DATACHANGED_EVENT, function () {
+    var root = model.root;
+    root.one(DATACHANGED_EVENT, function () {
         model.changed = false;
-        model.key && model.root.trigger(new Event(DATACHANGED_EVENT + ":" + model.key, {
+        model.key && root.trigger(new Event(DATACHANGED_EVENT + ":" + model.key, {
             target: model
         }));
 
         while (model) {
-            if (model instanceof Model || model instanceof Collection) {
-                model._linkedParents &&
-                    model._linkedParents.length &&
-                    model.root.trigger(LINKSCHANGE_EVENT + ":" + model.cid);
-            }
+            (model instanceof Model || model instanceof Collection)
+                && model._linkedParents != false
+                && root.trigger(LINKSCHANGE_EVENT + ":" + model.cid);
             model = model.parent;
         }
     }).render();
@@ -1136,33 +1174,6 @@ function updateTextNode(el, val) {
         removableTails.forEach(function (tail) {
             if (tail.parentNode) tail.parentNode.removeChild(tail);
         });
-    }
-}
-
-function fade(el, val) {
-    var $el = $(el);
-    var isInitDisplay = true;
-    if (!$el.hasClass('sn-display')) {
-        isInitDisplay = false;
-        $el.addClass('sn-display')[0].clientHeight;
-    }
-    var display = util.isNo(val) ? 'none' : val == 'block' || val == 'inline' || val == 'inline-block' ? val : '';
-    if (display == 'none') {
-        if (!$el.hasClass('sn-display-hide')) {
-            var onHide = function () {
-                if ($el.hasClass('sn-display-hide'))
-                    $el.hide();
-            }
-            $el.addClass('sn-display-hide')
-                .one(TRANSITION_END, onHide);
-            setTimeout(onHide, 300);
-        }
-    } else if (!isInitDisplay || $el.hasClass('sn-display-hide')) {
-        $el.css({
-            display: display
-        });
-        el.clientHeight;
-        $el.removeClass('sn-display-hide');
     }
 }
 
@@ -1674,7 +1685,7 @@ function Collection(parent, attributeName, array) {
 }
 
 var COLLECTION_UPDATE_ONLY_MATCHED = 2;
-var COLLECTION_MATCHED_AND_REMOVE_UNMATCHED = 3;
+var COLLECTION_UPDATE_MATCHED_AND_REMOVE_UNMATCHED = 3;
 
 Collection.prototype = {
 
@@ -1975,7 +1986,7 @@ Collection.prototype = {
                 }
             }
 
-            if (updateType === COLLECTION_MATCHED_AND_REMOVE_UNMATCHED && !exists) {
+            if (updateType === COLLECTION_UPDATE_MATCHED_AND_REMOVE_UNMATCHED && !exists) {
                 this.splice(i, 1);
             }
         }
@@ -1998,7 +2009,7 @@ Collection.prototype = {
 
     // 已有项将被增量覆盖，不在arr中的项将被删除
     updateTo: function (arr, primaryKey) {
-        return this.update(arr, primaryKey, COLLECTION_MATCHED_AND_REMOVE_UNMATCHED);
+        return this.update(arr, primaryKey, COLLECTION_UPDATE_MATCHED_AND_REMOVE_UNMATCHED);
     },
 
     // 只更新collection中匹配到的
@@ -2211,7 +2222,7 @@ var ViewModel = Event.mixin(
 
             if (eventCode == 'false') {
                 return false;
-            } else if (/^\d+$/.test(eventCode)) {
+            } else if (+eventCode) {
                 var snData = getVMFunctionArg(this, target, target.snData);
                 snData.e = e;
 

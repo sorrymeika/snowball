@@ -1,5 +1,4 @@
 var http = require('http');
-var _ = require('lodash');
 
 //app.all('*', httpProxy('m.abs.cn', 7788));
 //app.all('*', httpProxy('localhost', 6004));
@@ -19,7 +18,7 @@ module.exports = function (host, port, replace) {
             port: port,
             path: url,
             method: request.method,
-            headers: _.extend({}, request.headers, { host: host + ":" + port })
+            headers: Object.assign({}, request.headers, { host: host + ":" + port })
         };
 
         var isDebug = false;
@@ -29,6 +28,13 @@ module.exports = function (host, port, replace) {
 
         var req = http.request(options, function (res) {
             log(request.headers.origin);
+            var cookies = res.headers['set-cookie'];
+
+            if (cookies != false) {
+                cookies.forEach(function (cookie, i) {
+                    cookies[i] = cookie.replace(/Domain=[^;]+;/, 'Domain=' + request.hostname + ';')
+                });
+            }
 
             response.set(res.headers);
             //response.set('Access-Control-Allow-Credentials', true);
