@@ -11,8 +11,8 @@ var Event = require('./event');
 
 var isNo = util.isNo;
 var isThenable = util.isThenable;
-var isArray = Array.isArray;
 var isPlainObject = util.isPlainObject;
+var isArray = Array.isArray;
 var extend = $.extend;
 var camelCase = $.camelCase;
 var ConstuctorOf$ = $.zepto ? $.zepto.Z : $.fn.constructor;
@@ -2462,7 +2462,6 @@ Object.assign(ViewModel.prototype, {
             .prependTo(parentNode);
     }
 });
-
 
 exports.ViewModel = exports.Model = ViewModel;
 exports.createModel = function (props) {
