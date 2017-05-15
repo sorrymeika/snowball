@@ -257,8 +257,6 @@ function RepeatCompiler(viewModel, el, parent) {
     var attrRepeat = el.getAttribute('sn-repeat');
     var match = attrRepeat.match(repeatRE);
     var collectionKey = match[3];
-    var attrs = collectionKey.split('.');
-    var parentAlias = attrs[0];
     var filter = match[4];
 
     if (filter) {
@@ -270,12 +268,9 @@ function RepeatCompiler(viewModel, el, parent) {
 
     this.alias = match[1];
     this.loopIndexAlias = match[2];
-    this.key = attrs[attrs.length - 1];
     this.parent = parent;
     this.source = el;
     this.children = [];
-    this.attrs = attrs;
-    this.parentAlias = parentAlias;
     this.vm = viewModel;
 
     var orderByCode = match[5];
@@ -291,12 +286,15 @@ function RepeatCompiler(viewModel, el, parent) {
 
     parent && parent.appendChild(this);
 
-    if (parentAlias == 'this' || parentAlias == 'delegate') {
+    if (collectionKey.slice(-1) == ')') {
         this.isFn = true;
         this.fid = createVMFunction(viewModel, collectionKey, false);
 
         collectionKey = collectionKey.replace(/\./g, '/');
     } else {
+        var attrs = collectionKey.split('.');
+        var parentAlias = attrs[0];
+
         while (parent) {
             if (parent.alias == parentAlias) {
                 attrs[0] = parent.collectionKey + '^child';
@@ -451,7 +449,6 @@ function compileNode(viewModel, el) {
 }
 
 function compileElementAttributes(viewModel, el, isComponent) {
-    var fid;
     var attr;
     var val;
 
@@ -461,22 +458,23 @@ function compileElementAttributes(viewModel, el, isComponent) {
         if (attr == 'sn-else') {
             initIfElement(el, attr);
         } else if ((val = el.attributes[i].value)) {
-            var shouldCompile = false;
-            var isIfAttr = false;
             if (attr.slice(0, 3) === "sn-") {
                 switch (attr) {
                     case 'sn-if':
                     case 'sn-else-if':
                         initIfElement(el, attr);
-                        shouldCompile = true;
-                        isIfAttr = true;
+                        el.snIfFid = createVMFunction(viewModel,
+                            val.charAt(0) == '{' && val.slice(-1) == '}'
+                                ? val.slice(1, -1)
+                                : val,
+                            false);
                         break;
                     case 'sn-src':
                     case 'sn-html':
                     case 'sn-display':
                     case 'sn-style':
                     case 'sn-css':
-                        shouldCompile = true;
+                        compileAttribute(viewModel, el, attr, val, val.indexOf("{") != -1 && val.lastIndexOf("}") != -1);
                         break;
                     case 'sn-model':
                         el.removeAttribute(attr);
@@ -491,24 +489,20 @@ function compileElementAttributes(viewModel, el, isComponent) {
                         }
                         break;
                 }
-                if (shouldCompile && (val.indexOf("{") == -1 || val.indexOf("}") == -1)) {
-                    val = '{' + val + '}';
-                }
             } else if (attr == "ref" && !isComponent) {
                 viewModel.refs[val] = el;
             } else {
-                shouldCompile = true;
-            }
-
-            if (shouldCompile && (fid = createVMFunction(viewModel, val))) {
-                if (isIfAttr) {
-                    el.snIfFid = fid;
-                } else {
-                    (el.snAttributes || (el.snAttributes = [])).push(attr, fid);
-                    el.removeAttribute(attr);
-                }
+                compileAttribute(viewModel, el, attr, val);
             }
         }
+    }
+}
+
+function compileAttribute(viewModel, el, attr, val, withBraces) {
+    var fid = createVMFunction(viewModel, val, withBraces)
+    if (fid) {
+        (el.snAttributes || (el.snAttributes = [])).push(attr, fid);
+        el.removeAttribute(attr);
     }
 }
 
@@ -520,7 +514,6 @@ function initIfElement(el, type) {
     el.parentNode.insertBefore(snIf, el);
     el.parentNode.removeChild(el);
 }
-
 
 var methodRE = createRegExp("\\b((?:this\\.){0,1}[\\.\\w$]+)((...))", 'g', 4);
 var globalMethodsRE = /^((Math|JSON|Date|util|\$)\.|(encodeURIComponent|decodeURIComponent|parseInt|parseFloat)$)/;
