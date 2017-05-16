@@ -596,25 +596,30 @@ function compileExpression(expression, withBraces) {
         var exp;
         var start = 0;
         var m;
+        var str;
+        var firstLoop = true;
 
-        content += '\'';
         matchExpressionRE.lastIndex = 0;
 
         while ((m = matchExpressionRE.exec(expression))) {
+            if (!firstLoop) content += '+';
+            else firstLoop = false;
+
             exp = m[0].slice(1, -1);
-            content += replaceQuote(expression.substr(start, m.index - start))
-                + '\'+('
+            str = compileToString(expression.substr(start, m.index - start));
+            str && (content += str + '+');
+            content += '('
                 + parseExpression(exp, variables)
-                + ')+\'';
+                + ')';
             start = m.index + m[0].length;
         }
-        content += replaceQuote(expression.substr(start)) + '\'';
+        str = compileToString(expression.substr(start));
+        str && (content += '+' + str);
     } else {
         content += parseExpression(expression, variables);
     }
 
     content += ';}catch(e){console.error(e);return \'\';}';
-    content = content.replace('return \'\'+', 'return ').replace(/\+\'\'/g, '');
 
     if (variables.length) {
         content = 'var ' + variables.join(',') + ';' + content
@@ -641,8 +646,8 @@ function parseExpression(expression, variables) {
     })
 }
 
-function replaceQuote(str) {
-    return str.replace(/\\/g, '\\\\').replace(/'/g, '\\\'');
+function compileToString(str) {
+    return str ? '\'' + str.replace(/\\/g, '\\\\').replace(/'/g, '\\\'') + '\'' : str;
 }
 
 var valueRE = /^(-?\d+|true|false|undefined|null|'(?:\\'|[^'])*')$/;
