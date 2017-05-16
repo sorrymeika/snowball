@@ -174,6 +174,8 @@ util.style('sn-display', '.sn-display { opacity: 1; -webkit-transition: opacity 
 .sn-display-show { opacity: 1; }\
 .sn-display-hide { opacity: 0; }');
 
+var FADEOUT_CLASSNAME = 'sn-display-hide';
+
 function fade(el, val) {
     var $el = $(el);
     var isInitDisplay = true;
@@ -183,21 +185,20 @@ function fade(el, val) {
     }
     var display = isNo(val) ? 'none' : val == 'block' || val == 'inline' || val == 'inline-block' ? val : '';
     if (display == 'none') {
-        if (!$el.hasClass('sn-display-hide')) {
+        if (!$el.hasClass(FADEOUT_CLASSNAME)) {
             var onHide = function () {
-                if ($el.hasClass('sn-display-hide'))
-                    $el.hide();
+                $el.hasClass(FADEOUT_CLASSNAME) && $el.hide();
             }
-            $el.addClass('sn-display-hide')
+            $el.addClass(FADEOUT_CLASSNAME)
                 .one(TRANSITION_END, onHide);
             setTimeout(onHide, 300);
         }
-    } else if (!isInitDisplay || $el.hasClass('sn-display-hide')) {
+    } else if (!isInitDisplay || $el.hasClass(FADEOUT_CLASSNAME)) {
         $el.css({
             display: display
         });
         el.clientHeight;
-        $el.removeClass('sn-display-hide');
+        $el.removeClass(FADEOUT_CLASSNAME);
     }
 }
 
