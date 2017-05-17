@@ -1100,22 +1100,26 @@ function updateNodeAttributes(viewModel, el) {
                 el.src = val;
                 break;
             case 'sn-src':
-                if (el.getAttribute('sn-' + viewModel.cid + 'load') || el.getAttribute('sn-' + viewModel.cid + 'error')) {
-                    $(el).one('load error', viewModel._handleEvent);
-                }
-                if (el.src) {
-                    el.src = val;
+                if (val) {
+                    if (el.getAttribute('sn-' + viewModel.cid + 'load') || el.getAttribute('sn-' + viewModel.cid + 'error')) {
+                        $(el).one('load error', viewModel._handleEvent);
+                    }
+                    if (el.src) {
+                        el.src = val;
+                    } else {
+                        $(el).one('load error', function (e) {
+                            $(this).animate({
+                                opacity: 1
+                            }, 200);
+                            if (e.type === 'error') el.removeAttribute('src');
+                        }).css({
+                            opacity: 0
+                        }).attr({
+                            src: val
+                        });
+                    }
                 } else {
-                    $(el).one('load error', function (e) {
-                        $(this).animate({
-                            opacity: 1
-                        }, 200);
-                        if (e.type === 'error') el.removeAttribute('src');
-                    }).css({
-                        opacity: 0
-                    }).attr({
-                        src: val
-                    });
+                    el.removeAttribute('src');
                 }
                 break;
             default:

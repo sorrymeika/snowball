@@ -355,7 +355,7 @@ Scroll.prototype.imageLazyLoad = ScrollView.prototype.imageLazyLoad = function (
     if (!images.length) return;
 
     images.css({
-        opacity: 0
+        opacity: .3
     });
 
     var el = this.el;
@@ -366,6 +366,9 @@ Scroll.prototype.imageLazyLoad = ScrollView.prototype.imageLazyLoad = function (
     if (height === 0) return;
 
     images && images.each(function () {
+        var src = this.getAttribute('data-src');
+        if (!src) this.removeAttribute('data-src');
+
         var parent = this.offsetParent;
         var imgTop = this.offsetTop;
         while (parent && parent !== el && parent !== document.body) {
@@ -373,12 +376,13 @@ Scroll.prototype.imageLazyLoad = ScrollView.prototype.imageLazyLoad = function (
             parent = parent.offsetParent;
         }
 
-        if (imgTop <= top) {
-            var $el = $(this).one('load error', function () {
+        if (imgTop <= top + window.innerHeight / 3) {
+            var $el = $(this).one('load error', function (e) {
                 $el.animate({
                     opacity: 1
                 }, 200);
-            }).attr({ src: this.getAttribute('data-src') });
+                if (e.type === 'error') this.removeAttribute('src');
+            }).attr({ src: src });
             this.removeAttribute('data-src');
         }
     });
