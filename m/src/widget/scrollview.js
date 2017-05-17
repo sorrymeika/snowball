@@ -1,6 +1,5 @@
-﻿var $ = require('$'),
-    animation = require('core/animation'),
-    Touch = require('core/touch');
+﻿var $ = require('$');
+var Touch = require('core/touch');
 
 var insertScroller = function ($el) {
     return $('<div class="scroller_container" style="width:100%;"></div>').append($el.children()).appendTo($el.html(''));

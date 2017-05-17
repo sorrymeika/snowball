@@ -1106,10 +1106,11 @@ function updateNodeAttributes(viewModel, el) {
                 if (el.src) {
                     el.src = val;
                 } else {
-                    $(el).one('load error', function () {
+                    $(el).one('load error', function (e) {
                         $(this).animate({
                             opacity: 1
                         }, 200);
+                        if (e.type === 'error') el.removeAttribute('src');
                     }).css({
                         opacity: 0
                     }).attr({
@@ -1424,7 +1425,7 @@ var Model = util.createClass({
      * [renew, Object] 时覆盖当前model数据
      * 
      * @param {Boolean} [renew] 是否替换掉现有数据
-     * @param {String|Object} key 属性名
+     * @param {String|Array|Object} key 属性名
      * @param {any} [val] 属性值
      */
     set: function (renew, key, val) {
@@ -1640,11 +1641,8 @@ var Model = util.createClass({
         !key && (key = 'collection');
 
         var result = this._(key);
-
         if (result == null) {
-            this.set(key, []);
-
-            return this._model[key];
+            return this.set(key, [])._model[key];
         }
         return result;
     },

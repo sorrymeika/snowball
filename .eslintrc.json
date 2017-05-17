@@ -6,5 +6,7 @@
         "amd": true
     },
     "extends": "eslint:recommended",
-    "rules": {}
+    "rules": {
+        "no-console": "off"
+    }
 }
