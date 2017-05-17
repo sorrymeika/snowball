@@ -367,7 +367,10 @@ Scroll.prototype.imageLazyLoad = ScrollView.prototype.imageLazyLoad = function (
 
     images && images.each(function () {
         var src = this.getAttribute('data-src');
-        if (!src) this.removeAttribute('data-src');
+        if (!src) {
+            this.removeAttribute('data-src');
+            return;
+        }
 
         var parent = this.offsetParent;
         var imgTop = this.offsetTop;
@@ -490,7 +493,7 @@ exports.bind = function (selector, options) {
         if (options && options.refresh) {
             var $scroller = $el.children('.scroller_container');
             if (!$scroller.length) $scroller = ScrollView.insertScroller($el);
-            
+
             var $refresh = $('<div class="refresh" style="height:50px;text-align:center;line-height:50px;">下拉刷新</div>');
             var scroller = $scroller[0];
 
