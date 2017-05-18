@@ -49,9 +49,12 @@ var EVENTS = {
 var KEYWORDS = {
     'new': true,
     'this': true,
+    'return': true,
     '$': true,
     "sl": true,
     'util': true,
+    'Object': true,
+    'Array': true,
     "JSON": true,
     'Math': true,
     'Date': true,
@@ -539,7 +542,7 @@ function compileElementEvent(viewModel, el, evt, val) {
             return globalMethodsRE.test($1)
                 ? match
                 : ($1 + $2.slice(0, -1) + ($2.length == 2 ? '' : ',') + 'e)');
-        }).replace(setRE, 'this.dataOfElement(e.currentTarget,"$1",$2)');
+        }).replace(setRE, 'this.dataOfElement(e.currentTarget,\'$1\',$2)');
 
         var fid = compileToFunction(viewModel, content, false);
         fid && el.setAttribute(attr, fid);
@@ -584,8 +587,6 @@ for (var varName in utils) {
     UTILS_VARS += 'var ' + varName + '=$data.$utils.' + varName + ';';
 }
 var matchExpressionRE = createRegExp("{...}", 'g');
-var expressionRE = /'(?:(?:\\{2})+|\\'|[^'])*'|\bvar\s+('(?:(?:\\{2})+|\\'|[^'])*'|[^;]+);|((?:\{|,)\s*[\w$]+\s*:\s*|[!=><?\s:(),%&|+*\-\/\[\]]+|^)([\w$]*(?:\.[\w$]+)*(?![\w$]*\())/g;
-var varsRE = /([\w$]+)\s*(?:=(?:'(?:\\'|[^'])*'|[^;,]+))?/g;
 
 /**
  * 将字符串表达式转为function code
@@ -644,8 +645,11 @@ function compileExpression(expression, withBraces) {
     };
 }
 
+var expressionRE = /'(?:(?:\\{2})+|\\'|[^'])*'|"(?:(?:\\{2})+|\\"|[^"])*\"|\bvar\s+('(?:(?:\\{2})+|\\'|[^'])*'|[^;]+);|(?:\{|,)\s*[\w$]+\s*:\s*|[\w$]+\(|function\s*\(.*?\)|([\w$]+(?:\.[\w$]+)*(?![\w$]*\())/g;
+var varsRE = /([\w$]+)\s*(?:=(?:'(?:\\'|[^'])*'|[^;,]+))?/g;
+
 function parseExpression(expression, variables) {
-    return expression.replace(expressionRE, function (match, vars, prefix, name) {
+    return expression.replace(expressionRE, function (match, vars, name) {
         if (vars) {
             var mVar;
             while ((mVar = varsRE.exec(vars))) {
@@ -655,7 +659,7 @@ function parseExpression(expression, variables) {
         } else if (!name) {
             return match;
         }
-        return prefix + valueExpression(name, variables);
+        return valueExpression(name, variables);
     })
 }
 
