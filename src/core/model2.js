@@ -170,11 +170,19 @@ function eachElement(el, fn) {
     }
 }
 
+function nextNotTextNodeSibling(el) {
+    var nextSibling;
+    while ((nextSibling = el.nextSibling)) {
+        if (nextSibling.nodeType != TEXT_NODE) {
+            return nextSibling;
+        }
+    }
+    return null;
+}
+
 util.style('sn-display', '.sn-display { opacity: 1; -webkit-transition: opacity 300ms ease-out 0ms; transition: opacity 300ms ease-out 0ms; }\
 .sn-display-show { opacity: 1; }\
 .sn-display-hide { opacity: 0; }');
-
-var FADEOUT_CLASSNAME = 'sn-display-hide';
 
 function fade(el, val) {
     var $el = $(el);
@@ -185,20 +193,21 @@ function fade(el, val) {
     }
     var display = isNo(val) ? 'none' : val == 'block' || val == 'inline' || val == 'inline-block' ? val : '';
     if (display == 'none') {
-        if (!$el.hasClass(FADEOUT_CLASSNAME)) {
+        if (!$el.hasClass('sn-display-hide')) {
             var onHide = function () {
-                $el.hasClass(FADEOUT_CLASSNAME) && $el.hide();
+                if ($el.hasClass('sn-display-hide'))
+                    $el.hide();
             }
-            $el.addClass(FADEOUT_CLASSNAME)
+            $el.addClass('sn-display-hide')
                 .one(TRANSITION_END, onHide);
             setTimeout(onHide, 300);
         }
-    } else if (!isInitDisplay || $el.hasClass(FADEOUT_CLASSNAME)) {
+    } else if (!isInitDisplay || $el.hasClass('sn-display-hide')) {
         $el.css({
             display: display
         });
         el.clientHeight;
-        $el.removeClass(FADEOUT_CLASSNAME);
+        $el.removeClass('sn-display-hide');
     }
 }
 
@@ -359,7 +368,7 @@ function compileTemplate(viewModel, $element) {
     vmCodes = '';
 
     eachElement($element, function (node) {
-        if (node.snViewModel) return false;
+        if (node.snViewModel && node.snViewModel != viewModel) return false;
 
         if (node.nodeType != COMMENT_NODE)
             compileNode(viewModel, node);
@@ -510,8 +519,11 @@ function initIfElement(el, type) {
     snIf.snIfSource = el;
     el.snIf = snIf;
     el.snIfType = snIf.snIfType = type;
-    el.parentNode.insertBefore(snIf, el);
-    el.parentNode.removeChild(el);
+    if (el.snViewModel) snIf.snViewModel = el.snViewModel;
+    if (el.parentNode) {
+        el.parentNode.insertBefore(snIf, el);
+        el.parentNode.removeChild(el);
+    }
 }
 
 var methodRE = createRegExp("\\b((?:this\\.){0,1}[\\.\\w$]+)((...))", 'g', 4);
@@ -758,6 +770,13 @@ function updateNode(viewModel, el) {
 
 function updateIfElement(viewModel, el) {
     if (!el.parentNode) {
+        if (el.snViewModel) {
+            var nextEl = nextNotTextNodeSibling(el.snIf);
+            if (nextEl && nextEl.snViewModel == el.snViewModel) {
+                return { nextSibling: nextEl };
+            }
+            return { nextSibling: null };
+        }
         return {
             isSkipChildNodes: true,
             nextSibling: el.snIf.nextSibling
@@ -773,6 +792,10 @@ function updateIfElement(viewModel, el) {
             if (nextElement.nodeType === TEXT_NODE) {
                 nextElement = nextElement.nextSibling;
                 continue;
+            }
+
+            if (currentElement.snViewModel != nextElement.snViewModel) {
+                return {};
             }
 
             if ((!nextElement.snIf && !nextElement.snIfSource) || nextElement.snIfType == 'sn-if') {
@@ -1429,7 +1452,7 @@ var Model = util.createClass({
      * [renew, Object] 时覆盖当前model数据
      * 
      * @param {Boolean} [renew] 是否替换掉现有数据
-     * @param {String|Array|Object} key 属性名
+     * @param {String|Object} key 属性名
      * @param {any} [val] 属性值
      */
     set: function (renew, key, val) {
@@ -1645,8 +1668,11 @@ var Model = util.createClass({
         !key && (key = 'collection');
 
         var result = this._(key);
+
         if (result == null) {
-            return this.set(key, [])._model[key];
+            this.set(key, []);
+
+            return this._model[key];
         }
         return result;
     },
@@ -2260,11 +2286,15 @@ var ViewModel = Event.mixin(
                 self.dataOfElement(target, target.getAttribute(self.snModelKey), target.value);
             });
 
-            this.$el = (this.$el || $()).add(compileTemplate(this, $el));
-
             $el.each(function () {
                 this.snViewModel = self;
-            })
+            });
+
+            (!this.$el) && (this.$el = $());
+
+            compileTemplate(this, $el).each(function () {
+                self.$el.push(this.snIf ? this.snIf : this);
+            });
 
             return this;
         },
@@ -2346,7 +2376,7 @@ var ViewModel = Event.mixin(
                 this.refs = {};
 
                 this.$el && eachElement(this.$el, function (el) {
-                    if (el.snViewModel && el.snViewModel != self || self._nextTick) return false;
+                    if ((el.snViewModel && el.snViewModel != self) || self._nextTick) return false;
 
                     return updateNode(self, el);
                 });
@@ -2472,6 +2502,7 @@ Object.assign(ViewModel.prototype, {
 });
 
 exports.ViewModel = exports.Model = ViewModel;
+
 exports.createModel = function (props) {
     var attributes;
     if (props.attributes) {
@@ -2482,6 +2513,7 @@ exports.createModel = function (props) {
 }
 
 exports.Collection = Collection;
+
 exports.createCollection = function (props) {
     var array;
     if (props.array) {
