@@ -647,6 +647,7 @@ function compileExpression(expression, withBraces) {
 
 var expressionRE = /'(?:(?:\\{2})+|\\'|[^'])*'|"(?:(?:\\{2})+|\\"|[^"])*\"|\bvar\s+('(?:(?:\\{2})+|\\'|[^'])*'|[^;]+);|(?:\{|,)\s*[\w$]+\s*:\s*|[\w$]+\(|function\s*\(.*?\)|([\w$]+(?:\.[\w$]+)*(?![\w$]*\())/g;
 var varsRE = /([\w$]+)\s*(?:=(?:'(?:\\'|[^'])*'|[^;,]+))?/g;
+var valueRE = /^(-?\d+|true|false|undefined|null|'(?:\\'|[^'])*')$/;
 
 function parseExpression(expression, variables) {
     return expression.replace(expressionRE, function (match, vars, name) {
@@ -666,8 +667,6 @@ function parseExpression(expression, variables) {
 function compileToString(str) {
     return str ? '\'' + str.replace(/\\/g, '\\\\').replace(/'/g, '\\\'') + '\'' : str;
 }
-
-var valueRE = /^(-?\d+|true|false|undefined|null|'(?:\\'|[^'])*')$/;
 
 function valueExpression(str, variables) {
     if (valueRE.test(str)) return str;
