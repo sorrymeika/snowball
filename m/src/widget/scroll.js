@@ -255,7 +255,7 @@ function touchEnd(e) {
 
         e.stopPropagation();
         // 阻止click事件
-        e.preventDefault();
+        // e.preventDefault();
     }
     el.__isScroll = false;
 
@@ -263,6 +263,15 @@ function touchEnd(e) {
         el.isRefresh = false;
         el.$refresh.html('<div class="dataloading"></div>');
         el.$scroller.css({ '-webkit-transform': 'translate(0px,50px) translateZ(0)' }).triggerHandler('refresh');
+    }
+}
+
+function preventClick(e) {
+    var el = this;
+    if ((el.__isScroll && !el.__isStop) || touchStartEvent.isHoldScroll) {
+        e.stopPropagation();
+        // 阻止click事件
+        e.preventDefault();
     }
 }
 
@@ -285,6 +294,7 @@ function Scroll(el, options) {
     $el.on('touchstart', touchStart)
         .on('touchmove', touchMove)
         .on('touchend', touchEnd)
+        .on('click', preventClick)
         .on('scroll', scroll);
 
     el.options = options;
@@ -308,7 +318,6 @@ Scroll.prototype = {
     },
 
     scrollTop: function (y) {
-
         if (y !== undefined) {
             this.scrollTo(this.el.scrollLeft, y);
         }
@@ -462,7 +471,10 @@ exports.bind = function (selector, options) {
 
     $(selector).each(function () {
         var el = this;
-        if (el.__widget_scroll__) return;
+        if (el.__widget_scroll__) {
+            result.add(el.__widget_scroll__);
+            return;
+        }
 
         var $el = $(el).addClass('scrollview');
         var scrollView = (options && options.useScroll) || (android && parseFloat(osVersion <= 2.3))

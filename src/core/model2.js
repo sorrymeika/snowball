@@ -51,8 +51,8 @@ var KEYWORDS = {
     'this': true,
     'return': true,
     '$': true,
+    '$data': true,
     "sl": true,
-    'util': true,
     'Object': true,
     'Array': true,
     "JSON": true,
@@ -66,8 +66,7 @@ var KEYWORDS = {
     'document': true
 };
 
-var utils = {
-    util: util,
+var $filter = {
     contains: function (source, keywords) {
         return !keywords || source.indexOf(keywords) != -1;
     },
@@ -582,10 +581,6 @@ function compileToFunction(viewModel, expression, withBraces) {
     return expId;
 }
 
-var UTILS_VARS = "";
-for (var varName in utils) {
-    UTILS_VARS += 'var ' + varName + '=$data.$utils.' + varName + ';';
-}
 var matchExpressionRE = createRegExp("{...}", 'g');
 
 /**
@@ -604,7 +599,7 @@ function compileExpression(expression, withBraces) {
     if (withBraces && !testRegExp(matchExpressionRE, expression)) return;
 
     var variables = [];
-    var content = UTILS_VARS + 'try{return ';
+    var content = 'try{return ';
 
     if (withBraces) {
         var exp;
@@ -645,22 +640,24 @@ function compileExpression(expression, withBraces) {
     };
 }
 
-var expressionRE = /'(?:(?:\\{2})+|\\'|[^'])*'|"(?:(?:\\{2})+|\\"|[^"])*\"|\bvar\s+('(?:(?:\\{2})+|\\'|[^'])*'|[^;]+);|(?:\{|,)\s*[\w$]+\s*:\s*|[\w$]+\(|function\s*\(.*?\)|([\w$]+(?:\.[\w$]+)*(?![\w$]*\())/g;
+var expressionRE = /'(?:(?:\\{2})+|\\'|[^'])*'|"(?:(?:\\{2})+|\\"|[^"])*\"|\bvar\s+('(?:(?:\\{2})+|\\'|[^'])*'|[^;]+);|(?:\{|,)\s*[\w$]+\s*:\s*|([\w$]+)\(|function\s*\(.*?\)|([\w$]+(?:\.[\w$]+)*)(\.[\w$]*\()?/g;
 var varsRE = /([\w$]+)\s*(?:=(?:'(?:\\'|[^'])*'|[^;,]+))?/g;
 var valueRE = /^(-?\d+|true|false|undefined|null|'(?:\\'|[^'])*')$/;
 
 function parseExpression(expression, variables) {
-    return expression.replace(expressionRE, function (match, vars, name) {
+    return expression.replace(expressionRE, function (match, vars, fn, name, endFn) {
         if (vars) {
             var mVar;
             while ((mVar = varsRE.exec(vars))) {
                 variables.push(mVar[1]);
             }
             return vars + ',';
-        } else if (!name) {
-            return match;
+        } else if (fn) {
+            return (KEYWORDS[fn] ? fn : '$data.' + fn) + '(';
+        } else if (name) {
+            return valueExpression(name, variables) + (endFn || '');
         }
-        return valueExpression(name, variables);
+        return match;
     })
 }
 
@@ -676,14 +673,15 @@ function valueExpression(str, variables) {
     var code = '';
     var gb = '$data';
 
-    if (!alias || KEYWORDS[alias] || (variables.length && variables.indexOf(alias) !== -1) || utils[alias] !== undefined) {
+    if (!alias || KEYWORDS[alias] || (variables.length && variables.indexOf(alias) !== -1)) {
         return str;
     } else {
         switch (alias) {
             case 'delegate':
                 return 'this.' + str;
             case 'srcElement':
-            case '$utils':
+            case 'util':
+            case '$filter':
                 return gb + '.' + str;
         }
     }
@@ -704,7 +702,8 @@ function valueExpression(str, variables) {
 function getVMFunctionArg(viewModel, element, snData) {
     var data = Object.assign({
         srcElement: element,
-        $utils: utils
+        util: util,
+        $filter: $filter
     }, viewModel.attributes);
 
     if (snData) {
@@ -2395,27 +2394,29 @@ var ViewModel = Event.mixin(
         },
 
         destroy: function () {
-            this.$el.off('input change blur', '[' + this.snModelKey + ']')
-                .each(function () {
-                    this.snViewModel = null;
-                });
+            if (this.$el) {
+                this.$el.off('input change blur', '[' + this.snModelKey + ']')
+                    .each(function () {
+                        this.snViewModel = null;
+                    });
 
-            var eventName;
-            var eventAttr;
-            var eventFn = this._handleEvent;
-            for (var key in EVENTS) {
-                eventName = EVENTS[key];
-                eventAttr = '[sn-' + this.cid + eventName + ']';
+                var eventName;
+                var eventAttr;
+                var eventFn = this._handleEvent;
+                for (var key in EVENTS) {
+                    eventName = EVENTS[key];
+                    eventAttr = '[sn-' + this.cid + eventName + ']';
 
-                switch (eventName) {
-                    case "scroll":
-                    case "scrollStop":
-                        this.$el.find(eventAttr).off(eventName, eventFn);
-                        break
-                    default:
-                        this.$el.off(eventName, eventAttr, eventFn);
+                    switch (eventName) {
+                        case "scroll":
+                        case "scrollStop":
+                            this.$el.find(eventAttr).off(eventName, eventFn);
+                            break
+                        default:
+                            this.$el.off(eventName, eventAttr, eventFn);
+                    }
+                    this.$el.filter(eventAttr).off(eventName, eventFn)
                 }
-                this.$el.filter(eventAttr).off(eventName, eventFn)
             }
 
             var children = this._linkedModels;
