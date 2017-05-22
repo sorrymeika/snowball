@@ -307,6 +307,7 @@ function Scroll(el, options) {
 
 Scroll.prototype = {
     destroy: function () {
+        this.el.__widget_scroll__ = null;
         this.$el.off('touchstart', touchStart)
             .off('touchmove', touchMove)
             .off('touchend', touchEnd)
