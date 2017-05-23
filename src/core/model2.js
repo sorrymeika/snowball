@@ -640,12 +640,12 @@ function compileExpression(expression, withBraces) {
     };
 }
 
-var expressionRE = /'(?:(?:\\{2})+|\\'|[^'])*'|"(?:(?:\\{2})+|\\"|[^"])*\"|\bvar\s+('(?:(?:\\{2})+|\\'|[^'])*'|[^;]+);|(?:\{|,)\s*[\w$]+\s*:\s*|([\w$]+)\(|function\s*\(.*?\)|([\w$]+(?:\.[\w$]+)*)(\.[\w$]*\()?/g;
+var expressionRE = /'(?:(?:\\{2})+|\\'|[^'])*'|"(?:(?:\\{2})+|\\"|[^"])*\"|\bvar\s+('(?:(?:\\{2})+|\\'|[^'])*'|[^;]+);|(?:\{|,)\s*[\w$]+\s*:\s*|([\w$]+)\(|function\s*\(.*?\)|([\w$]+(?:\.[\w$]+)*)(\()?/g;
 var varsRE = /([\w$]+)\s*(?:=(?:'(?:\\'|[^'])*'|[^;,]+))?/g;
 var valueRE = /^(-?\d+|true|false|undefined|null|'(?:\\'|[^'])*')$/;
 
 function parseExpression(expression, variables) {
-    return expression.replace(expressionRE, function (match, vars, fn, name, endFn) {
+    return expression.replace(expressionRE, function (match, vars, fn, name, lastIsFn) {
         if (vars) {
             var mVar;
             while ((mVar = varsRE.exec(vars))) {
@@ -655,7 +655,9 @@ function parseExpression(expression, variables) {
         } else if (fn) {
             return (KEYWORDS[fn] ? fn : '$data.' + fn) + '(';
         } else if (name) {
-            return valueExpression(name, variables) + (endFn || '');
+            return lastIsFn
+                ? valueExpression(name.substr(0, lastIsFn = name.lastIndexOf('.')), variables) + name.substr(lastIsFn) + "("
+                : valueExpression(name, variables);
         }
         return match;
     })
