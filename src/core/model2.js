@@ -828,7 +828,7 @@ function updateIfElement(viewModel, el) {
 
 function updateComponent(viewModel, el) {
     var fid = el.snProps;
-    var props = !fid ? null : executeVMFunction(viewModel, fid, getVMFunctionArg(viewModel, el.snData, el));
+    var props = !fid ? null : executeVMFunction(viewModel, fid, getVMFunctionArg(viewModel, el, el.snData));
 
     if (el.snComponentInstance) {
         el.snComponentInstance.set(props);
@@ -883,7 +883,7 @@ function updateRepeatView(viewModel, el) {
     var collectionData;
 
     if (repeatCompiler.isFn) {
-        collectionData = executeVMFunction(viewModel, repeatCompiler.fid, getVMFunctionArg(viewModel, parentSNData, el));
+        collectionData = executeVMFunction(viewModel, repeatCompiler.fid, getVMFunctionArg(viewModel, el, parentSNData));
     }
 
     if (!collection) {
@@ -975,7 +975,7 @@ function updateRepeatView(viewModel, el) {
                 // orderBy=['a',true,someFunctionId,false]
                 orderBy = orderBy.map(function (item) {
                     if (typeof item === 'number') {
-                        return executeVMFunction(viewModel, item, getVMFunctionArg(viewModel, parentSNData, el));
+                        return executeVMFunction(viewModel, item, getVMFunctionArg(viewModel, el, parentSNData));
                     }
                     return item;
                 });
@@ -1060,8 +1060,7 @@ function updateNodeAttributes(viewModel, el) {
         case "sn-if":
         case "sn-else-if":
             data = getVMFunctionArg(viewModel, el, el.snData);
-            var is = executeVMFunction(viewModel, el.snIfFid, data);
-            if (isNo(is)) {
+            if (isNo(executeVMFunction(viewModel, el.snIfFid, data))) {
                 if (el.parentNode) {
                     el.parentNode.removeChild(el);
                 }
@@ -1080,6 +1079,11 @@ function updateNodeAttributes(viewModel, el) {
     for (var i = 0, n = snAttributes.length; i < n; i += 2) {
         var attrName = snAttributes[i];
         var val = executeVMFunction(viewModel, snAttributes[i + 1], data);
+
+        if (attrName == 'ref' && typeof val === 'function') {
+            !el.snComponent && val(el.snComponentInstance || el);
+            continue;
+        }
 
         if (snValues[i / 2] === val) continue;
         snValues[i / 2] = val;
