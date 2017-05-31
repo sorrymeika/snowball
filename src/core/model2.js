@@ -425,6 +425,8 @@ function compileTemplate(viewModel, $element) {
     return $element;
 }
 
+var registedComponents = {};
+
 function compileNode(viewModel, el) {
     var fid;
     var componentName;
@@ -448,9 +450,11 @@ function compileNode(viewModel, el) {
             el.removeAttribute('sn-props');
         }
         if (componentName) {
-            el.snComponent = typeof viewModel.components == 'function' ?
-                viewModel.components(componentName) :
-                viewModel.components[componentName];
+            el.snComponent = registedComponents[componentName] || (
+                typeof viewModel.components == 'function' ?
+                    viewModel.components(componentName) :
+                    viewModel.components[componentName]
+            );
             el.snProps = compileToFunction(viewModel, propsVal);
         }
     }
@@ -1284,7 +1288,7 @@ function findModelByKey(model, key) {
     var modelMap = model._model;
 
     do {
-        var flag = false;
+        var isFind = false;
 
         for (var modelKey in modelMap) {
             model = modelMap[modelKey];
@@ -1301,24 +1305,24 @@ function findModelByKey(model, key) {
                             if (key == childModelKey) {
                                 return model;
                             } else if (key.indexOf(childModelKey + '.') == 0) {
-                                flag = true;
+                                isFind = true;
                                 key = key.substr(childModelKey.length + 1);
                                 break;
                             }
                         }
 
                     } else if (key.indexOf(model.key + '.') == 0) {
-                        flag = true;
+                        isFind = true;
                     }
                 }
 
-                if (flag && model._model) {
+                if (isFind && model._model) {
                     modelMap = model._model;
                     break;
                 }
             }
         }
-    } while (flag);
+    } while (isFind);
 
     return null;
 }
@@ -2510,6 +2514,12 @@ Object.assign(ViewModel.prototype, {
             .prependTo(parentNode);
     }
 });
+
+exports.component = function (componentName, component) {
+    registedComponents[componentName] = typeof component == 'function'
+        ? component
+        : ViewModel.extend(component);
+}
 
 exports.ViewModel = exports.Model = ViewModel;
 
