@@ -2209,7 +2209,7 @@ var ViewModel = Event.mixin(
          * @param {Array} [children] 子节点列表
          */
         constructor: function (template, attributes, children) {
-            if (arguments.length === 1 && template && template.attributes && template.el) {
+            if (arguments.length === 1 && template && template.attributes && (template.el || template.delegate)) {
                 children = template.children;
                 attributes = template.attributes;
 
