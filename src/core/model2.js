@@ -1657,7 +1657,7 @@ var Model = util.createClass({
         return this.root.on(DATACHANGED_EVENT + key, cb);
     },
 
-    removeObserve: function (key, fn) {
+    unobserve: function (key, fn) {
         if (typeof key === 'function') {
             fn = key;
             key = this.key || '';
@@ -2298,12 +2298,11 @@ var ViewModel = Event.mixin(
                 self.dataOfElement(target, target.getAttribute(self.snModelKey), target.value);
             });
 
+            !this.$el && (this.$el = $());
+
             $el.each(function () {
                 this.snViewModel = self;
             });
-
-            (!this.$el) && (this.$el = $());
-
             compileTemplate(this, $el).each(function () {
                 self.$el.push(this.snIf ? this.snIf : this);
             });

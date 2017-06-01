@@ -1550,7 +1550,7 @@ var Model = util.createClass({
         return this.root.on(DATACHANGED_EVENT + key, cb);
     },
 
-    removeObserve: function (key, fn) {
+    unobserve: function (key, fn) {
         if (typeof key === 'function') {
             fn = key;
             key = this.key || '';

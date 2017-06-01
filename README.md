@@ -134,7 +134,7 @@ collection.update([{ id: 3, name: 'C1' }, { id: 4, name: 'D1' }], function(a, b)
 
 # 监听 Model
 
-* `observe / removeObserve / on('change:child.attribute',cb)` 
+* `observe / unobserve / on('change:child.attribute',cb)` 
 ```js
 // 监听所有数据变动
 model.observe(function(e) {
@@ -584,7 +584,7 @@ model.change('user.userName', function(e) {
 });
 ```
 
-#### `Model.prototype.removeObserve` 方法
+#### `Model.prototype.unobserve` 方法
 
 * 移除监听
 
