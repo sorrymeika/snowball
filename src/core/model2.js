@@ -1730,12 +1730,14 @@ function prepareForCollectionUpdate(collection) {
 }
 
 function endOfCollectionUpdate(collection) {
-    collection._isSetting = false;
-    if (collection.changed) {
-        updateReferenceOf(collection);
-    } else if (collection.__arrayBackup) {
-        collection.array = collection.__arrayBackup;
-        collection.__arrayBackup = null;
+    if (collection._isSetting) {
+        collection._isSetting = false;
+        if (collection.changed) {
+            updateReferenceOf(collection);
+        } else if (collection.__arrayBackup) {
+            collection.array = collection.__arrayBackup;
+            collection.__arrayBackup = null;
+        }
     }
     return collection;
 }
@@ -2188,11 +2190,12 @@ Collection.prototype = {
 
     clear: function () {
         if (this.length == 0 && this.array.length == 0) return;
-        this.array = [];
         for (var i = 0; i < this.length; i++) {
             delete this[i];
         }
+        this.array = [];
         this.length = 0;
+        this._isSetting = true;
 
         return endOfCollectionUpdate(updateViewNextTick(this));
     },
