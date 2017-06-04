@@ -1533,18 +1533,18 @@ var Model = util.createClass({
             }
         }
         var hasChange = false;
+        var oldAttributes = this.attributes;
+        var attributes;
 
         if (this.attributes === null || !isPlainObject(this.attributes)) {
-            this.attributes = {};
+            attributes = {};
             hasChange = true;
+        } else {
+            attributes = Object.assign({}, this.attributes)
         }
 
-        var modelMap = this._model;
-        var oldAttributes = this.attributes;
-        var attributes = Object.assign({}, this.attributes);
-
-        this._isSetting = true;
         this.attributes = attributes;
+        this._isSetting = true;
 
         if (renew) {
             for (var name in attributes) {
@@ -1557,6 +1557,7 @@ var Model = util.createClass({
         var changes = [];
         var origin;
         var value;
+        var modelMap = this._model;
 
         for (var attr in attrs) {
             value = attrs[attr];
