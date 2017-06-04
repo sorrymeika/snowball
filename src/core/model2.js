@@ -729,7 +729,7 @@ function executeVMFunction(viewModel, fid, data) {
 }
 
 function updateViewNextTick(model) {
-    if (model.changed) return;
+    if (model.changed) return model;
     model.changed = true;
 
     if (model.parent instanceof Collection) {
@@ -745,11 +745,13 @@ function updateViewNextTick(model) {
 
         while (model) {
             (model instanceof Model || model instanceof Collection)
-                && model._linkedParents != false
+                && model._linkedParents && model._linkedParents.length
                 && root.trigger(LINKSCHANGE_EVENT + ":" + model.cid);
             model = model.parent;
         }
     }).render();
+
+    return model;
 }
 
 function updateNode(viewModel, el) {
@@ -1269,16 +1271,31 @@ function unlinkModels(model, value) {
     }
 }
 
-function updateParentReferenceOf(model) {
-    var parent = model.parent;
-    if (!parent) return;
-    if (parent instanceof Collection) {
-        var index = parent.indexOf(model);
-        if (index != -1) {
-            parent.array[index] = model.attributes;
+function updateReferenceOf(model) {
+    var value = model instanceof Collection ? model.array : model.attributes;
+    var linkedParents = model._linkedParents || [];
+
+    if (model.parent) linkedParents.push(model.parent);
+
+    for (var i = 0; i < linkedParents.length; i++) {
+        var parent = linkedParents[i];
+
+        if (parent instanceof Collection) {
+            var index = parent.indexOf(model);
+            if (index != -1 && parent.array[index] !== value) {
+                if (!parent._isSetting) {
+                    parent.array = parent.array.slice();
+                    updateReferenceOf(parent);
+                }
+                parent.array[index] = value;
+            }
+        } else if (parent.attributes[model._key] !== value) {
+            if (!parent._isSetting) {
+                parent.attributes = Object.assign({}, parent.attributes);
+                updateReferenceOf(parent);
+            }
+            parent.attributes[model._key] = value;
         }
-    } else {
-        parent.attributes[model._key] = model.attributes;
     }
 }
 
@@ -1486,6 +1503,7 @@ var Model = util.createClass({
         if (key === null) {
             this.restore();
             this.attributes = null;
+            updateReferenceOf(this);
             return this;
         } else if (!isArrayKey && typeof key == 'object') {
             attrs = key;
@@ -1494,8 +1512,7 @@ var Model = util.createClass({
 
             if (this.attributes !== val) {
                 this.attributes = val;
-                updateParentReferenceOf(this);
-                updateViewNextTick(this);
+                updateReferenceOf(updateViewNextTick(this));
             }
             return this;
         } else {
@@ -1519,12 +1536,15 @@ var Model = util.createClass({
 
         if (this.attributes === null || !isPlainObject(this.attributes)) {
             this.attributes = {};
-            updateParentReferenceOf(this);
             hasChange = true;
         }
 
-        var attributes = this.attributes;
         var modelMap = this._model;
+        var oldAttributes = this.attributes;
+        var attributes = Object.assign({}, this.attributes);
+
+        this._isSetting = true;
+        this.attributes = attributes;
 
         if (renew) {
             for (var name in attributes) {
@@ -1601,14 +1621,17 @@ var Model = util.createClass({
         }
 
         if (hasChange) {
-            updateViewNextTick(this);
+            updateReferenceOf(updateViewNextTick(this));
 
             for (var i = 0, length = changes.length; i < length; i += 3) {
                 root.trigger(new Event("change:" + changes[i], {
                     target: this
                 }), changes[i + 1], changes[i + 2]);
             }
+        } else {
+            this.attributes = oldAttributes;
         }
+        this._isSetting = false;
 
         return this;
     },
@@ -1697,6 +1720,24 @@ var Model = util.createClass({
     }
 });
 
+function prepareForCollectionUpdate(collection) {
+    if (!collection._isSetting) {
+        collection._isSetting = true;
+        collection.__arrayBackup = collection.array;
+        collection.array = collection.array.slice();
+    }
+}
+
+function endOfCollectionUpdate(collection) {
+    collection._isSetting = false;
+    if (collection.changed) {
+        updateReferenceOf(collection);
+    } else if (collection.__arrayBackup) {
+        collection.array = collection.__arrayBackup;
+        collection.__arrayBackup = null;
+    }
+    return collection;
+}
 
 function Collection(parent, attributeName, array) {
     if (isArray(parent)) {
@@ -1875,12 +1916,15 @@ Collection.prototype = {
         } else {
             var modelsLen = this.length;
 
+            prepareForCollectionUpdate(this);
+
             if (array.length < modelsLen) {
-                this.splice(array.length, modelsLen - array.length)
+                this.splice(array.length, modelsLen - array.length);
+                this._isSetting = true;
             }
 
             var i = 0;
-            var hasChange = this.changed;
+            var hasChange = false;
             var item;
 
             this.each(function (model) {
@@ -1888,18 +1932,16 @@ Collection.prototype = {
 
                 if (item instanceof Model) {
                     if (item != model) {
-                        if (!hasChange) {
-                            hasChange = true;
-                        }
+                        hasChange = true;
                         unlinkModels(this, model);
                         linkModels(this, item, this.key + '^child');
 
                         this[i] = item;
-                        this.array[i] = item.array;
+                        this.array[i] = item.attributes;
                     }
                 } else {
                     model.set(true, item);
-                    if (!hasChange && model.changed) {
+                    if (model.changed) {
                         hasChange = true;
                     }
                 }
@@ -1907,11 +1949,12 @@ Collection.prototype = {
                 i++;
             });
 
-            this.add(i == 0 ? array : array.slice(i, array.length));
-
-            if (!this.changed && hasChange) {
+            if (hasChange) {
                 updateViewNextTick(this);
             }
+            this.add(i == 0 ? array : array.slice(i, array.length));
+
+            endOfCollectionUpdate(this);
         }
         return this;
     },
@@ -1927,11 +1970,12 @@ Collection.prototype = {
         var results = [];
 
         if (dataLen) {
+            prepareForCollectionUpdate(this);
+
             for (var i = 0; i < dataLen; i++) {
                 var dataItem = array[i];
 
                 if (dataItem instanceof Model) {
-
                     linkModels(this, dataItem, this.key + '^child');
                     model = dataItem;
                 } else {
@@ -1944,7 +1988,7 @@ Collection.prototype = {
                 results.push(model);
             }
 
-            updateViewNextTick(this);
+            endOfCollectionUpdate(updateViewNextTick(this));
         }
         return dataIsArray ? results : results[0];
     },
@@ -2008,6 +2052,8 @@ Collection.prototype = {
         var n = arr.length;
         var result;
 
+        prepareForCollectionUpdate(this);
+
         for (var i = length - 1; i >= 0; i--) {
             item = this.array[i];
             exists = false;
@@ -2043,7 +2089,7 @@ Collection.prototype = {
             }
         }
 
-        return this;
+        return endOfCollectionUpdate(this);
     },
 
     // 已有项将被增量覆盖，不在arr中的项将被删除
@@ -2067,6 +2113,7 @@ Collection.prototype = {
         if (!isArray(data)) {
             data = [data];
         }
+        prepareForCollectionUpdate(this);
 
         for (var i = 0, dataLen = data.length; i < dataLen; i++) {
             var dataItem = data[i];
@@ -2083,8 +2130,7 @@ Collection.prototype = {
             this.array.splice(count, 0, model.attributes);
         }
 
-        updateViewNextTick(this);
-        return this;
+        return endOfCollectionUpdate(updateViewNextTick(this));
     },
 
     splice: function (start, count, data) {
@@ -2099,12 +2145,12 @@ Collection.prototype = {
             });
         }
 
+        prepareForCollectionUpdate(this);
         this.array.splice(start, count);
 
-        if (data)
-            this.insert(start, data);
-        else
-            updateViewNextTick(this);
+        endOfCollectionUpdate(data
+            ? this.insert(start, data)
+            : updateViewNextTick(this));
 
         return spliced;
     },
@@ -2116,6 +2162,8 @@ Collection.prototype = {
      * @param {any} val
      */
     remove: function (key, val) {
+        prepareForCollectionUpdate(this);
+
         var array = this.array;
         var fn = typeof key === 'function'
             ? key
@@ -2134,21 +2182,18 @@ Collection.prototype = {
             }
         }
 
-        updateViewNextTick(this);
-
-        return this;
+        return endOfCollectionUpdate(updateViewNextTick(this));
     },
 
     clear: function () {
         if (this.length == 0 && this.array.length == 0) return;
+        this.array = [];
         for (var i = 0; i < this.length; i++) {
             delete this[i];
         }
-        this.length = this.array.length = 0;
+        this.length = 0;
 
-        updateViewNextTick(this);
-
-        return this;
+        return endOfCollectionUpdate(updateViewNextTick(this));
     },
 
     each: function (start, end, fn) {
