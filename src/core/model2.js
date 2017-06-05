@@ -79,9 +79,9 @@ var $filter = {
 
 function insertElementAfter(destElem, elem) {
     if (destElem.nextSibling != elem) {
-        destElem.nextSibling ?
-            destElem.parentNode.insertBefore(elem, destElem.nextSibling) :
-            destElem.parentNode.appendChild(elem);
+        destElem.nextSibling
+            ? destElem.parentNode.insertBefore(elem, destElem.nextSibling)
+            : destElem.parentNode.appendChild(elem);
     }
 }
 
@@ -451,9 +451,9 @@ function compileNode(viewModel, el) {
         }
         if (componentName) {
             el.snComponent = registedComponents[componentName] || (
-                typeof viewModel.components == 'function' ?
-                    viewModel.components(componentName) :
-                    viewModel.components[componentName]
+                typeof viewModel.components == 'function'
+                    ? viewModel.components(componentName)
+                    : viewModel.components[componentName]
             );
             el.snProps = compileToFunction(viewModel, propsVal);
         }
@@ -1168,9 +1168,9 @@ function updateNodeAttributes(viewModel, el) {
 
 function insertBeforeIfElement(el) {
     if (!el.parentNode) {
-        el.snIf.nextSibling ?
-            el.snIf.parentNode.insertBefore(el, el.snIf.nextSibling) :
-            el.snIf.parentNode.appendChild(el);
+        el.snIf.nextSibling
+            ? el.snIf.parentNode.insertBefore(el, el.snIf.nextSibling)
+            : el.snIf.parentNode.appendChild(el);
     }
 }
 
@@ -1521,11 +1521,9 @@ var Model = util.createClass({
             if (keys.length > 1) {
                 model = updateModelByKeys(this, renew, keys, val);
 
-                if (model.changed) {
-                    updateViewNextTick(this);
-                }
-                return this;
-
+                return model._hasChange
+                    ? updateViewNextTick(this)
+                    : this;
             } else {
                 renewChild = renew;
                 renew = false;
@@ -1584,7 +1582,7 @@ var Model = util.createClass({
                     }
                     attributes[attr] = origin.attributes;
 
-                    if (origin.changed) hasChange = true;
+                    if (origin._hasChange) hasChange = true;
                 } else if (origin instanceof Collection) {
                     if (!isArray(value)) {
                         if (value == null) {
@@ -1597,7 +1595,7 @@ var Model = util.createClass({
                     origin.set(value);
                     attributes[attr] = origin.array;
 
-                    if (origin.changed) hasChange = true;
+                    if (origin._hasChange) hasChange = true;
                 } else if (isThenable(value)) {
                     value.then(function (res) {
                         self.set(attr, res);
@@ -1633,6 +1631,7 @@ var Model = util.createClass({
             this.attributes = oldAttributes;
         }
         this._isSetting = false;
+        this._hasChange = hasChange;
 
         return this;
     },
@@ -1723,21 +1722,24 @@ var Model = util.createClass({
 
 function prepareForCollectionUpdate(collection) {
     if (!collection._isSetting) {
-        collection._isSetting = true;
+        collection._isSetting = 1;
+        collection._hasChange = false;
         collection.__arrayBackup = collection.array;
         collection.array = collection.array.slice();
+    } else {
+        collection._isSetting++;
     }
 }
 
 function endOfCollectionUpdate(collection) {
-    if (collection._isSetting) {
-        collection._isSetting = false;
-        if (collection.changed) {
-            updateReferenceOf(collection);
+    if (collection._isSetting && --collection._isSetting == 0) {
+        if (collection._hasChange) {
+            updateReferenceOf(updateViewNextTick(collection));
         } else if (collection.__arrayBackup) {
             collection.array = collection.__arrayBackup;
-            collection.__arrayBackup = null;
         }
+        collection._isSetting = false;
+        collection.__arrayBackup = null;
     }
     return collection;
 }
@@ -1900,7 +1902,7 @@ Collection.prototype = {
 
     getOrCreate: function (obj) {
         var index = util.indexOf(this.array, obj);
-        return ~index ? this[index] : this.add(obj);
+        return index !== -1 ? this[index] : this.add(obj);
     },
 
     get: function (i) {
@@ -1923,12 +1925,11 @@ Collection.prototype = {
 
             if (array.length < modelsLen) {
                 this.splice(array.length, modelsLen - array.length);
-                this._isSetting = true;
             }
 
             var i = 0;
-            var hasChange = false;
             var item;
+            var hasChange = false;
 
             this.each(function (model) {
                 item = array[i];
@@ -1944,7 +1945,7 @@ Collection.prototype = {
                     }
                 } else {
                     model.set(true, item);
-                    if (model.changed) {
+                    if (model._hasChange) {
                         hasChange = true;
                     }
                 }
@@ -1952,9 +1953,8 @@ Collection.prototype = {
                 i++;
             });
 
-            if (hasChange) {
-                updateViewNextTick(this);
-            }
+            if (hasChange) this._hasChange = true;
+
             this.add(i == 0 ? array : array.slice(i, array.length));
 
             endOfCollectionUpdate(this);
@@ -1963,6 +1963,8 @@ Collection.prototype = {
     },
 
     add: function (array) {
+        prepareForCollectionUpdate(this);
+
         var model;
         var dataIsArray = isArray(array);
 
@@ -1973,8 +1975,6 @@ Collection.prototype = {
         var results = [];
 
         if (dataLen) {
-            prepareForCollectionUpdate(this);
-
             for (var i = 0; i < dataLen; i++) {
                 var dataItem = array[i];
 
@@ -1990,9 +1990,11 @@ Collection.prototype = {
 
                 results.push(model);
             }
-
-            endOfCollectionUpdate(updateViewNextTick(this));
+            this._hasChange = true;
         }
+
+        endOfCollectionUpdate(this);
+
         return dataIsArray ? results : results[0];
     },
 
@@ -2007,13 +2009,17 @@ Collection.prototype = {
      * @return {Collection} self
      */
     updateBy: function (attributeName, val, data) {
+        prepareForCollectionUpdate(this);
         var array = this.array;
         for (var i = 0; i < array.length; i++) {
             if (array[i][attributeName] === val) {
                 this[i].set(data);
+                if (this[i]._hasChange) {
+                    this._hasChange = true;
+                }
             }
         }
-        return this;
+        return endOfCollectionUpdate(this);
     },
 
     /**
@@ -2039,6 +2045,8 @@ Collection.prototype = {
             return this;
         }
 
+        prepareForCollectionUpdate(this);
+
         if (typeof primaryKey === 'string') {
             fn = function (a, b) {
                 return a[primaryKey] == b[primaryKey];
@@ -2055,8 +2063,6 @@ Collection.prototype = {
         var n = arr.length;
         var result;
 
-        prepareForCollectionUpdate(this);
-
         for (var i = length - 1; i >= 0; i--) {
             item = this.array[i];
             exists = false;
@@ -2067,6 +2073,9 @@ Collection.prototype = {
                 if (arrItem !== undefined) {
                     if ((result = fn.call(this, item, arrItem))) {
                         this[i].set(typeof result == 'object' ? result : arrItem);
+                        if (this[i]._hasChange) {
+                            this._hasChange = true;
+                        }
                         arr[j] = undefined;
                         exists = true;
                         break;
@@ -2110,13 +2119,14 @@ Collection.prototype = {
     },
 
     insert: function (index, data) {
+        prepareForCollectionUpdate(this);
+
         var model;
         var count;
 
         if (!isArray(data)) {
             data = [data];
         }
-        prepareForCollectionUpdate(this);
 
         for (var i = 0, dataLen = data.length; i < dataLen; i++) {
             var dataItem = data[i];
@@ -2132,28 +2142,31 @@ Collection.prototype = {
             Array.prototype.splice.call(this, count, 0, model)
             this.array.splice(count, 0, model.attributes);
         }
+        this._hasChange = true;
 
-        return endOfCollectionUpdate(updateViewNextTick(this));
+        return endOfCollectionUpdate(this);
     },
 
     splice: function (start, count, data) {
+        prepareForCollectionUpdate(this);
+
         if (!count) count = 1;
+
         var root = this.root;
         var spliced = Array.prototype.splice.call(this, start, count);
+        this.array.splice(start, count);
+        this._hasChange = true;
+
         if (root._linkedModels) {
             var self = this;
-
             spliced.forEach(function (model) {
                 model._linkedParents && unlinkModels(self, model);
             });
         }
 
-        prepareForCollectionUpdate(this);
-        this.array.splice(start, count);
-
         endOfCollectionUpdate(data
             ? this.insert(start, data)
-            : updateViewNextTick(this));
+            : this);
 
         return spliced;
     },
@@ -2182,22 +2195,24 @@ Collection.prototype = {
             if (fn.call(this, array[i], i)) {
                 Array.prototype.splice.call(this, i, 1);
                 array.splice(i, 1);
+                this._hasChange = true;
             }
         }
 
-        return endOfCollectionUpdate(updateViewNextTick(this));
+        return endOfCollectionUpdate(this);
     },
 
     clear: function () {
-        if (this.length == 0 && this.array.length == 0) return;
+        if (this.length == 0 && this.array.length == 0) return this;
         for (var i = 0; i < this.length; i++) {
             delete this[i];
         }
         this.array = [];
         this.length = 0;
-        this._isSetting = true;
+        this._isSetting = 1;
+        this._hasChange = true;
 
-        return endOfCollectionUpdate(updateViewNextTick(this));
+        return endOfCollectionUpdate(this);
     },
 
     each: function (start, end, fn) {
