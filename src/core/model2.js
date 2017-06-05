@@ -1273,12 +1273,16 @@ function unlinkModels(model, value) {
 
 function updateReferenceOf(model) {
     var value = model instanceof Collection ? model.array : model.attributes;
-    var linkedParents = model._linkedParents || [];
+    var parents = model._linkedParents
+        ? model._linkedParents.map(function (item) {
+            return item.model;
+        })
+        : [];
 
-    if (model.parent) linkedParents.push(model.parent);
+    if (model.parent) parents.push(model.parent);
 
-    for (var i = 0; i < linkedParents.length; i++) {
-        var parent = linkedParents[i];
+    for (var i = 0; i < parents.length; i++) {
+        var parent = parents[i];
 
         if (parent instanceof Collection) {
             var index = parent.indexOf(model);
