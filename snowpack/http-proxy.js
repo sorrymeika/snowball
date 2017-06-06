@@ -30,7 +30,7 @@ module.exports = function (host, port, replace) {
             log(request.headers.origin);
             var cookies = res.headers['set-cookie'];
 
-            if (cookies != false) {
+            if (cookies && cookies.length) {
                 cookies.forEach(function (cookie, i) {
                     cookies[i] = cookie.replace(/Domain=[^;]+;/, 'Domain=' + request.hostname + ';')
                 });

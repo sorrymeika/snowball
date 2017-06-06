@@ -254,6 +254,18 @@ function createRegExp(exp, flags, deep) {
     return new RegExp(result, flags);
 }
 
+function isModel(model) {
+    return model instanceof Model;
+}
+
+function isCollection(collection) {
+    return collection instanceof Collection;
+}
+
+function isModelOrCollection(model) {
+    return isModel(model) || isCollection(model);
+}
+
 function isRepeatableNode(node) {
     return node.nodeType === ELEMENT_NODE && node.getAttribute('sn-repeat');
 }
@@ -715,9 +727,11 @@ function getVMFunctionArg(viewModel, element, snData) {
     if (snData) {
         for (var key in snData) {
             var val = snData[key];
-            data[key] = (val instanceof Model || val instanceof Collection)
+            data[key] = isModel(val)
                 ? val.attributes
-                : val;
+                : isCollection(val)
+                    ? val.array
+                    : val;
         }
     }
 
@@ -732,7 +746,7 @@ function updateViewNextTick(model) {
     if (model.changed) return model;
     model.changed = true;
 
-    if (model.parent instanceof Collection) {
+    if (isCollection(model.parent)) {
         updateViewNextTick(model.parent);
     }
 
@@ -744,9 +758,9 @@ function updateViewNextTick(model) {
         }));
 
         while (model) {
-            (model instanceof Model || model instanceof Collection)
-                && model._linkedParents && model._linkedParents.length
-                && root.trigger(LINKSCHANGE_EVENT + ":" + model.cid);
+            if (isModelOrCollection(model) && model._linkedParents && model._linkedParents.length) {
+                root.trigger(LINKSCHANGE_EVENT + ":" + model.cid);
+            }
             model = model.parent;
         }
     }).render();
@@ -1272,7 +1286,7 @@ function unlinkModels(model, value) {
 }
 
 function updateReferenceOf(model) {
-    var value = model instanceof Collection ? model.array : model.attributes;
+    var value = isCollection(model) ? model.array : model.attributes;
     var parents = model._linkedParents
         ? model._linkedParents.map(function (item) {
             return item.model;
@@ -1284,7 +1298,7 @@ function updateReferenceOf(model) {
     for (var i = 0; i < parents.length; i++) {
         var parent = parents[i];
 
-        if (parent instanceof Collection) {
+        if (isCollection(parent)) {
             var index = parent.indexOf(model);
             if (index != -1 && parent.array[index] !== value) {
                 if (!parent._isSetting) {
@@ -1314,7 +1328,7 @@ function findModelByKey(model, key) {
         for (var modelKey in modelMap) {
             model = modelMap[modelKey];
 
-            if (model instanceof Model || model instanceof Collection) {
+            if (isModelOrCollection(model)) {
                 if (model.key == key) {
                     return model;
                 } else {
@@ -1356,7 +1370,7 @@ function updateModelByKeys(model, renew, keys, val) {
     for (var i = 0, len = keys.length; i < len; i++) {
         key = keys[i];
 
-        if (!(model._model[key] instanceof Model)) {
+        if (!isModel(model._model[key])) {
             tmp = model._model[key] = new Model(model, key, {});
             model.attributes[key] = tmp.attributes;
             model = tmp;
@@ -1373,10 +1387,10 @@ var RE_COLL_QUERY = /\[((?:'(?:\\'|[^'])*'|"(?:\\"|[^"])*"|[^\]])+)\](?:\[([\+\-
 var Model = util.createClass({
 
     constructor: function (parent, key, attributes) {
-        if (parent instanceof Model) {
+        if (isModel(parent)) {
             this.key = parent.key ? parent.key + '.' + key : key;
             this._key = key;
-        } else if (parent instanceof Collection) {
+        } else if (isCollection(parent)) {
             this.key = parent.key + '^child';
             this._key = parent._key + '^child';
         } else {
@@ -1429,10 +1443,10 @@ var Model = util.createClass({
             attr = m[1];
             query = m[2];
 
-            if (result instanceof Model) {
+            if (isModel(result)) {
                 result = attr in result._model ? result._model[attr] : result.attributes[attr];
 
-                if (query && result instanceof Collection) {
+                if (query && isCollection(result)) {
                     return result._(query + search.substr(m.index + m[0].length), def);
                 }
             }
@@ -1566,18 +1580,18 @@ var Model = util.createClass({
             origin = attr in modelMap ? modelMap[attr] : attributes[attr];
 
             if (origin !== value) {
-                if (value instanceof Model || value instanceof Collection) {
+                if (isModelOrCollection(value)) {
                     modelMap[attr] = value;
-                    attributes[attr] = value instanceof Collection ? value.array : value.attributes;
+                    attributes[attr] = isCollection(value) ? value.array : value.attributes;
 
-                    if (origin instanceof Model || origin instanceof Collection) {
+                    if (isModelOrCollection(origin)) {
                         unlinkModels(this, origin);
                     }
 
                     linkModels(this, value, this.key ? this.key + '.' + attr : attr);
 
                     hasChange = true;
-                } else if (origin instanceof Model) {
+                } else if (isModel(origin)) {
                     if (value === null || value === undefined) {
                         origin.restore();
                         origin.attributes = null;
@@ -1587,7 +1601,7 @@ var Model = util.createClass({
                     attributes[attr] = origin.attributes;
 
                     if (origin._hasChange) hasChange = true;
-                } else if (origin instanceof Collection) {
+                } else if (isCollection(origin)) {
                     if (!isArray(value)) {
                         if (value == null) {
                             value = [];
@@ -1895,12 +1909,12 @@ Collection.prototype = {
     },
 
     indexOf: function (key, val) {
-        return key instanceof Model ? Array.prototype.indexOf.call(this, key) :
+        return isModel(key) ? Array.prototype.indexOf.call(this, key) :
             util.indexOf(this.array, key, val);
     },
 
     lastIndexOf: function (key, val) {
-        return key instanceof Model ? Array.prototype.lastIndexOf.call(this, key) :
+        return isModel(key) ? Array.prototype.lastIndexOf.call(this, key) :
             util.lastIndexOf(this.array, key, val);
     },
 
@@ -1938,7 +1952,7 @@ Collection.prototype = {
             this.each(function (model) {
                 item = array[i];
 
-                if (item instanceof Model) {
+                if (isModel(item)) {
                     if (item != model) {
                         hasChange = true;
                         unlinkModels(this, model);
@@ -1982,7 +1996,7 @@ Collection.prototype = {
             for (var i = 0; i < dataLen; i++) {
                 var dataItem = array[i];
 
-                if (dataItem instanceof Model) {
+                if (isModel(dataItem)) {
                     linkModels(this, dataItem, this.key + '^child');
                     model = dataItem;
                 } else {
@@ -2135,7 +2149,7 @@ Collection.prototype = {
         for (var i = 0, dataLen = data.length; i < dataLen; i++) {
             var dataItem = data[i];
 
-            if (dataItem instanceof Model) {
+            if (isModel(dataItem)) {
                 model = dataItem;
                 linkModels(this, model, this.key + '^child');
             } else {
@@ -2187,7 +2201,7 @@ Collection.prototype = {
         var array = this.array;
         var fn = typeof key === 'function'
             ? key
-            : key instanceof Model
+            : isModel(key)
                 ? function (item, i) {
                     return this[i] === key;
                 }
