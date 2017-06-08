@@ -267,7 +267,7 @@ var util = {
         if (b === undefined) {
             var res = document.cookie.match(new RegExp("(^| )" + a + "=([^;]*)(;|$)"));
             if (res != null)
-                return unescape(res[2]);
+                return decodeURIComponent(res[2]);
             return null;
         } else {
             if (b === null) {
@@ -280,7 +280,7 @@ var util = {
                 d.setTime(d.getTime() + c * 24 * 60 * 60 * 1000);
                 c = ";expires=" + d.toGMTString();
             }
-            document.cookie = a + "=" + escape(b) + (c || "") + ";path=" + (p || '/')
+            document.cookie = a + "=" + encodeURIComponent(b) + (c || "") + ";path=" + (p || '/')
         }
     },
 

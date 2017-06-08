@@ -25,6 +25,8 @@ var TEXT_NODE = document.TEXT_NODE || 3;
 var COMMENT_NODE = document.COMMENT_NODE || 8;
 var ELEMENT_NODE = document.ELEMENT_NODE || 1;
 
+var EVENT_DESTROY = 'destroy';
+
 var EVENTS = {
     tap: 'tap',
     longtap: 'longTap',
@@ -47,15 +49,17 @@ var EVENTS = {
 };
 
 var KEYWORDS = {
+    'sl': true,
     'new': true,
     'this': true,
     'return': true,
     '$': true,
     '$data': true,
-    "sl": true,
+    'instanceof': true,
+    'typeof': true,
     'Object': true,
     'Array': true,
-    "JSON": true,
+    'JSON': true,
     'Math': true,
     'Date': true,
     'parseInt': true,
@@ -387,20 +391,19 @@ function compileTemplate(viewModel, $element) {
         if (node.nodeType != COMMENT_NODE)
             compileNode(viewModel, node);
 
-        var parentRepeatCompiler;
-        for (var parentNode = (node.snIf || node).parentNode;
-            parentNode && !parentNode.snViewModel;
-            parentNode = (parentNode.snIf || parentNode).parentNode) {
-
-            if (parentNode.snRepeatCompiler) {
-                parentRepeatCompiler = parentNode.snRepeatCompiler;
-                break;
-            }
-        }
-
         var nextSibling;
         if (isRepeatableNode(node)) {
             if (node.snIf) throw new Error('can not use sn-if and sn-repeat at the same time!!please use filter instead!!');
+
+            var parentRepeatCompiler;
+            var parentNode = node;
+
+            while ((parentNode = (parentNode.snIf || parentNode).parentNode) && !parentNode.snViewModel) {
+                if (parentNode.snRepeatCompiler) {
+                    parentRepeatCompiler = parentNode.snRepeatCompiler;
+                    break;
+                }
+            }
 
             nextSibling = node.nextSibling;
             node.snRepeatCompiler = new RepeatCompiler(viewModel, node, parentRepeatCompiler);
@@ -477,13 +480,14 @@ function compileNode(viewModel, el) {
 function compileElementAttributes(viewModel, el, isComponent) {
     var attr;
     var val;
+    var attributes = el.attributes;
 
-    for (var i = el.attributes.length - 1; i >= 0; i--) {
-        attr = el.attributes[i].name;
+    for (var i = attributes.length - 1; i >= 0; i--) {
+        attr = attributes[i].name;
 
         if (attr == 'sn-else') {
             initIfElement(el, attr);
-        } else if ((val = el.attributes[i].value)) {
+        } else if ((val = attributes[i].value)) {
             if (attr.slice(0, 3) === "sn-") {
                 switch (attr) {
                     case 'sn-if':
@@ -504,7 +508,7 @@ function compileElementAttributes(viewModel, el, isComponent) {
                         break;
                     case 'sn-model':
                         el.removeAttribute(attr);
-                        el.setAttribute(viewModel.snModelKey, val);
+                        el.setAttribute(viewModel.eventId, val);
                         break;
                     default:
                         //处理事件绑定
@@ -758,7 +762,7 @@ function updateViewNextTick(model) {
         }));
 
         while (model) {
-            if (isModelOrCollection(model) && model._linkedParents && model._linkedParents.length) {
+            if (model._linkedParents && model._linkedParents.length) {
                 root.trigger(LINKSCHANGE_EVENT + ":" + model.cid);
             }
             model = model.parent;
@@ -1248,37 +1252,45 @@ function setRef(viewModel, el) {
     }
 }
 
-function linkModels(model, value, key) {
+function linkModels(model, child, key) {
     var root = model.root;
+    var childRoot = child.root;
     var link = {
         childModelKey: key,
-        childModel: value,
-        childRoot: value.root,
+        childModel: child,
+        childRoot: childRoot,
         model: model,
         cb: function () {
             root.render();
         }
     };
+    var unlink = function () {
+        unlinkModels(model, child);
+        root.off(EVENT_DESTROY, unlink);
+        childRoot.off(EVENT_DESTROY, unlink);
+    }
 
-    value.root.on(LINKSCHANGE_EVENT + ":" + value.cid, link.cb);
+    root.on(EVENT_DESTROY, unlink);
+    childRoot.on(EVENT_DESTROY, unlink)
+        .on(LINKSCHANGE_EVENT + ":" + child.cid, link.cb);
 
-    (value._linkedParents || (value._linkedParents = [])).push(link);
+    (child._linkedParents || (child._linkedParents = [])).push(link);
     (root._linkedModels || (root._linkedModels = [])).push(link);
 }
 
-function unlinkModels(model, value) {
+function unlinkModels(model, child) {
     var root = model.root;
     var link;
     var linkedModels = root._linkedModels;
-    var linkedParents = value._linkedParents;
+    var linkedParents = child._linkedParents;
 
     if (linkedModels && linkedParents) {
         for (var i = linkedModels.length - 1; i >= 0; i--) {
             link = linkedModels[i];
-            if (link.model == model && link.childModel == value) {
+            if (link.model == model && link.childModel == child) {
                 linkedModels.splice(i, 1);
-                linkedParents.splice(linkedParents.indexOf(link));
-                value.root.off(LINKSCHANGE_EVENT + ":" + value.cid, link.cb);
+                linkedParents.splice(linkedParents.indexOf(link), 1);
+                child.root.off(LINKSCHANGE_EVENT + ":" + child.cid, link.cb);
                 break;
             }
         }
@@ -1573,11 +1585,13 @@ var Model = util.createClass({
         var changes = [];
         var origin;
         var value;
+        var isInModelMap;
         var modelMap = this._model;
 
         for (var attr in attrs) {
+            isInModelMap = attr in modelMap
+            origin = isInModelMap ? modelMap[attr] : attributes[attr];
             value = attrs[attr];
-            origin = attr in modelMap ? modelMap[attr] : attributes[attr];
 
             if (origin !== value) {
                 if (isModelOrCollection(value)) {
@@ -1631,7 +1645,7 @@ var Model = util.createClass({
                 } else {
                     changes.push(this.key ? this.key + "." + attr : attr, value, attributes[attr]);
                     attributes[attr] = value;
-                    // delete modelMap[attr];
+                    isInModelMap && delete modelMap[attr];
                     hasChange = true;
                 }
             }
@@ -2314,7 +2328,7 @@ var ViewModel = Event.mixin(
             this._handleEvent = this._handleEvent.bind(this);
 
             this.cid = util.guid();
-            this.snModelKey = 'sn-' + this.cid + 'model';
+            this.eventId = 'sn-' + this.cid + 'model';
 
             this.repeats = {};
 
@@ -2353,7 +2367,7 @@ var ViewModel = Event.mixin(
 
         template: function (el) {
             var self = this;
-            var $el = $(el).on('input change blur', '[' + this.snModelKey + ']', function (e) {
+            var $el = $(el).on('input change blur', '[' + this.eventId + ']', function (e) {
                 var target = e.currentTarget;
 
                 switch (e.type) {
@@ -2377,7 +2391,7 @@ var ViewModel = Event.mixin(
                         break;
                 }
 
-                self.dataOfElement(target, target.getAttribute(self.snModelKey), target.value);
+                self.dataOfElement(target, target.getAttribute(self.eventId), target.value);
             });
 
             !this.$el && (this.$el = $());
@@ -2392,8 +2406,8 @@ var ViewModel = Event.mixin(
             return this;
         },
 
-        dataOfElement: function (el, modelName, value) {
-            var attrs = modelName.split('.');
+        dataOfElement: function (el, keys, value) {
+            var attrs = keys.split('.');
             var model;
 
             if (el.snData && attrs[0] in el.snData) {
@@ -2486,7 +2500,7 @@ var ViewModel = Event.mixin(
 
         destroy: function () {
             if (this.$el) {
-                this.$el.off('input change blur', '[' + this.snModelKey + ']')
+                this.$el.off('input change blur', '[' + this.eventId + ']')
                     .each(function () {
                         this.snViewModel = null;
                     });
@@ -2510,17 +2524,7 @@ var ViewModel = Event.mixin(
                 }
             }
 
-            var children = this._linkedModels;
-            if (children) {
-                for (var i = 0; i < children.length; i++) {
-                    var link = children[i];
-                    var childModel = link.childModel;
-                    var linkedParents = childModel._linkedParents;
-
-                    linkedParents.splice(linkedParents.indexOf(link), 1);
-                    childModel.root.off(LINKSCHANGE_EVENT + ':' + childModel.cid, link.cb);
-                }
-            }
+            this.trigger(EVENT_DESTROY);
         }
     })
 );

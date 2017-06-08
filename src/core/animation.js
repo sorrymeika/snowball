@@ -3,7 +3,6 @@ var LinkList = require("./linklist");
 var Matrix2D = require("../graphics/matrix2d");
 var tween = require("../graphics/tween");
 var CubicBezier = require("../graphics/cubicBezier");
-var util = require("util");
 
 var TRANSFORM = $.fx.cssPrefix + 'transform';
 
@@ -21,11 +20,9 @@ var matrixEndRE = /matrix\([^\)]+\)\s*$/;
 var transformAllRE = /(translate|skew|rotate|scale|matrix)(3d)?\(([^\)]+)\)/g;
 var transformRE = /^(matrix|translate|skew|rotate|scale|invert)(3d)?$/;
 
-
 function toFloatArray(arr) {
-    return arr.map(function (item, i) {
+    return arr.map(function (item) {
         item = parseFloat(item);
-
         return isNaN(item) ? 0 : item;
     });
 }
@@ -42,7 +39,6 @@ function getCurrent(from, end, d) {
 }
 
 exports.step = getCurrent;
-
 
 function getMatrixByTransform(transform) {
     var matrix = new Matrix2D();
@@ -80,11 +76,10 @@ function toTransform(css) {
     });
 
     return { css: result, matrix: matrix };
-};
+}
 
 $.fn.transform = function (css) {
     this.css(toTransform(css).css);
-
     return this;
 };
 
@@ -123,9 +118,6 @@ function run() {
         animationStop = false;
 
         var timeUse,
-            arr,
-            flag = false,
-            startTime = +new Date,
             item = list._idlePrev,
             nextItem,
             first;
@@ -133,19 +125,13 @@ function run() {
         while (item && item != list) {
             nextItem = item._idlePrev;
             first = item.data;
-
             timeUse = Date.now() - first.startTime;
-            arr = [];
 
             if (timeUse <= first.duration) {
-
                 first.step(first.ease instanceof CubicBezier ? first.ease.get(timeUse / first.duration) : first.ease(timeUse, first.from, first.to - first.from, first.duration) / 100, timeUse, first.duration);
-
             } else {
                 first.step(first.to / 100, first.duration, first.duration);
-
                 list._remove(item);
-
                 first.finish && first.finish(first.to / 100);
             }
 
@@ -159,7 +145,7 @@ function run() {
 }
 
 function parallel(animations) {
-    for (var i = 0, n = animations.length, item; i < n; i++) {
+    for (var i = 0, n = animations.length; i < n; i++) {
         list.append(init(animations[i]));
     }
 
@@ -187,21 +173,17 @@ function eachFrame(d) {
 
                 if (key == TRANSFORM) {
                     var m = originVal.match(matrixRE) || ['', 1, 0, 0, 1, 0, 0];
-                    var i = 0;
                     var matrix = getMatrixByTransform(val);
-
                     for (var i = 0; i < 6; i++) {
                         matrix[i] = getCurrent(m[i + 1], matrix[i], d);
                     }
                     newStyle[key] = matrix.toString() + ' translateZ(0)';
 
                 } else if (!isNaN(parseFloat(val))) {
-
                     originVal = parseFloat(originVal);
                     if (isNaN(originVal)) originVal = defaultStyle[key] || 0;
 
                     newStyle[key] = getCurrent(originVal, val, d);
-
                 } else {
                     newStyle[key] = val;
                 }
@@ -221,7 +203,6 @@ function animationFinish(per) {
 }
 
 function prepare(animations) {
-
     for (var i = 0, n = animations.length; i < n; i++) {
         var item = animations[i];
 
@@ -247,7 +228,6 @@ function prepare(animations) {
                 if (typeof val === 'string') {
                     if (key == TRANSFORM) {
                         val = val.replace(translatePercentRE, function ($0, $1, $2) {
-
                             return 'translate(' + ($1.slice(-1) === '%' ?
                                 el.offsetWidth * parseFloat($1) / 100 :
                                 parseFloat($1)) + 'px,'
@@ -255,7 +235,6 @@ function prepare(animations) {
                                     $2.slice(-1) === '%' ?
                                         el.offsetHeight * parseFloat($2) / 100 :
                                         parseFloat($2)
-
                                 ) + 'px)';
                         });
 
@@ -263,7 +242,6 @@ function prepare(animations) {
                         val = val.replace(percentRE, function ($0) {
                             return el.parentNode.offsetHeight * parseFloat($0) / 100 + "px";
                         });
-
                     } else if (/^(left|margin(-l|L)eft|padding(-l|L)eft|padding(-t|T)op)$/.test(key)) {
                         val = val.replace(percentRE, function ($0) {
                             return el.parentNode.offsetWidth * parseFloat($0) / 100 + "px";
@@ -293,7 +271,6 @@ function Animation(animations) {
     if (!$.isArray(animations)) animations = [animations];
 
     prepare(animations);
-
     this.list = animations;
 }
 
@@ -325,7 +302,6 @@ Animation.prototype.animate = function (duration, percent, callback) {
     item.finish = callback;
 
     parallel(animations);
-
     return this;
 }
 

@@ -1,19 +1,13 @@
 
 var $ = require('$'),
-    util = require('util'),
     Component = require('./component'),
     Queue = require('./queue');
-
 var URL = require('./url');
-
-var noop = util.noop,
-    slice = Array.prototype.slice;
 
 var Navigation = Component.extend({
     events: {
         'click a[href]:not(.js-link-default)': function (e) {
-            var that = this,
-                target = $(e.currentTarget);
+            var target = $(e.currentTarget);
 
             if (!/^(http\:|https\:|javascript\:|mailto\:|tel\:)/.test(target.attr('href')) && target.attr('target') != '_blank') {
                 e.preventDefault();
@@ -33,9 +27,7 @@ var Navigation = Component.extend({
     el: '<div class="screen" style="position:fixed;top:0px;bottom:0px;right:0px;width:100%;background:rgba(0,0,0,0);z-index:2000;display:none"></div><div class="viewport"></div>',
 
     initialize: function (options) {
-
         this.routeManager = options.routeManager;
-
         this.activityManager = options.activityManager.setApplication(this);
 
         this.$mask = $(this.$el[0]).on('click', false);
@@ -60,16 +52,12 @@ var Navigation = Component.extend({
         that.hash = URL.trim(location.hash);
 
         that.queue.push(function (err, res, next) {
-
             that.activityManager.get(that.hash, function (activity) {
-
                 activity.$el.show().appendTo(that.el);
                 that.activityManager.setCurrentActivity(activity);
 
-                activity.doAfterCreate(function () {
-
+                activity.afterCreate(function () {
                     activity.trigger('Resume').trigger('Show');
-
                     that.trigger('start');
                     next();
                 })
@@ -79,9 +67,7 @@ var Navigation = Component.extend({
                 that.hash = URL.trim(location.hash);
 
                 if (that.skip == 0) {
-
                     that.to(that.hash);
-
                 } else if (that.skip > 0)
                     that.skip--;
                 else
@@ -130,7 +116,7 @@ var Navigation = Component.extend({
 
                     activity.$el.show().siblings('.view').hide();
 
-                    activity.doAfterCreate(function () {
+                    activity.afterCreate(function () {
                         activity.trigger('Resume').trigger('Show');
                     });
                 }

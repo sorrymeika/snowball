@@ -3,7 +3,6 @@
         len = input.length,
         count = 0,
         c,
-        prev,
         quote,
         quoteCount = 0,
         res = '',
@@ -18,7 +17,6 @@
                 quoteCount++;
             } else if (c == left && quoteCount == 0) {
                 count++;
-
             } else if (c == right) {
                 count--;
                 if (count <= 0) {
@@ -34,7 +32,6 @@
             else start = true;
         }
 
-        prev = c;
         i++;
     }
     return res;
@@ -51,7 +48,7 @@ function XRegExp(str) {
         item = new RegExp(str[i], 'm');
 
         if (i != l) {
-            item.left = left = str[i].charAt(str[i].length - 1);
+            item.left = str[i].charAt(str[i].length - 1);
             item.right = str[i + 1].charAt(str[i + 1].length - 1);
         }
         this.parts.push(item);
@@ -181,7 +178,6 @@ var parse = function (templateStr) {
 
     var functions = {},
         helpers = {},
-        name,
         i = 0,
         len = templateStr.length,
         prev,
@@ -215,8 +211,6 @@ var parse = function (templateStr) {
                     var m = rcmd.exec(codeStr);
 
                     if (m) {
-                        name = m[2];
-
                         if ('if' == m[1]) {
                             code = rif.exec(codeStr);
                             str += "';"
@@ -345,7 +339,6 @@ razor.nodeFn = function (templateStr) {
 
     try {
         return eval('[(function(){' + razor.create(templateStr) + ' return T;})()][0]');
-
     } catch (e) {
         return {
             html: function () {

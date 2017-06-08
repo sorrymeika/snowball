@@ -1,6 +1,4 @@
-﻿var LinkList = require('./core/linklist');
-
-var BrowserMutationObserver = window.MutationObserver || window.WebKitMutationObserver;
+﻿var BrowserMutationObserver = window.MutationObserver || window.WebKitMutationObserver;
 
 var flushQueue = new Array(1000);
 var len = 0;
@@ -119,7 +117,7 @@ function Promise(callback) {
         return new Promise(callback);
 
     var self = this;
-    var queue = new LinkList();
+    var queue = [];
 
     this.state = -1;
     this.queue = queue;
@@ -128,7 +126,7 @@ function Promise(callback) {
         self.state = 1;
         self._result = res;
 
-        for (var next; next = queue.shift();) {
+        for (var next; (next = queue.shift());) {
             emit(res, next.onFulfilled, next.onRejected, next.nextFulfilled, next.nextRejected);
         }
 
@@ -136,7 +134,7 @@ function Promise(callback) {
         self.state = 0;
         self._error = e;
 
-        for (var next; next = queue.shift();) {
+        for (var next; (next = queue.shift());) {
             emitRejection(e, next.onRejected, next.nextFulfilled, next.nextRejected);
         }
     });
@@ -152,7 +150,7 @@ Promise.prototype = {
         return new Promise(function (nextFulfilled, nextRejected) {
             switch (self.state) {
                 case -1:
-                    self.queue.append({
+                    self.queue.push({
                         nextFulfilled: nextFulfilled,
                         nextRejected: nextRejected,
                         onFulfilled: onFulfilled,

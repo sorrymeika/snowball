@@ -12,8 +12,6 @@ function trim(hash) {
 }
 
 function URL(url) {
-
-    var index = url.indexOf('?');
     var search;
     var path;
     var query = {};
@@ -21,7 +19,6 @@ function URL(url) {
     var uri = {};
 
     if (/(?:^(https?\:)\/\/([^:\/]+)(?:\:(\d+))?)?(?:(\/[^?#]*)(\?.+)?(#.+)?)?/.test(url)) {
-
         uri.protocol = RegExp.$1 || location.protocol;
         uri.host = RegExp.$2;
         uri.port = RegExp.$3 ? parseInt(RegExp.$3) : 80;

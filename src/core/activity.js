@@ -1,10 +1,8 @@
-var $ = require('$'),
-    util = require('util'),
-    Component = require('./component');
+var $ = require('$');
+var util = require('util');
+var Component = require('./component');
 
-var noop = util.noop,
-    indexOf = util.indexOf,
-    slice = Array.prototype.slice;
+var noop = util.noop;
 
 var Page = Component.extend({
     el: '<div class="view"></div>',
@@ -27,7 +25,6 @@ var Page = Component.extend({
             that.$el.data('url', that.url).data('path', that.path);
 
             var promise = new Promise(function (resolve) {
-
                 seajs.use(that.route.template, function (razor) {
                     that.razor = razor;
 
@@ -39,13 +36,13 @@ var Page = Component.extend({
                 });
             })
 
-            this.doAfterCreate = function (fn) {
+            this.afterCreate = function (fn) {
                 promise.then(fn)
             }
 
         } else {
             this.onCreate();
-            this.doAfterCreate = function (fn) {
+            this.afterCreate = function (fn) {
                 fn();
             }
         }

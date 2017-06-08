@@ -4,7 +4,7 @@ var URL = require('./url');
 function Route(options) {
     this.routes = [];
     this.append(options);
-};
+}
 
 Route.prototype.append = function (options) {
     var option,

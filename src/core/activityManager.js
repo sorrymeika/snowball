@@ -1,9 +1,5 @@
-
 var $ = require('$');
-var util = require('util');
-var Event = require('./event');
 var getUrlPath = require('./url').getPath;
-
 
 function setActivityReferrer(activedInstance, route) {
     activedInstance.isForward = route.isForward;
@@ -28,9 +24,11 @@ function setActivityReferrer(activedInstance, route) {
         activedInstance.referrerDir = route.referrerDir;
     }
 
-    if (activedInstance.recordBackURL) {
+    if (activedInstance.isRecordBackURL) {
         var backURL = route.query.from || activedInstance.referrer || activedInstance.defaultBackURL;
-        backURL && getUrlPath(backURL) != route.path.toLowerCase() && (activedInstance.swipeBack = backURL);
+        if (backURL && getUrlPath(backURL) != route.path.toLowerCase()) {
+            activedInstance.swipeBack = backURL;
+        }
     }
 }
 
@@ -48,14 +46,11 @@ function setActivityRoute(activity, route) {
  * Activity 管理器
  */
 function ActivityManager(options) {
-
     this.routeManager = options.routeManager;
 }
 
 ActivityManager.prototype = {
-
     _activities: {},
-
     _currentActivity: null,
 
     setCurrentActivity: function (currentActivity) {
@@ -84,23 +79,23 @@ ActivityManager.prototype = {
 
             var diff = {};
             var before;
+            var key;
+            var query = activity.query;
+            var queryHistory = activity._query;
 
-            for (var key in activity.query) {
-                if (!(key in activity._query)) {
-                    activity._query[key] = undefined;
+            for (key in query) {
+                if (!(key in queryHistory) && query[key]) {
+                    diff[key] = query;
                 }
             }
-            for (var key in activity._query) {
-                before = activity._query[key];
-
-                if (before != activity.query[key]) {
+            for (key in queryHistory) {
+                before = queryHistory[key];
+                if (before != query[key]) {
                     diff[key] = before;
                 }
             }
 
-            activity.trigger(new Event('QueryChange', {
-                data: diff
-            }));
+            activity.trigger("QueryChange", diff);
         }
     },
 
@@ -116,13 +111,11 @@ ActivityManager.prototype = {
         var activity = this._activities[path];
 
         if (activity == null) {
+            
             (function (fn) {
                 route.package ? seajs.use(route.package + ".js?v" + sl.buildVersion, fn) : fn();
-
             })(function () {
-
                 seajs.use(route.view, function (Activity) {
-
                     if (null != Activity) {
                         var application = that.application;
                         var options = {
@@ -141,16 +134,14 @@ ActivityManager.prototype = {
                         activity = new Activity(options);
 
                         activity.on('Destroy', function () {
-
                             that.remove(this.path);
                         })
 
                         that.set(path, activity);
 
-                        activity.doAfterCreate(function () {
+                        activity.afterCreate(function () {
                             callback.call(that, activity, route);
                         })
-
                     } else {
                         location.hash = that._currentActivity.url;
                     }
@@ -159,7 +150,6 @@ ActivityManager.prototype = {
 
         } else {
             setActivityReferrer(activity, route);
-
             callback.call(that, activity, route);
         }
     },

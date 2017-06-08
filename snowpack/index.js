@@ -40,8 +40,7 @@ function formatDate(d, f) {
         })
 }
 
-function getModuleId() {
-    var args = [].slice.apply(arguments);
+function getModuleId(...args) {
     var result = args.join('/').replace(/[\\]+/g, '/').replace(/([^\:\/]|^)[\/]{2,}/g, '$1/').replace(/([^\.]|^)\.\//g, '$1');
     var flag = true;
     while (flag) {
@@ -53,7 +52,7 @@ function getModuleId() {
         })
     }
     return result.replace(/\/$/, '');
-};
+}
 var transformSnowballJS = tools.transformSnowballJS;
 
 // if (__dirname != process.cwd()) process.chdir(__dirname);
@@ -102,7 +101,7 @@ exports.loadConfig = function (callback) {
 
         exec('ifconfig', (err, stdout, stderr) => {
             if (err) {
-                console.error(err);
+                console.error(err, stderr);
                 return;
             }
             var matchIp = stdout.match(/\sen0\:[\s\S]+?\sinet\s(\d+\.\d+\.\d+\.\d+)/);
@@ -337,7 +336,6 @@ exports.startWebServer = function (config) {
         var httpRE = /^(https?\:)\/\/([^:\/]+)(?:\:(\d+))?(?:(\/[^?#]*)(\?.+)?(#.+)?)?/;
 
         if (httpRE.test(proxy)) {
-            var protocol = RegExp.$1;
             var host = RegExp.$2;
             var port = RegExp.$3 ? parseInt(RegExp.$3) : 80;
 
@@ -563,7 +561,7 @@ if (args.build) {
             config.projects.forEach(function (proj) {
                 if (proj.images) {
                     proj.images.forEach(function (imgDir) {
-                        fsc.copy(absolutePath(proj.root, imgDir), absolutePath(config.dest, proj.root, 'images'), resouceExt, function (err, result) { });
+                        fsc.copy(absolutePath(proj.root, imgDir), absolutePath(config.dest, proj.root, 'images'), resouceExt);
                     });
                 }
             });

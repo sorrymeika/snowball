@@ -2,6 +2,8 @@
 var path = require('path');
 var fse = require('fs-extra');
 
+var noop = function () { };
+
 var walk = function (dir, done) {
     var results = [];
     fs.readdir(dir, function (err, list) {
@@ -83,7 +85,7 @@ var copy = function (src, dest, filter, done) {
     if (!done && typeof filter === 'function') {
         done = filter;
         filter = null;
-    }
+    } else if (!done) done = noop;
     if (!filter) fse.copy(src, dest, done);
     else {
         var fullSrc = path.resolve(src);

@@ -3,25 +3,18 @@ var util = require('util');
 var bridge = require('bridge');
 var Component = require('./component');
 var animation = require('./animation');
-var LinkList = require('./linklist');
 var Queue = require('./queue');
 var Touch = require('./touch');
-
-var URI = require('./url');
-
-var Activity = require('./activity');
 var Toast = require('../widget/toast');
-
 var URL = require('./url');
-
-var noop = util.noop;
 var lastIndexOf = util.lastIndexOf;
-var slice = Array.prototype.slice;
 
 
 function adjustActivity(currentActivity, activity) {
     currentActivity.$el.siblings('.view:not([data-path="' + activity.path + '"])').hide();
-    if (activity.el.parentNode === null) activity.$el.appendTo(currentActivity.application.el);
+    if (activity.el.parentNode === null) {
+        activity.$el.appendTo(currentActivity.application.el);
+    }
 }
 
 function getToggleAnimation(isForward, currentActivity, activity, toggleAnim) {
@@ -84,20 +77,18 @@ function enterAnimationEnd(activity) {
  * @param {Application} application 
  */
 function bindBackGesture(application) {
-
     var touch = application.touch = new Touch(application.el, {
         enableVertical: false,
         enableHorizontal: true,
         momentum: false
     });
 
-    touch.on('beforestart', function (e) {
+    touch.on('beforestart', function () {
         this.x = 0;
 
         if (this._isInAnim || this.pointY < 80) {
             this.stop();
         }
-
     }).on('start', function () {
         var that = this,
             isForward,
@@ -159,7 +150,7 @@ function bindBackGesture(application) {
             that.swiperQueue = null;
         }
 
-    }).on('move', function (e) {
+    }).on('move', function () {
         var that = this,
             deltaX = that.deltaX;
 
@@ -246,13 +237,10 @@ var Application = Component.extend({
 
                     target.attr('back') != null ? this.back(href) : this.forward(href);
                 }
-
             } else if (sl.isInApp && href.indexOf('http') == 0) {
                 bridge.openInApp(href);
-
             } else if (sl.isInApp && !/^(javascript\:|mailto\:|tel\:)/.test(href)) {
                 bridge.open(href);
-
             } else {
                 target.addClass('js-link-default');
                 return;
@@ -292,13 +280,11 @@ var Application = Component.extend({
         var that = this;
 
         $(window).on('back', function () {
-
             if (that._backAction.length) {
                 that._backAction.pop()();
                 return;
             }
 
-            var hash = location.hash;
             var currentActivity = that.getCurrentActivity();
 
             if (!currentActivity || currentActivity.path == "/" || currentActivity.path == options.loginPath) {
@@ -311,20 +297,15 @@ var Application = Component.extend({
                     }, 2000);
                     Toast.showToast("再按一次退出程序");
                 }
-
             } else {
                 that.back(currentActivity.referrer || '/');
             }
-
         }).on('urlchange', function (e, data) {
             that.forward(data.url);
-
         }).on('keyboardWillShow', function (e, keyboardHeight) {
             that.el.style.bottom = keyboardHeight + 'px';
-
         }).on('keyboardWillHide', function () {
             that.el.style.bottom = '0px';
-
         });
     },
 
@@ -333,7 +314,6 @@ var Application = Component.extend({
     },
 
     removeBackAction: function (fn) {
-
         if (fn === undefined) {
             this._backAction.length = 0;
             return;
@@ -356,7 +336,7 @@ var Application = Component.extend({
         var $win = $(window);
         var $el = this.$el;
 
-        this.$el = $(that.el);
+        this.$el = $(this.el);
 
         if (bridge.hasStatusBar) {
             $('body').addClass('has_status_bar');
@@ -370,44 +350,33 @@ var Application = Component.extend({
 
         if (delay) {
             promise = new Promise(function (resolve) {
-
                 setTimeout(function () {
                     $el.appendTo(document.body);
-
                     resolve();
-
                 }, delay);
             });
         } else {
             $el.appendTo(document.body);
-
             promise = Promise.resolve();
         }
 
         this.queue = new Queue();
 
         this.activityManager.get(this.hash, function (activity) {
-
             that.history.push(that.hash);
-
             activity.$el.appendTo(that.el);
-
             that.activityManager.setCurrentActivity(activity);
-
             activity.$el.transform(activity.toggleAnim.openEnterAnimationTo);
 
             promise.then(function () {
-
-                activity.doAfterCreate(function () {
+                activity.afterCreate(function () {
                     activity.$el.css({
                         opacity: 0
                     }).addClass('active').animate({
                         opacity: 1
-
                     }, 'ease-out', 400);
 
                     activity.trigger('Appear').trigger('Show');
-
                     that.trigger('Start');
 
                     that.queue.shift();
@@ -415,23 +384,20 @@ var Application = Component.extend({
             });
 
             $win.on('hashchange', function () {
-                var hash = that.hash = URI.trim(location.hash);
+                var hash = that.hash = URL.trim(location.hash);
                 var hashIndex;
 
                 if (that.hashChanged) {
                     that.hashChanged = false;
                     that.historyQueue.shift();
-
                 } else {
                     that.historyQueue.push(function (err, res, next) {
-
                         hashIndex = lastIndexOf(that.history, hash);
                         if (hashIndex == -1) {
                             that.forward(hash);
                         } else {
                             that.back(hash);
                         }
-
                         next();
                     });
                 }
@@ -446,7 +412,6 @@ var Application = Component.extend({
     },
 
     _toggle: function (route, options, toggleFinish, queueDone) {
-
         var activityManager = this.activityManager;
         var currentActivity = activityManager.getCurrentActivity();
 
@@ -473,7 +438,6 @@ var Application = Component.extend({
             route.prevActivity = prevActivity;
             route.referrer = prevActivity ? prevActivity.url : null;
             route.referrerDir = "Left";
-
         } else if (isForward) {
             route.prevActivity = currentActivity;
             route.referrer = currentActivity.url;
@@ -483,7 +447,6 @@ var Application = Component.extend({
         startExiting(currentActivity);
 
         activityManager.get(route, function (activity) {
-
             adjustActivity(currentActivity, activity);
 
             activityManager.setCurrentActivity(activity)
@@ -513,7 +476,6 @@ var Application = Component.extend({
 
                 if (!duration) {
                     anim.el.css(animation.transform(anim.css).css);
-
                 } else {
                     anim.ease = ease;
                     anim.duration = duration;
@@ -547,7 +509,6 @@ var Application = Component.extend({
      * application.navigate(url, false);
      */
     navigate: function (url, isForward) {
-
         this.historyQueue.push(function (err, res, next) {
             var index,
                 hashChanged = !URL.isEqual(url, location.hash);
@@ -557,12 +518,9 @@ var Application = Component.extend({
             if (isForward === 2) {
                 this.history[this.history.length - 1] = url;
                 hashChanged && (location.replace('#' + url));
-
             } else if (isForward) {
-
                 this.history.push(url);
                 hashChanged && (location.hash = url);
-
             } else {
                 index = lastIndexOf(this.history, url);
 
@@ -570,7 +528,6 @@ var Application = Component.extend({
                     this.history.length = 0;
                     this.history.push(url);
                     hashChanged && (location.replace('#' + url));
-
                 } else {
                     var go = index + 1 - this.history.length;
 
@@ -582,16 +539,13 @@ var Application = Component.extend({
             }
 
             if (!hashChanged) next();
-
         }, this);
-
     },
 
     _navigate: function (url, isForward, duration, toggleAnim, data) {
         var route = this.routeManager.match(url);
 
         if (route) {
-
             this.queue.push(function (err, res, next) {
                 var options = {};
 
@@ -600,9 +554,7 @@ var Application = Component.extend({
 
                 var currentActivity = this.activityManager.getCurrentActivity();
 
-                if (data) {
-                    Object.assign(route.data, data);
-                }
+                if (data) Object.assign(route.data, data);
 
                 options.isForward = isForward;
 
@@ -611,11 +563,8 @@ var Application = Component.extend({
 
                 this._toggle(route, options, isForward && isForward != 2 ? null : function () {
                     currentActivity.destroy();
-
                 }, next);
-
             }, this);
-
         } else {
             location.hash = this.activityManager.getCurrentActivity().url;
         }

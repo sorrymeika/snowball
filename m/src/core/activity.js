@@ -45,7 +45,7 @@ var Activity = Component.extend({
 
     toggleAnim: defaultToggleAnim,
 
-    recordBackURL: true,
+    isRecordBackURL: true,
     defaultBackURL: '/',
 
     status: STATUS.INIT,
@@ -72,7 +72,7 @@ var Activity = Component.extend({
         self.onPause && self.on('Pause', self.onPause);
         self.onQueryChange && self.on('QueryChange', self.onQueryChange);
 
-        self._waitLoad = new Promise(function (resolve, reject) {
+        self._waitLoad = new Promise(function (resolve) {
             self.one('Show', resolve);
         });
 
@@ -80,24 +80,20 @@ var Activity = Component.extend({
             self.$el.data('url', self.url).data('path', self.path);
 
             var promise = new Promise(function (resolve) {
-
                 seajs.use(self.route.template, function (razor) {
                     self.razor = razor;
                     self.$el.html(razor.html(self.data)).appendTo(self.application.$el);
-
                     self.onCreate();
-
                     resolve();
                 });
             })
 
-            this.doAfterCreate = function (fn) {
+            this.afterCreate = function (fn) {
                 promise.then(fn)
             }
-
         } else {
             this.onCreate();
-            this.doAfterCreate = function (fn) {
+            this.afterCreate = function (fn) {
                 fn();
             }
         }
@@ -171,20 +167,14 @@ var Activity = Component.extend({
     queryString: function (key, val) {
         var query = this.route.query;
 
-        if (typeof val === 'undefined')
-            return query[key];
+        if (typeof val === 'undefined') return query[key];
 
         if (query[key] == val) return;
-
-        else if (val === null || val === false || val === '')
-            delete query[key];
-        else
-            query[key] = val;
+        else if (val === null || val === false || val === '') delete query[key];
+        else query[key] = val;
 
         var queryString = $.param(query);
-
         this.route.url = this.url = this.route.path + (queryString ? '?' + queryString : '');
-
         this.application.navigate(this.url);
 
         var data = {};
