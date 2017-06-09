@@ -12,6 +12,7 @@ var Event = require('./event');
 var isNo = util.isNo;
 var isThenable = util.isThenable;
 var isPlainObject = util.isPlainObject;
+var isNumber = util.isNumber;
 var isArray = Array.isArray;
 var extend = $.extend;
 var camelCase = $.camelCase;
@@ -998,7 +999,7 @@ function updateRepeatView(viewModel, el) {
             default:
                 // orderBy=['a',true,someFunctionId,false]
                 orderBy = orderBy.map(function (item) {
-                    if (typeof item === 'number') {
+                    if (isNumber(item)) {
                         return executeVMFunction(viewModel, item, getVMFunctionArg(viewModel, el, parentSNData));
                     }
                     return item;
@@ -1019,8 +1020,10 @@ function updateRepeatView(viewModel, el) {
 
                         // 中文排序需使用 localeCompare
                         // ret = isDesc ? (a > b ? -1 : a < b ? 1 : 0) : (a > b ? 1 : a < b ? -1 : 0);
-                        ret = ((a === undefined || a === null) ? '' : (a + '')).localeCompare(b);
-                        isDesc && (ret = !ret);
+                        ret = isNumber(a) && isNumber(b)
+                            ? a - b
+                            : ((a === undefined || a === null) ? '' : (a + '')).localeCompare(b);
+                        isDesc && (ret *= -1);
 
                         if (ret != 0) return ret;
                     }

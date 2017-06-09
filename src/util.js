@@ -19,6 +19,9 @@ var isArray = Array.isArray || isType("Array");
 var isString = function (str) {
     return typeof str == 'string' || toString.call(str) == "[object String]";
 }
+var isNumber = function (str) {
+    return typeof str == 'number' || toString.call(str) == "[object Number]";
+}
 var isFunction = function (fn) {
     return typeof fn == 'function';
 }
@@ -110,6 +113,7 @@ var util = {
         return thenable && typeof thenable === 'object' && typeof thenable.then === 'function';
     },
 
+    isNumber: isNumber,
     isString: isString,
     isObject: isObject,
     isFunction: isFunction,
