@@ -2,7 +2,8 @@ Snowball
 =======
 
 强大的前端mvvm框架<br>
-核心文件 https://github.com/sorrymeika/snowball/blob/master/src/core/model2.js
+核心文件 https://github.com/sorrymeika/snowball/blob/master/src/core/model2.js<br>
+已迁移至es6版本 https://github.com/sorrymeika/snowfall<br>
 
 
 ## Start With ViewModel

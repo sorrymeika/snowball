@@ -62,7 +62,6 @@ Event.prototype = {
 
     isPropagationStopped: returnFalse,
 
-
     preventDefault: function () {
         this.isDefaultPrevented = returnTrue;
     },
