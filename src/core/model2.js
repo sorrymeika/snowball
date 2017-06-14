@@ -3,8 +3,6 @@
  * 用途: ViewModel
  */
 
-require('./base');
-
 var $ = require('$');
 var util = require('util');
 var Event = require('./event');
@@ -1019,7 +1017,6 @@ function updateRepeatView(viewModel, el) {
                         b = bm[sort];
 
                         // 中文排序需使用 localeCompare
-                        // ret = isDesc ? (a > b ? -1 : a < b ? 1 : 0) : (a > b ? 1 : a < b ? -1 : 0);
                         ret = isNumber(a) && isNumber(b)
                             ? a - b
                             : ((a === undefined || a === null) ? '' : (a + '')).localeCompare(b);
