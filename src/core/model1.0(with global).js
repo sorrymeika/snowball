@@ -52,7 +52,7 @@ var GLOBAL_VARIABLES = {
     'document': true
 };
 
-var rvalue = /^((-)?\d+|true|false|undefined|null|'(?:\\'|[^'])*')$/;
+var rvalue = /^((-)?\d+(\.\d+)?|true|false|undefined|null|'(?:\\'|[^'])*')$/;
 var rrepeat = /([\w$]+)(?:\s*,(\s*[\w$]+)){0,1}\s+in\s+([\w$]+(?:\.[\w$\(,\)]+){0,})(?:\s*\|\s*filter\s*\:\s*(.+?)){0,1}(?:\s*\|\s*orderBy\:(.+)){0,1}(\s|$)/;
 var rmatch = /\{\s*(.+?)\s*\}(?!\s*\})/g;
 var rset = /([\w$]+(?:\.[\w$]+)*)\s*=\s*((?:\((?:'(?:\\'|[^'])*'|[^\)])+\)|'(?:\\'|[^'])*'|[\w$][!=]==?|[^;=])+?)(?=;|,|\)|$)/g;

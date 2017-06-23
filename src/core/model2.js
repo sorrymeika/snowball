@@ -659,9 +659,9 @@ function compileExpression(expression, withBraces) {
     };
 }
 
-var expressionRE = /'(?:(?:\\{2})+|\\'|[^'])*'|"(?:(?:\\{2})+|\\"|[^"])*\"|\bvar\s+('(?:(?:\\{2})+|\\'|[^'])*'|[^;]+);|(?:\{|,)\s*[\w$]+\s*:\s*|([\w$]+)\(|function\s*\(.*?\)|([\w$]+(?:\.[\w$]+|\[[\w$]+\])*)(\()?/g;
+var expressionRE = /'(?:(?:\\{2})+|\\'|[^'])*'|"(?:(?:\\{2})+|\\"|[^"])*\"|\bvar\s+('(?:(?:\\{2})+|\\'|[^'])*'|[^;]+);|(?:\{|,)\s*[\w$]+\s*:\s*|([\w$]+)\(|function\s*\(.*?\)|([\w$]+(?:\.[\w$]+|\[[\w$\']+\])*)(\()?/g;
 var varsRE = /([\w$]+)\s*(?:=(?:'(?:\\'|[^'])*'|[^;,]+))?/g;
-var valueRE = /^(-?\d+|true|false|undefined|null|'(?:\\'|[^'])*')$/;
+var valueRE = /^(-?\d+(\.\d+)?|true|false|undefined|null|'(?:\\'|[^'])*')$/;
 
 function parseExpression(expression, variables) {
     return expression.replace(expressionRE, function (match, vars, fn, name, lastIsFn) {
@@ -2409,15 +2409,28 @@ var ViewModel = Event.mixin(
         dataOfElement: function (el, keys, value) {
             var attrs = keys.split('.');
             var model;
+            var name = attrs[0];
 
-            if (el.snData && attrs[0] in el.snData) {
+            if (el.snData && name in el.snData) {
                 model = el.snData[attrs.shift()];
             } else {
                 model = this;
             }
 
             if (arguments.length == 3) {
-                model.set(attrs, value);
+                switch (name) {
+                    case 'srcElement':
+                        util.value(el, attrs.slice(1, -1))[attrs.pop()] = value;
+                        break;
+                    case 'document':
+                        util.value(document, attrs.slice(1, -1))[attrs.pop()] = value;
+                        break;
+                    case 'window':
+                        util.value(window, attrs.slice(1, -1))[attrs.pop()] = value;
+                        break;
+                    default:
+                        model.set(attrs, value);
+                }
                 return this;
             }
 
@@ -2538,10 +2551,14 @@ function checkOwnNode(viewModel, node) {
         if (!node.length)
             throw new Error('is not own node');
     } else {
+        var isOwnNode = false;
         viewModel.$el.each(function () {
-            if (!$.contains(this, node))
-                throw new Error('is not own node');
+            if ($.contains(this, node)) {
+                isOwnNode = true;
+                return false;
+            }
         });
+        if (!isOwnNode) throw new Error('is not own node');
     }
     return node;
 }
