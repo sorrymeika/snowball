@@ -369,7 +369,7 @@ Scroll.prototype.imageLazyLoad = ScrollView.prototype.imageLazyLoad = function (
     });
 
     var el = this.el;
-    var scrollTop = options ? options.y : 0;
+    var scrollTop = options ? options.y : el.scrollTop;
     var height = options ? options.height : el.clientHeight;
     var top = scrollTop + height;
 
