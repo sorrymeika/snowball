@@ -664,13 +664,15 @@ var varsRE = /([\w$]+)\s*(?:=(?:'(?:\\'|[^'])*'|[^;,]+))?/g;
 var valueRE = /^(-?\d+(\.\d+)?|true|false|undefined|null|'(?:\\'|[^'])*')$/;
 
 function parseExpression(expression, variables) {
-    return expression.replace(expressionRE, function (match, vars, fn, name, lastIsFn) {
+    return expression.replace(expressionRE, function (match, vars, fn, name, lastIsFn, index) {
         if (vars) {
             var mVar;
             while ((mVar = varsRE.exec(vars))) {
                 variables.push(mVar[1]);
             }
             return vars + ',';
+        } else if (expression[index - 1] == '.') {
+            return match;
         } else if (fn) {
             return (KEYWORDS[fn] ? fn : '$data.' + fn) + '(';
         } else if (name) {
