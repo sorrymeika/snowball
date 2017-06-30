@@ -51,6 +51,7 @@ var KEYWORDS = {
     'sl': true,
     'new': true,
     'this': true,
+    'function': true,
     'return': true,
     '$': true,
     '$data': true,
@@ -68,6 +69,18 @@ var KEYWORDS = {
     'window': true,
     'document': true
 };
+
+// var RE_REGEXP = "\/(?:(?:\\{2})+|\\\/|[^\/\r\n])+\/[img]*(?=[\)|\.|,])"
+// var RE_STRING = "'(?:(?:\\\\{2})+|\\\\'|[^'])*'|\"(?:(?:\\\\{2})+|\\\\\"|[^\"])*\"";
+var RE_STRING = "'(?:(?:\\\\{2})+|\\\\'|[^'])*'";
+var RE_METHOD = createRegExp("\\b((?:this\\.){0,1}[\\.\\w$]+)((...))", 'g', 4);
+var RE_GLOBAL_METHOD = /^((Math|JSON|Date|util|\$)\.|(encodeURIComponent|decodeURIComponent|parseInt|parseFloat)$)/;
+var RE_SET = createRegExp("([\\w$]+(?:\\.[\\w$]+)*)\\s*=\\s*((?:(...)|" + RE_STRING + "|[\\w$][!=]==?|[^;=])+?)(?=;|,|\\)|$)", 'g', 4);
+var RE_REPEAT = /([\w$]+)(?:\s*,(\s*[\w$]+)){0,1}\s+in\s+([\w$]+(?:\.[\w$\(,\)]+){0,})(?:\s*\|\s*filter\s*:\s*(.+?)){0,1}(?:\s*\|\s*orderBy:(.+)){0,1}(\s|$)/;
+var RE_EXPRESSION = /'(?:(?:\\{2})+|\\'|[^'])*'|"(?:(?:\\{2})+|\\"|[^"])*\"|function\s*\((.*?)\)|\bvar\s+('(?:(?:\\{2})+|\\'|[^'])*'|[^;]+);|(?:\{|,)\s*[\w$]+\s*:\s*|([\w$]+)\(|([\w$]+(?:\.[\w$]+|\[[\w$\']+\])*)(\()?/g;
+var RE_VARS = /([\w$]+)\s*(?:=(?:'(?:\\'|[^'])*'|[^;,]+))?/g;
+var RE_VALUE = /^(-?\d+(\.\d+)?|true|false|undefined|null|'(?:\\'|[^'])*')$/;
+var RE_MATCH_EXPRESSION = createRegExp("{...}", 'g');
 
 var $filter = {
     contains: function (source, keywords) {
@@ -220,10 +233,6 @@ function testRegExp(regExp, val) {
     return regExp.lastIndex != 0 && (regExp.lastIndex = 0) || regExp.test(val);
 }
 
-// var regExpRE = "\/(?:(?:\\{2})+|\\\/|[^\/\r\n])+\/[img]*(?=[\)|\.|,])"
-// var stringRE = "'(?:(?:\\\\{2})+|\\\\'|[^'])*'|\"(?:(?:\\\\{2})+|\\\\\"|[^\"])*\"";
-var stringRE = "'(?:(?:\\\\{2})+|\\\\'|[^'])*'";
-
 function createRegExp(exp, flags, deep) {
     if (typeof flags === 'number') {
         deep = flags;
@@ -241,7 +250,7 @@ function createRegExp(exp, flags, deep) {
         } else {
             var pre = expArr[i].slice(-1);
             var suf = expArr[i + 1].charAt(0);
-            var parenthesisREStart = '\\' + pre + '(?:' + stringRE + '|';
+            var parenthesisREStart = '\\' + pre + '(?:' + RE_STRING + '|';
             var parenthesisREEnd = '[^\\' + suf + '])*\\' + suf;
 
             var before = "";
@@ -276,11 +285,10 @@ function isRepeatableNode(node) {
 var ORDER_BY_THIS_FUNCTION = 1;
 var ORDER_BY_DELEGATE_FUNCTION = 2;
 var ORDER_BY_ATTRIBUTES_FUNCTION = 3;
-var repeatRE = /([\w$]+)(?:\s*,(\s*[\w$]+)){0,1}\s+in\s+([\w$]+(?:\.[\w$\(,\)]+){0,})(?:\s*\|\s*filter\s*:\s*(.+?)){0,1}(?:\s*\|\s*orderBy:(.+)){0,1}(\s|$)/;
 
 function RepeatCompiler(viewModel, el, parent) {
     var attrRepeat = el.getAttribute('sn-repeat');
-    var match = attrRepeat.match(repeatRE);
+    var match = attrRepeat.match(RE_REPEAT);
     var collectionKey = match[3];
     var filter = match[4];
 
@@ -547,20 +555,16 @@ function initIfElement(el, type) {
     }
 }
 
-var methodRE = createRegExp("\\b((?:this\\.){0,1}[\\.\\w$]+)((...))", 'g', 4);
-var globalMethodsRE = /^((Math|JSON|Date|util|\$)\.|(encodeURIComponent|decodeURIComponent|parseInt|parseFloat)$)/;
-var setRE = createRegExp("([\\w$]+(?:\\.[\\w$]+)*)\\s*=\\s*((?:(...)|" + stringRE + "|[\\w$][!=]==?|[^;=])+?)(?=;|,|\\)|$)", 'g', 4);
-
 function compileElementEvent(viewModel, el, evt, val) {
     var attr = "sn-" + viewModel.cid + evt;
     if (val == 'false') {
         el.setAttribute(attr, val);
     } else {
-        var content = val.replace(methodRE, function (match, $1, $2) {
-            return globalMethodsRE.test($1)
+        var content = val.replace(RE_METHOD, function (match, $1, $2) {
+            return RE_GLOBAL_METHOD.test($1)
                 ? match
                 : ($1 + $2.slice(0, -1) + ($2.length == 2 ? '' : ',') + 'e)');
-        }).replace(setRE, 'this.dataOfElement(e.currentTarget,\'$1\',$2)');
+        }).replace(RE_SET, 'this.dataOfElement(e.currentTarget,\'$1\',$2)');
 
         var fid = compileToFunction(viewModel, content, false);
         fid && el.setAttribute(attr, fid);
@@ -600,8 +604,6 @@ function compileToFunction(viewModel, expression, withBraces) {
     return expId;
 }
 
-var matchExpressionRE = createRegExp("{...}", 'g');
-
 /**
  * 将字符串表达式转为function code
  * 
@@ -615,7 +617,7 @@ var matchExpressionRE = createRegExp("{...}", 'g');
  */
 function compileExpression(expression, withBraces) {
     if (withBraces === undefined) withBraces = true;
-    if (withBraces && !testRegExp(matchExpressionRE, expression)) return;
+    if (withBraces && !testRegExp(RE_MATCH_EXPRESSION, expression)) return;
 
     var variables = [];
     var content = 'try{return ';
@@ -627,9 +629,9 @@ function compileExpression(expression, withBraces) {
         var str;
         var firstLoop = true;
 
-        matchExpressionRE.lastIndex = 0;
+        RE_MATCH_EXPRESSION.lastIndex = 0;
 
-        while ((m = matchExpressionRE.exec(expression))) {
+        while ((m = RE_MATCH_EXPRESSION.exec(expression))) {
             if (!firstLoop) content += '+';
             else firstLoop = false;
 
@@ -659,15 +661,16 @@ function compileExpression(expression, withBraces) {
     };
 }
 
-var expressionRE = /'(?:(?:\\{2})+|\\'|[^'])*'|"(?:(?:\\{2})+|\\"|[^"])*\"|\bvar\s+('(?:(?:\\{2})+|\\'|[^'])*'|[^;]+);|(?:\{|,)\s*[\w$]+\s*:\s*|([\w$]+)\(|function\s*\(.*?\)\s*\{[^\}]*\}|([\w$]+(?:\.[\w$]+|\[[\w$\']+\])*)(\()?/g;
-var varsRE = /([\w$]+)\s*(?:=(?:'(?:\\'|[^'])*'|[^;,]+))?/g;
-var valueRE = /^(-?\d+(\.\d+)?|true|false|undefined|null|'(?:\\'|[^'])*')$/;
-
 function parseExpression(expression, variables) {
-    return expression.replace(expressionRE, function (match, vars, fn, name, lastIsFn, index) {
-        if (vars) {
+    var fnParamsCache = {};
+    return expression.replace(RE_EXPRESSION, function (match, fnParams, vars, fn, name, lastIsFn, index) {
+        if (fnParams) {
+            fnParams.split(',').forEach(function (param) {
+                fnParamsCache[param.trim()] = true;
+            })
+        } else if (vars) {
             var mVar;
-            while ((mVar = varsRE.exec(vars))) {
+            while ((mVar = RE_VARS.exec(vars))) {
                 variables.push(mVar[1]);
             }
             return vars + ',';
@@ -677,8 +680,8 @@ function parseExpression(expression, variables) {
             return (KEYWORDS[fn] ? fn : '$data.' + fn) + '(';
         } else if (name) {
             return lastIsFn
-                ? valueExpression(name.substr(0, lastIsFn = name.lastIndexOf('.')), variables) + name.substr(lastIsFn) + "("
-                : valueExpression(name, variables);
+                ? valueExpression(name.substr(0, lastIsFn = name.lastIndexOf('.')), variables, fnParamsCache) + name.substr(lastIsFn) + "("
+                : valueExpression(name, variables, fnParamsCache);
         }
         return match;
     })
@@ -688,15 +691,15 @@ function compileToString(str) {
     return str ? '\'' + str.replace(/\\/g, '\\\\').replace(/'/g, '\\\'') + '\'' : str;
 }
 
-function valueExpression(str, variables) {
-    if (valueRE.test(str)) return str;
+function valueExpression(str, variables, fnParams) {
+    if (RE_VALUE.test(str)) return str;
 
     var arr = str.split('.');
     var alias = arr[0];
     var code = '';
     var gb = '$data';
 
-    if (!alias || KEYWORDS[alias] || (variables.length && variables.indexOf(alias) !== -1)) {
+    if (!alias || KEYWORDS[alias] || (fnParams && fnParams[alias]) || (variables.length && variables.indexOf(alias) !== -1)) {
         return str;
     } else {
         switch (alias) {

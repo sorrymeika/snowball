@@ -25,6 +25,9 @@ var isNumber = function (str) {
 var isFunction = function (fn) {
     return typeof fn == 'function';
 }
+var isPlainObject = function (value) {
+    return value && (value.constructor === Object || value.constructor === undefined);
+}
 
 var guid = 0;
 
@@ -117,10 +120,7 @@ var util = {
     isString: isString,
     isObject: isObject,
     isFunction: isFunction,
-
-    isPlainObject: function (value) {
-        return value && (value.constructor === Object || value.constructor === undefined);
-    },
+    isPlainObject: isPlainObject,
 
     isEmptyObject: function (obj) {
         if (!obj) return false;
@@ -195,7 +195,12 @@ var util = {
 
     params: function (params) {
         return Object.keys(params).map(function (key) {
-            return key + "=" + (params[key] ? encodeURIComponent(params[key]) : '');
+            var val = params[key];
+            return key + "=" + (val !== undefined && val !== null
+                ? encodeURIComponent(isArray(val) || isPlainObject(val)
+                    ? JSON.stringify(val)
+                    : val)
+                : '');
         }).join('&');
     },
 
