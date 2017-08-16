@@ -76,7 +76,7 @@ var RE_STRING = "'(?:(?:\\\\{2})+|\\\\'|[^'])*'";
 var RE_METHOD = createRegExp("\\b((?:this\\.){0,1}[\\.\\w$]+)((...))", 'g', 4);
 var RE_GLOBAL_METHOD = /^((Math|JSON|Date|util|\$)\.|(encodeURIComponent|decodeURIComponent|parseInt|parseFloat)$)/;
 var RE_SET = createRegExp("([\\w$]+(?:\\.[\\w$]+)*)\\s*=\\s*((?:(...)|" + RE_STRING + "|[\\w$][!=]==?|[^;=])+?)(?=;|,|\\)|$)", 'g', 4);
-var RE_REPEAT = /([\w$]+)(?:\s*,(\s*[\w$]+)){0,1}\s+in\s+([\w$]+(?:\.[\w$\(,\)]+){0,})(?:\s*\|\s*filter\s*:\s*(.+?)){0,1}(?:\s*\|\s*orderBy:(.+)){0,1}(\s|$)/;
+var RE_REPEAT = /([\w$]+)(?:\s*,\s*([\w$]+)){0,1}\s+in\s+([\w$]+(?:\.[\w$\(,\)]+){0,})(?:\s*\|\s*filter\s*:\s*(.+?)){0,1}(?:\s*\|\s*orderBy:(.+)){0,1}(\s|$)/;
 var RE_EXPRESSION = /'(?:(?:\\{2})+|\\'|[^'])*'|"(?:(?:\\{2})+|\\"|[^"])*\"|function\s*\((.*?)\)|\bvar\s+('(?:(?:\\{2})+|\\'|[^'])*'|[^;]+);|(?:\{|,)\s*[\w$]+\s*:\s*|([\w$]+)\(|([\w$]+(?:\.[\w$]+|\[[\w$\']+\])*)(\()?/g;
 var RE_VARS = /([\w$]+)\s*(?:=(?:'(?:\\'|[^'])*'|[^;,]+))?/g;
 var RE_VALUE = /^(-?\d+(\.\d+)?|true|false|undefined|null|'(?:\\'|[^'])*')$/;
@@ -420,21 +420,7 @@ function compileTemplate(viewModel, $element) {
         return { nextSibling: nextSibling };
     });
 
-    var eventName;
-    var eventAttr;
-    var eventFn = viewModel._handleEvent;
-    for (var key in EVENTS) {
-        switch (key) {
-            case 'scroll':
-            case 'scrollStop':
-                break;
-            default:
-                eventName = EVENTS[key];
-                eventAttr = '[sn-' + viewModel.cid + eventName + ']';
-                $element.on(eventName, eventAttr, eventFn)
-                    .filter(eventAttr).on(eventName, eventFn);
-        }
-    }
+    bindEvents(viewModel, $element);
 
     if (vmCodes) {
         var fns = new Function('return {' + vmCodes.slice(0, -1) + '}')();
@@ -445,6 +431,33 @@ function compileTemplate(viewModel, $element) {
     }
 
     return $element;
+}
+
+function bindEvents(viewModel, $element, isBindOrUnbind) {
+    var eventName;
+    var eventAttr;
+    var eventFn = viewModel._handleEvent;
+    var bind = isBindOrUnbind === false ? $.fn.off : $.fn.on;
+    for (var key in EVENTS) {
+        switch (key) {
+            case 'scroll':
+            case 'scrollStop':
+                break;
+            default:
+                eventName = EVENTS[key];
+                eventAttr = '[sn-' + viewModel.cid + eventName + ']';
+                bind.call(
+                    bind.call($element, eventName, eventAttr, eventFn)
+                        .filter(eventAttr),
+                    eventName,
+                    eventFn
+                )
+        }
+    }
+}
+
+function unbindEvents(viewModel, $element) {
+    bindEvents(viewModel, $element, false)
 }
 
 var registedComponents = {};
@@ -1635,7 +1648,7 @@ var Model = util.createClass({
                     if (origin._hasChange) hasChange = true;
                 } else if (isThenable(value)) {
                     value.then(function (res) {
-                        self.set(attr, res);
+                        self.set(renew, attr, res);
                     });
                 } else if (isPlainObject(value)) {
                     value = new Model(this, attr, value);
@@ -2132,7 +2145,6 @@ Collection.prototype = {
                     appends.push(arr[i]);
                 }
             }
-
             if (appends.length) {
                 this.add(appends);
             }
@@ -2557,8 +2569,9 @@ function checkOwnNode(viewModel, node) {
             throw new Error('is not own node');
     } else {
         var isOwnNode = false;
+
         viewModel.$el.each(function () {
-            if ($.contains(this, node)) {
+            if ($.contains(this.snIfSource || this, node)) {
                 isOwnNode = true;
                 return false;
             }
@@ -2619,6 +2632,24 @@ Object.assign(ViewModel.prototype, {
 
         return compileNewTemplate(this, newNode)
             .prependTo(parentNode);
+    },
+
+    takeOff: function (childNode) {
+        childNode = checkOwnNode(this, childNode);
+        childNode.snViewModel = this;
+        this.$el.push(childNode);
+
+        bindEvents(this, $(childNode));
+        return childNode;
+    },
+
+    bringBack: function (childNode) {
+        var index = this.$el.indexOf(childNode);
+        if (index != -1) {
+            delete childNode.snViewModel;
+            Array.prototype.splice.call(this.$el, index, 1);
+            unbindEvents(this, $(childNode));
+        }
     }
 });
 

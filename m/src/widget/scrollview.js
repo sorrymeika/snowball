@@ -65,11 +65,9 @@ ScrollView.prototype = {
     },
 
     destroy: function () {
-
         this.touch.destroy();
     }
 }
-
 
 ScrollView.insertScroller = insertScroller;
 

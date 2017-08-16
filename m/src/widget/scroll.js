@@ -361,7 +361,8 @@ Scroll.prototype.detectImageLazyLoad = ScrollView.prototype.detectImageLazyLoad 
 }
 
 Scroll.prototype.imageLazyLoad = ScrollView.prototype.imageLazyLoad = function (options) {
-    var images = $('img[data-src]:not([src])', this.$el);
+    var images = $('img[data-src]', this.$el);
+
     if (!images.length) return;
 
     images.css({
@@ -376,8 +377,13 @@ Scroll.prototype.imageLazyLoad = ScrollView.prototype.imageLazyLoad = function (
     if (height === 0) return;
 
     images && images.each(function () {
+        if (this.src) {
+            $(this).animate({
+                opacity: 1
+            }, 200);
+        }
         var src = this.getAttribute('data-src');
-        if (!src) {
+        if (!src || src == this.src) {
             this.removeAttribute('data-src');
             return;
         }
