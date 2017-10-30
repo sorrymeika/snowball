@@ -520,6 +520,7 @@ function compileElementAttributes(viewModel, el, isComponent) {
                             false);
                         break;
                     case 'sn-src':
+                    case 'sn-image':
                     case 'sn-html':
                     case 'sn-display':
                     case 'sn-style':
@@ -1095,14 +1096,19 @@ function cloneRepeatElement(viewModel, source, snData) {
 
 function updateNodeAttributes(viewModel, el) {
     var data;
+    var no;
+
     switch (el.snIfType) {
         case "sn-else":
+            el.snIfStatus = true;
             insertBeforeIfElement(el);
             break;
         case "sn-if":
         case "sn-else-if":
             data = getVMFunctionArg(viewModel, el, el.snData);
-            if (isNo(executeVMFunction(viewModel, el.snIfFid, data))) {
+            no = isNo(executeVMFunction(viewModel, el.snIfFid, data))
+            el.snIfStatus = !no;
+            if (no) {
                 if (el.parentNode) {
                     el.parentNode.removeChild(el);
                 }
@@ -1169,6 +1175,7 @@ function updateNodeAttributes(viewModel, el) {
             case 'disabled':
                 (el[attrName] = !!val) ? el.setAttribute(attrName, attrName) : el.removeAttribute(attrName);
                 break;
+            case 'sn-image':
             case 'src':
                 el.src = val;
                 break;
@@ -1186,7 +1193,7 @@ function updateNodeAttributes(viewModel, el) {
                             }, 200);
                             if (e.type === 'error') el.removeAttribute('src');
                         }).css({
-                            opacity: 0
+                            opacity: .3
                         }).attr({
                             src: val
                         });
@@ -1203,7 +1210,7 @@ function updateNodeAttributes(viewModel, el) {
 }
 
 function insertBeforeIfElement(el) {
-    if (!el.parentNode) {
+    if (!el.parentNode && el.snIf.parentNode) {
         el.snIf.nextSibling
             ? el.snIf.parentNode.insertBefore(el, el.snIf.nextSibling)
             : el.snIf.parentNode.appendChild(el);
@@ -1270,30 +1277,46 @@ function setRef(viewModel, el) {
     }
 }
 
-function linkModels(model, child, key) {
+function ModelLink(model, childModel, childModelKey) {
     var root = model.root;
-    var childRoot = child.root;
-    var link = {
-        childModelKey: key,
-        childModel: child,
-        childRoot: childRoot,
-        model: model,
-        cb: function () {
-            root.render();
-        }
-    };
-    var unlink = function () {
-        unlinkModels(model, child);
-        root.off(EVENT_DESTROY, unlink);
-        childRoot.off(EVENT_DESTROY, unlink);
-    }
+    var childRoot = childModel.root;
 
-    root.on(EVENT_DESTROY, unlink);
-    childRoot.on(EVENT_DESTROY, unlink)
-        .on(LINKSCHANGE_EVENT + ":" + child.cid, link.cb);
+    this.childModelKey = childModelKey;
+    this.childModel = childModel;
+    this.childRoot = childModel.root;
+    this.model = model;
+
+    root.on(EVENT_DESTROY, this.destroy, this);
+    childRoot
+        .on(EVENT_DESTROY, this.destroy, this)
+        .one(DATACHANGED_EVENT, this.connect, this);
+}
+
+ModelLink.prototype.connect = function () {
+    this.childRoot.on(LINKSCHANGE_EVENT + ":" + this.childModel.cid, this.cb, this);
+}
+
+ModelLink.prototype.cb = function () {
+    updateViewNextTick(this.model);
+}
+
+ModelLink.prototype.destroy = function () {
+    unlinkModels(this.model, this.childModel);
+    this.close();
+}
+
+ModelLink.prototype.close = function () {
+    this.model.root.off(EVENT_DESTROY, this.destroy);
+    this.childRoot
+        .off(EVENT_DESTROY, this.destroy)
+        .off(LINKSCHANGE_EVENT + ":" + this.childModel.cid, this.cb);
+}
+
+function linkModels(model, child, key) {
+    var link = new ModelLink(model, child, key);
 
     (child._linkedParents || (child._linkedParents = [])).push(link);
-    (root._linkedModels || (root._linkedModels = [])).push(link);
+    (model.root._linkedModels || (model.root._linkedModels = [])).push(link);
 }
 
 function unlinkModels(model, child) {
@@ -1308,7 +1331,7 @@ function unlinkModels(model, child) {
             if (link.model == model && link.childModel == child) {
                 linkedModels.splice(i, 1);
                 linkedParents.splice(linkedParents.indexOf(link), 1);
-                child.root.off(LINKSCHANGE_EVENT + ":" + child.cid, link.cb);
+                link.close();
                 break;
             }
         }
@@ -1544,6 +1567,11 @@ var Model = util.createClass({
             val = key;
             key = renew;
             renew = false;
+            if (val === undefined && util.isString(key) && arguments.length == 2) {
+                val = null;
+            }
+        } else if (arguments.length == 3 && val === undefined) {
+            val = null;
         }
 
         var isArrayKey = isArray(key);
@@ -1628,7 +1656,7 @@ var Model = util.createClass({
                         origin.restore();
                         origin.attributes = null;
                     } else {
-                        origin.set(renewChild, value);
+                        origin.set(renew || renewChild, value);
                     }
                     attributes[attr] = origin.attributes;
 
@@ -2500,27 +2528,25 @@ var ViewModel = Event.mixin(
             this._rendering = true;
             this.viewWillUpdate && this.viewWillUpdate();
 
-            console.time('render-' + this.cid);
+            // console.time('render-' + this.cid);
 
             var self = this;
 
             do {
+                this._nextTick = null;
                 this.trigger(new Event(DATACHANGED_EVENT, {
                     target: this
                 }));
 
-                this._nextTick = null;
                 this.refs = {};
-
                 this.$el && eachElement(this.$el, function (el) {
                     if ((el.snViewModel && el.snViewModel != self) || self._nextTick) return false;
 
                     return updateNode(self, el);
                 });
-
             } while (this._nextTick);
 
-            console.timeEnd('render-' + this.cid);
+            // console.timeEnd('render-' + this.cid);
 
             this._rendering = false;
 
@@ -2552,9 +2578,10 @@ var ViewModel = Event.mixin(
                     }
                     this.$el.filter(eventAttr).off(eventName, eventFn)
                 }
+                this.$el = null;
             }
-
-            this.trigger(EVENT_DESTROY);
+            this.trigger(EVENT_DESTROY)
+                .off();
         }
     })
 );
@@ -2563,20 +2590,28 @@ ViewModel.prototype.next = ViewModel.prototype.nextTick;
 
 function checkOwnNode(viewModel, node) {
     if (typeof node == 'string') {
-        node = viewModel.$el.find(node);
+        node = viewModel.$(node);
 
-        if (!node.length)
-            throw new Error('is not own node');
+        if (!node.length) {
+            console.error('is not own node');
+            return null;
+        }
     } else {
         var isOwnNode = false;
 
         viewModel.$el.each(function () {
-            if ($.contains(this.snIfSource || this, node)) {
+            var parentNode = this.snIfSource && this.snIfSource.snIfStatus
+                ? this.snIfSource
+                : this;
+            if ($.contains(parentNode, node)) {
                 isOwnNode = true;
                 return false;
             }
         });
-        if (!isOwnNode) throw new Error('is not own node');
+        if (!isOwnNode) {
+            console.error('is not own node');
+            return null;
+        }
     }
     return node;
 }
@@ -2594,20 +2629,19 @@ function compileNewTemplate(viewModel, template) {
 }
 
 Object.assign(ViewModel.prototype, {
-    isOwnNode: function (node) {
-        if (typeof node == 'string') {
-            return !this.$el.find(node).length;
-        } else {
-            var flag = true;
-            this.$el.each(function () {
-                if (!$.contains(this, node)) return false;
-            });
-            return flag;
-        }
+    $: function (selector) {
+        var $el = this.$el;
+        this.$el.each((i, el) => {
+            if (el.snIfSource && el.snIfSource.snIfStatus) {
+                $el = $el.add(el.snIfSource);
+            }
+        });
+        return $el.find(selector);
     },
 
     before: function (template, referenceNode) {
         referenceNode = checkOwnNode(this, referenceNode);
+        if (!referenceNode) return null;
 
         return compileNewTemplate(this, template)
             .insertBefore(referenceNode);
@@ -2615,6 +2649,7 @@ Object.assign(ViewModel.prototype, {
 
     after: function (newNode, referenceNode) {
         referenceNode = checkOwnNode(this, referenceNode);
+        if (!referenceNode) return null;
 
         return compileNewTemplate(this, newNode)
             .insertAfter(referenceNode);
@@ -2622,6 +2657,7 @@ Object.assign(ViewModel.prototype, {
 
     append: function (newNode, parentNode) {
         parentNode = checkOwnNode(this, parentNode);
+        if (!parentNode) return null;
 
         return compileNewTemplate(this, newNode)
             .appendTo(parentNode);
@@ -2629,17 +2665,49 @@ Object.assign(ViewModel.prototype, {
 
     prepend: function (newNode, parentNode) {
         parentNode = checkOwnNode(this, parentNode);
+        if (!parentNode) return null;
 
         return compileNewTemplate(this, newNode)
             .prependTo(parentNode);
     },
 
+    prependTo: function (parent) {
+        this.$el
+            .prependTo(parent)
+            .each((i, el) => {
+                if (el.snIfSource && !el.snIfSource.parentNode && el.snIfSource.snIfStatus) {
+                    $(el.snIfSource).insertAfter(el);
+                }
+            })
+    },
+
+    appendTo: function (parent) {
+        this.$el
+            .appendTo(parent)
+            .each((i, el) => {
+                if (el.snIfSource && !el.snIfSource.parentNode && el.snIfSource.snIfStatus) {
+                    $(el.snIfSource).insertAfter(el);
+                }
+            })
+    },
+
+    removeNode: function () {
+        this.$el
+            .each((i, el) => {
+                if (el.snIfSource) {
+                    $(el.snIfSource).remove();
+                }
+            }).remove();
+    },
+
     takeOff: function (childNode) {
         childNode = checkOwnNode(this, childNode);
+        if (!childNode) return null;
+
         childNode.snViewModel = this;
         this.$el.push(childNode);
-
         bindEvents(this, $(childNode));
+        (this._takeOffEls || (this._takeOffEls = [])).push(childNode);
         return childNode;
     },
 
@@ -2648,8 +2716,26 @@ Object.assign(ViewModel.prototype, {
         if (index != -1) {
             delete childNode.snViewModel;
             Array.prototype.splice.call(this.$el, index, 1);
+            this._takeOffEls.splice(this._takeOffEls.indexOf(childNode), 1);
             unbindEvents(this, $(childNode));
         }
+    },
+
+    bringBackAll: function () {
+        var els = this._takeOffEls;
+        if (els) {
+            for (var i = els.length - 1; i >= 0; i--) {
+                var childNode = els[i];
+                var index = this.$el.indexOf(childNode);
+                if (index != -1) {
+                    delete childNode.snViewModel;
+                    Array.prototype.splice.call(this.$el, index, 1);
+                    unbindEvents(this, $(childNode));
+                }
+            }
+            this._takeOffEls = null;
+        }
+        return els;
     }
 });
 
@@ -2670,7 +2756,32 @@ exports.createModel = function (props) {
     return Object.assign(new ViewModel(attributes), props);
 }
 
+exports.findViewModel = function (el) {
+    for (; el; el = el.parentNode) {
+        if (el.snViewModel) {
+            return el.snViewModel;
+        }
+    }
+}
+
+exports.removeAttribute = function removeAttribute(el, attributeName) {
+    var snAttributes = el.snAttributes;
+    if (snAttributes) {
+        for (var i = 0, n = snAttributes.length; i < n; i += 2) {
+            if (snAttributes[i] == attributeName) {
+                el.snValues[i / 2] = undefined;
+                break;
+            }
+        }
+    }
+    el.removeAttribute(attributeName);
+}
+
 exports.Collection = Collection;
+
+exports.isModel = isModel;
+exports.isCollection = isCollection;
+exports.isModelOrCollection = isModelOrCollection;
 
 exports.createCollection = function (props) {
     var array;
