@@ -1,7 +1,7 @@
 Snowball
 =======
 
-强大的前端mvvm框架<br>
+前端mvvm框架<br>
 已迁移至es6版本 https://github.com/sorrymeika/snowfall<br>
 
 
