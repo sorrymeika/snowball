@@ -21,7 +21,6 @@
         "fs-extra": "",
         "mongodb": "~2.0",
         "oracledb": "",
-        "mysql": "2.6.2",
         "redis": "",
         "hiredis": "",
         "async": "",
