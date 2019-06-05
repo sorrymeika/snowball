@@ -1,0 +1,69 @@
+$color: #ff6f00;
+$deepcolor: #ff4500;
+
+$bgc: #f4f4f4;
+$lightbgc: #f9f9f9;
+
+$fc: #333;
+$lightfc: #ccc;
+$darkfc: #333;
+
+$blue: #3d96ff;
+
+@mixin arrow($color:#fff,$size:10px) { position: relative; border-top: 2px solid $color; border-right: 2px solid $color; width: $size; height: $size; font-size: 0px; vertical-align: middle; -webkit-transform: rotate(45deg); -webkit-transform-origin: 50% 50%; display: inline-block; }
+
+@mixin border($color:#aaa,$radius:0px) { position: absolute; content: ""; display: block; top: 0; right: -100%; left: 0; bottom: -100%; pointer-events: none; z-index: 1; transform: scale(.5); transform-origin: 0% 0%; border: 1px solid $color; border-radius: $radius; }
+
+@mixin arrow_left($color:#fff,$size:10px) { position: relative; border-top: 2px solid $color; border-right: 2px solid $color; width: $size; height: $size; font-size: 0px; vertical-align: middle; -webkit-transform: rotate(-135deg); display: inline-block; top: -5px; -webkit-transform-origin: 50% 50%; }
+
+@mixin textbox($color:#aaa,$radius:0,$bgc:#fff) {
+    position: relative; padding: 1px 5px; overflow: visible; @content;
+    &:after{ @include border($color,$radius); background-color: $bgc; }
+    >input{ position: relative; z-index: 1; border: 0; height: 100%; width: 100%; display: block; background-color: rgba(0,0,0,0); }
+}
+
+@mixin rotate($deg) { -webkit-transform: rotate($deg); transform: rotate($deg); }
+
+%dock { position: absolute; bottom: 0; left: 0; right: 0; top: 0; }
+%dock_t { position: absolute; top: 0; }
+%dock_b { position: absolute; bottom: 0; }
+%dock_l { position: absolute; left: 0; }
+%dock_r { position: absolute; right: 0; }
+%dock_tb { position: absolute; top: 0; bottom: 0; }
+%dock_tl { position: absolute; top: 0; left: 0; }
+%dock_tlr { position: absolute; top: 0; left: 0; right: 0; }
+%dock_tr { position: absolute; top: 0; right: 0; }
+%dock_tbl { position: absolute; top: 0; bottom: 0; left: 0; }
+%dock_tbr { position: absolute; top: 0; bottom: 0; right: 0; }
+%dock_blr { position: absolute; bottom: 0; left: 0; right: 0; }
+%dock_bl { position: absolute; bottom: 0; left: 0; }
+%dock_br { position: absolute; bottom: 0; right: 0; }
+%dock_lr { position: absolute; left: 0; right: 0; }
+
+%flex {
+    display: -webkit-box; display: flex;
+    > a { display: block }
+    > a:active { background-color: rgba(0,0,0,.1); }
+}
+%flexwrap { display: -webkit-box; -webkit-box-lines: multiple; display: flex; flex-wrap: wrap; }
+%flex_r { @extend %flex; @extend %ai_fs; -webkit-box-direction: reverse; -webkit-box-pack: end; flex-direction: row-reverse; }
+%fd_r { -webkit-box-orient: horizontal; flex-direction: row; }
+%fd_rr { -webkit-box-direction: reverse; flex-direction: row-reverse; }
+%fd_c { -webkit-box-orient: vertical; flex-direction: column; }
+%fd_cr { -webkit-box-orient: vertical; -webkit-box-direction: reverse; flex-direction: column-reverse; }
+%jc_c { -webkit-box-pack: center; justify-content: center; }
+%jc_e { -webkit-box-pack: end; justify-content: flex-end; }
+%jc_sb { -webkit-box-pack: justify; justify-content: space-between; }
+%jc_sa { -webkit-box-pack: justify; justify-content: space-around; }
+%ai_s { align-items: stretch; }
+%ai_c { -webkit-box-align: center; align-items: center; }
+%ai_b { -webkit-box-align: baseline; align-items: baseline; }
+%ai_fs { -webkit-box-align: start; align-items: flex-start; }
+%ai_fe { -webkit-box-align: end; align-items: flex-end; }
+%as_c { align-self: center; }
+%as_s { align-self: stretch; }
+%as_fs { align-self: flex-start; }
+%as_fe { align-self: flex-end; }
+
+%flexavg, %flex_0 { display: block; -webkit-box-flex: 1; flex: 1; width: 0px; }
+%flexitem, %flex_1 { display: block; -webkit-box-flex: 1; flex: 1; }
