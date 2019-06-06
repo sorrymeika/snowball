@@ -6,7 +6,7 @@ import { ViewModel, component, Model } from './vm';
 @component({
     tagName: 'Test',
     template: `<div>234{a}
-    <span>bb<span>aa</span>b</span>
+    <span sn-if={false}>bb<span>aa</span>b</span>
     </div>`
 })
 class Test extends Model {

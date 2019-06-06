@@ -353,9 +353,9 @@ function readAttributes(input, cursor) {
                 match = readAttributeValue(input, cursor);
                 if (match) {
                     if (match.isExpression) {
-                        attributes.push(name, match.value);
-                    } else {
                         props.push(name, match.value);
+                    } else {
+                        attributes.push(name, match.value);
                     }
                     name = '';
                     cursor = match.cursor;
