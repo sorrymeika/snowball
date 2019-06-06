@@ -185,6 +185,7 @@ function readHtmlString(input) {
                     match = readEndTag(input, cursor);
                     if (match) {
                         appendText();
+                        vnodes.pop();
                         cursor = match.cursor;
                     }
                 } else {
@@ -292,7 +293,6 @@ function readEndTag(input, cursor) {
 
         switch (c) {
             case '>':
-                vnodes.pop();
                 return {
                     tagName,
                     cursor: cursor + 1
