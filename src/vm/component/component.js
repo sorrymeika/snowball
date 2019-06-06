@@ -1,5 +1,5 @@
 import { compile } from "./compile";
-import { createElement, syncRootChildElements } from "./element";
+import { createElement, syncRootChildElements, removeElement } from "./element";
 import { render } from "./render";
 import { $, isFunction } from "../../utils";
 import { nextTick } from "../methods/enqueueUpdate";
@@ -21,6 +21,7 @@ export function component({
             const data = Object.create(this.state.data || null);
             data.__state = this;
             render(this.state.component.rootElement, this, data);
+            this.state.renderedVersion = this.state.version;
             return this.state.component;
         };
 
@@ -75,6 +76,25 @@ export function component({
 
             insertBefore(element) {
                 return nodeHandler.call(this, element, 'insertBefore');
+            }
+
+            remove() {
+                const { rootElement } = this;
+                const handle = () => {
+                    $(rootElement.firstChild).remove();
+                    const childElements = rootElement.childElements;
+                    if (childElements) {
+                        for (let i = 0; i < childElements.length; i++) {
+                            removeElement(childElements[i]);
+                        }
+                    }
+                };
+
+                rootElement.firstChild
+                    ? handle()
+                    : nextTick(handle);
+
+                return this;
             }
 
             set(data) {

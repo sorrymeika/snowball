@@ -14,6 +14,8 @@ export default class Emitter extends Observer {
         if (this.state.changed = (this.state.data !== data)) {
             this.state.data = data;
             updateRefs(this);
+        } else {
+            this.state.version++;
         }
         if (this.state.initialized) {
             emitUpdate(this);

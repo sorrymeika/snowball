@@ -91,6 +91,7 @@ export function render(element: IElement, state, data) {
                 }
                 if (child.isRepeat) {
                     renderRepeatItem(child, state, data);
+                    renderRepeatItem(child, state, data);
                     prevSibling = child.closeNode;
                 } else {
                     prevSibling = child;
@@ -189,7 +190,7 @@ function renderRepeatItem(element: IElement, state, data) {
         collection.set(array);
     }
 
-    const elements = element.elements || [];
+    const elements = element.elements || (element.elements = []);
     const visibleElements = {};
     const list = [];
 
@@ -200,6 +201,7 @@ function renderRepeatItem(element: IElement, state, data) {
 
         if (filter == null || invoke(element, elementData, filter)) {
             let itemElement;
+
             for (let j = 0; j < elements.length; j++) {
                 if (elements[j].state == item) {
                     visibleElements[j] = true;
@@ -272,7 +274,7 @@ function renderRepeatItem(element: IElement, state, data) {
         });
     }
 
-    let cursorElement = element;
+    let cursorElement = element.node;
 
     list.forEach(function (item, index) {
         const elem = item.element;

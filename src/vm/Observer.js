@@ -58,6 +58,8 @@ export class Observer implements IObservable {
             this.state.data = data;
             enqueueUpdate(this);
             updateRefs(this);
+        } else {
+            this.state.version++;
         }
         return this;
     }

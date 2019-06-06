@@ -63,9 +63,8 @@ export function prependElement(parentElement, element) {
 
     if (element.vnode) {
         if (isComponentElement(element)) {
-            element = element.component.element;
-        }
-        if (element.type === 'root') {
+            element.component.prependTo(parentNode);
+        } else if (element.type === 'root') {
             prependNode(parentNode, element.firstChild);
             syncRootChildElements(element);
         } else {
@@ -91,9 +90,8 @@ export function insertElementAfter(destElement, element) {
     let destNode = getInsertAfterNode(destElement);
     if (element.vnode) {
         if (isComponentElement(element)) {
-            element = element.component.element;
-        }
-        if (element.type === 'root') {
+            element.component.insertAfter(destNode);
+        } else if (element.type === 'root') {
             insertAfter(destNode, element.firstChild);
             syncRootChildElements(element);
         } else {
@@ -115,7 +113,7 @@ function insertAfter(destNode, newNode) {
 function getInsertAfterNode(element) {
     if (element.vnode) {
         if (isComponentElement(element)) {
-            element = element.component.element;
+            element = element.component.rootElement;
         }
         if (element.type === 'root') {
             const childElements = element.childElements;
@@ -144,9 +142,8 @@ export function syncRootChildElements(element) {
 export function removeElement(element) {
     if (element.vnode) {
         if (isComponentElement(element)) {
-            element = element.component.element;
-        }
-        if (element.vnode.type === 'root') {
+            element.component.remove();
+        } else if (element.vnode.type === 'root') {
             const childElements = element.childElements;
             if (childElements) {
                 for (let i = childElements.length; i >= 0; i++) {

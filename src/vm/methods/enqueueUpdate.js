@@ -261,16 +261,15 @@ function flushViews() {
 
         viewIds[id] = false;
 
-        if (!target.state.rendered) {
+        if (target.state.renderedVersion !== target.state.version) {
             target.render(fiber);
             if (fiber.current) {
-                target.state.rendered = false;
                 scheduleFlushViews();
                 return;
             }
+            target.state.renderedVersion = target.state.version;
+            target.trigger('render');
         }
-        target.state.rendered = false;
-        target.trigger('render');
 
         fiber.index = i + 1;
         fiber.current = null;

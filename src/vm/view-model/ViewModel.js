@@ -317,8 +317,6 @@ export class ViewModel extends Model {
     }
 
     render(fiber) {
-        this.state.rendered = true;
-
         let shouldReturn = false;
         let rendered = [];
 
@@ -351,7 +349,7 @@ export class ViewModel extends Model {
             }
         };
 
-        if (fiber.current) {
+        if (fiber && fiber.current) {
             const {
                 rendered: renderedElements,
                 stack,
@@ -390,6 +388,7 @@ export class ViewModel extends Model {
         }
 
         if (!shouldReturn) {
+            this.state.renderedVersion = this.state.version;
             this.trigger('viewDidUpdate');
             this.viewDidUpdate && this.viewDidUpdate();
         }
