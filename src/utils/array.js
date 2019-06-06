@@ -1,7 +1,7 @@
 import { isArray } from './is';
 import { contains, equals } from './object';
 
-var RE_QUERY_ATTR = /([\w]+)(\^|\*|=|!|\$|~)?=(\d+|null|undefined|true|false|'(?:\\'|[^'])*'|"(?:\\"|[^"])*"|(?:.*?(?=[,\|&])))([,\|&])?/g;
+var RE_QUERY_ATTR = /([\w]+)(\^|\*|=|!|\$|~)?=(\d+|null|undefined|true|false|'(?:\\'|[^'])*'|"(?:\\"|[^"])*"|(?:.*?(?=[,|&])))([,|&])?/g;
 
 /**
  * 将 query 编译成 查询方法
@@ -378,7 +378,7 @@ export function groupBy(query, data) {
     var operations = [];
 
     query.split(/\s*,\s*/).forEach(function (item) {
-        var m = /(sum|avg)\(([^\)]+)\)/.exec(item);
+        var m = /(sum|avg)\(([^)]+)\)/.exec(item);
         if (m) {
             operations.push({
                 operation: m[1],

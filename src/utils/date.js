@@ -41,7 +41,7 @@ export function splitTime(timestamp, type = "D") {
  * @return {Date}
  */
 export function parseDate(date) {
-    date = date.split(/\s+|:|\-|年|月|日|\//).map(function (time) {
+    date = date.split(/\s+|:|-|年|月|日|\//).map(function (time) {
         return parseInt(time, 10);
     });
 

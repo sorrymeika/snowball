@@ -1,5 +1,5 @@
 export function validateEmail(email) {
-    return /^[-_a-zA-Z0-9\.]+@([-_a-zA-Z0-9]+\.)+[a-zA-Z0-9]{2,3}$/.test(email);
+    return /^[-_a-zA-Z0-9.]+@([-_a-zA-Z0-9]+\.)+[a-zA-Z0-9]{2,3}$/.test(email);
 }
 
 export function validateMobile(str) {

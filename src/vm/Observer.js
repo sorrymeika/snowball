@@ -1,10 +1,13 @@
 import { eventMixin } from '../core/event';
 import { get } from '../utils/object';
 import { identify } from '../utils/guid';
+
 import { enqueueUpdate, nextTick, enqueueInit } from './methods/enqueueUpdate';
 import { updateRefs } from './methods/updateRefs';
 import { connect, disconnect } from './methods/connect';
+
 import compute from './operators/compute';
+
 
 export interface IObservable {
     get: () => any,

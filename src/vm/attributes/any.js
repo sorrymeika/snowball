@@ -2,7 +2,7 @@ import initializer from "./initializer";
 import { source } from "./symbols";
 import { reactTo } from "../Reaction";
 
-export function object(target, name, descriptor) {
+export function any(target, name, descriptor) {
     initializer(target, name, descriptor);
 
     return {

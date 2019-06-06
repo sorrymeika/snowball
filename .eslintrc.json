@@ -3,11 +3,6 @@
         "react-app",
         "plugin:flowtype/recommended"
     ],
-    "settings": {
-        "flowtype": {
-            "onlyFilesWithFlowAnnotation": false
-        }
-    },
     "rules": {
         "no-restricted-globals": "off",
         "semi": "error",
@@ -104,6 +99,7 @@
                 "SwitchCase": 1
             }
         ],
-        "default-case": "off"
+        "default-case": "off",
+        "flowtype/no-types-missing-file-annotation": "off"
     }
 }

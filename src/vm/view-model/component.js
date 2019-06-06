@@ -1,6 +1,6 @@
 import { TEXT_NODE, ELEMENT_NODE } from '../../utils/dom';
 import { camelCase } from '../../utils/string';
-import { ViewModel } from '../ViewModel';
+import { ViewModel } from './ViewModel';
 
 const registedComponents = {};
 

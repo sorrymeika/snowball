@@ -1,13 +1,13 @@
-import * as objectUtils from '../utils/object';
-import { $ } from '../utils/dom';
-import * as $filter from './compilers/filter';
-import * as util from '../utils';
+import * as objectUtils from '../../utils/object';
+import { $ } from '../../utils/dom';
+import * as $filter from './filter';
+import * as util from '../../utils';
 
-import { unbindEvents, bindEvents } from './compilers/events';
-import { TemplateCompiler } from './compilers/template';
+import { unbindEvents, bindEvents } from './events';
+import { TemplateCompiler } from './template';
 
-import { Model } from './Model';
-import { enqueueUpdate, shouldContinueFlushingViews } from './methods/enqueueUpdate';
+import { Model } from '../Model';
+import { enqueueUpdate, shouldContinueFlushingViews } from '../methods/enqueueUpdate';
 
 function compileNewTemplate(viewModel, template) {
     var $element = $(template);

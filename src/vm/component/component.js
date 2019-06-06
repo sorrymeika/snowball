@@ -1,7 +1,7 @@
 import { compile } from "./compile";
 import { createElement, syncRootChildElements } from "./element";
 import { render } from "./render";
-import { $ } from "../../utils";
+import { $, isFunction } from "../../utils";
 
 const factories = {};
 
@@ -21,11 +21,22 @@ export function component({
             data.__state = this;
             render(this.state.rootElement, this, data);
             this.state.rendered = true;
+            return this.state.component;
         };
+
+        if (isFunction(State.prototype.initialize)) {
+            const set = State.prototype.set;
+            State.prototype.set = function (data) {
+                this.initialize(data);
+                this.set = set;
+            };
+        }
+
 
         const componentClass = class Component {
             constructor(data) {
                 this.state = new State(data);
+                this.state.state.component = this;
                 this.element = this.state.state.rootElement = createElement(rootVNode);
             }
 
@@ -61,12 +72,19 @@ export function component({
 
             set(data) {
                 this.state.set(data);
+                return this;
             }
 
             render() {
                 this.state.render();
+                return this;
             }
         };
-        factories[selector] = componentClass;
+        if (selector) {
+            if (factories[selector]) {
+                throw new Error('`' + selector + '` is already registered!');
+            }
+            factories[selector] = componentClass;
+        }
     };
 }

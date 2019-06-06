@@ -25,8 +25,7 @@ function initElementIf(el, type) {
 function setFunctionId(template, node, val) {
     node.snIfFid = template.compileToFunction(val.charAt(0) == '{' && val.slice(-1) == '}'
         ? val.slice(1, -1)
-        : val,
-        false);
+        : val, false);
 }
 
 function insertIfSourceElement(el) {

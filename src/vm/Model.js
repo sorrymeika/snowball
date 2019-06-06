@@ -17,7 +17,7 @@ import compute from './operators/compute';
 import { source } from './attributes/symbols';
 
 const toString = Object.prototype.toString;
-const RE_QUERY = /(?:^|\.)([_a-zA-Z0-9]+)(\[(?:'(?:\\'|[^'])*'|"(?:\\"|[^"])*"|[^\]])+\](?:\[[\+\-]?\d*\])?)?/g;
+const RE_QUERY = /(?:^|\.)([_a-zA-Z0-9]+)(\[(?:'(?:\\'|[^'])*'|"(?:\\"|[^"])*"|[^\]])+\](?:\[[+-]?\d*\])?)?/g;
 
 export class Model extends Observer {
     static createAttribute(parent, name, value) {

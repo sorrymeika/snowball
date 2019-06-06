@@ -13,7 +13,7 @@ import { observeProp, unobserveProp } from './methods/observeProp';
 import compute from './operators/compute';
 import { source } from './attributes/symbols';
 
-var RE_COLL_QUERY = /\[((?:'(?:\\'|[^'])*'|"(?:\\"|[^"])*"|[^\]])+)\](?:\[([\+\-]?)(\d+)?\])?(?:\.(.*))?/;
+var RE_COLL_QUERY = /\[((?:'(?:\\'|[^'])*'|"(?:\\"|[^"])*"|[^\]])+)\](?:\[([+-]?)(\d+)?\])?(?:\.(.*))?/;
 
 function matcher(key, val) {
     return isString(key)

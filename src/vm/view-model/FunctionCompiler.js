@@ -1,5 +1,3 @@
-import * as util from '../../utils';
-import { isObservable } from '../predicates';
 import compileExpression from './compileExpression';
 
 var vmExpressionsId = 1;
