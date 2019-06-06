@@ -1,24 +1,21 @@
-import { Observer } from "./Observer";
-import { Model } from "./Model";
-import { Collection } from "./Collection";
-import List from "./List";
+export const OBSERVER_TYPE_KEY = '%_ObserverObjectType_%';
 
 export function isObserver(observer) {
-    return observer && observer.constructor === Observer;
+    return observer && observer[OBSERVER_TYPE_KEY] === 'Observer';
 }
 
 export function isObservable(observer) {
-    return observer instanceof Observer;
+    return !!(observer && observer[OBSERVER_TYPE_KEY]);
 }
 
 export function isModel(model) {
-    return model instanceof Model;
+    return model && model[OBSERVER_TYPE_KEY] === 'Model';
 }
 
 export function isCollection(collection) {
-    return collection instanceof Collection;
+    return collection && collection[OBSERVER_TYPE_KEY] === 'Collection';
 }
 
 export function isList(list) {
-    return list instanceof List;
+    return list && list[OBSERVER_TYPE_KEY] === 'List';
 }

@@ -5,7 +5,7 @@ import { get } from '../utils/object';
 import { Observer } from './Observer';
 import { Collection } from './Collection';
 
-import { isModel, isCollection, isObservable } from './predicates';
+import { isModel, isCollection, isObservable, OBSERVER_TYPE_KEY } from './predicates';
 
 import { enqueueUpdate } from './methods/enqueueUpdate';
 import { blindSet } from './methods/blindSet';
@@ -380,6 +380,9 @@ export class Model extends Observer {
         }
     }
 }
+
+Model.prototype[OBSERVER_TYPE_KEY] = 'Model';
+
 
 function createAttribute(model, name, value) {
     return model.constructor.createAttribute(model, name, value);

@@ -7,6 +7,7 @@ import { updateRefs } from './methods/updateRefs';
 import { connect, disconnect } from './methods/connect';
 
 import compute from './operators/compute';
+import { OBSERVER_TYPE_KEY } from './predicates';
 
 
 export interface IObservable {
@@ -121,6 +122,8 @@ export class Observer implements IObservable {
     }
 }
 
+Observer.prototype[OBSERVER_TYPE_KEY] = 'Observer';
+
 eventMixin(Observer);
 
 export function readonlyObserver(observer) {
@@ -134,3 +137,51 @@ export function readonlyObserver(observer) {
     });
     return [observer, set];
 }
+
+export class ChangeObserver implements IObservable {
+    constructor(observer, name) {
+        this.state = { updated: observer.updated };
+        this.observer = observer;
+        this.name = name;
+        this.callbacks = [];
+    }
+
+    get() {
+        return this.observer.get(this.name);
+    }
+
+    observe(cb) {
+        this.observer.observe(this.name, cb);
+        this.callbacks.push(cb);
+        return this;
+    }
+
+    unobserve(cb) {
+        this.observer.unobserve(this.name, cb);
+
+        const callbacks = this.callbacks;
+        for (var i = callbacks.length - 1; i >= 0; i--) {
+            if (callbacks[i] === cb) {
+                callbacks.splice(i, 1);
+            }
+        }
+        return this;
+    }
+
+    valueOf() {
+        return this.get();
+    }
+
+    destroy() {
+        const callbacks = this.callbacks;
+        for (var i = callbacks.length - 1; i >= 0; i--) {
+            this.observer.unobserve(this.name, callbacks[i]);
+        }
+        this.observer = null;
+        this.callbacks = null;
+    }
+}
+
+ChangeObserver.prototype.compute = Observer.prototype.compute;
+
+ChangeObserver.prototype[OBSERVER_TYPE_KEY] = 'ChangeObserver';
