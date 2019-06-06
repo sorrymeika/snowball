@@ -248,6 +248,7 @@ function readStartTag(input, cursor) {
     let prevChar = '';
     let match;
     let attributes;
+    let events;
     let props;
 
     while (cursor < input.length) {
@@ -258,6 +259,7 @@ function readStartTag(input, cursor) {
                 match = readAttributes(input, cursor);
                 if (match) {
                     attributes = match.attributes;
+                    events = match.events;
                     props = match.props;
                     cursor = match.cursor;
                 }
@@ -266,8 +268,9 @@ function readStartTag(input, cursor) {
                 return {
                     tagName,
                     selfClose: prevChar === '/',
-                    props,
                     attributes,
+                    events,
+                    props,
                     cursor
                 };
             case '<':
@@ -336,13 +339,15 @@ function readAttributes(input, cursor) {
             case '@':
                 name = '';
 
-                do {
+                while (1) {
                     c = input[cursor++];
                     if (!c || c == '<' || c == '>') {
                         return;
                     }
+                    if (c == '=')
+                        break;
                     name += c;
-                } while (c != '=');
+                }
 
                 match = readEvent(input, cursor);
                 events.push(name, match.value);

@@ -60,15 +60,29 @@ export function render(element: IElement, state, data) {
             element.node = document.createTextNode(vnode.nodeValue || '');
         } else {
             const nodeName = vnode.tagName;
-            var node = vnode.isSvg ? document.createElementNS('http://www.w3.org/2000/svg', nodeName) : document.createElement(nodeName);
-            const attributes = vnode.attributes;
+            const node = vnode.isSvg ? document.createElementNS('http://www.w3.org/2000/svg', nodeName) : document.createElement(nodeName);
 
             element.node = node;
 
+            const attributes = vnode.attributes;
             if (attributes) {
                 for (let i = 0; i < attributes.length; i += 2) {
                     setAttribute(element, attributes[i], attributes[i + 1]);
                 }
+            }
+        }
+    }
+
+    const events = vnode.events;
+    if (events) {
+        element.eventData = data;
+        if (!element.bindEvent) {
+            element.bindEvent = true;
+            for (let i = 0; i < events.length; i += 2) {
+                const fid = events[i + 1];
+                element.node.addEventListener(events[i], () => {
+                    return invoke(element, element.eventData, fid, $setter);
+                });
             }
         }
     }
@@ -91,7 +105,6 @@ export function render(element: IElement, state, data) {
                     }
                 }
                 if (child.isRepeat) {
-                    renderRepeatItem(child, state, data);
                     renderRepeatItem(child, state, data);
                     prevSibling = child.closeNode;
                 } else {
@@ -303,8 +316,8 @@ function renderRepeatItem(element: IElement, state, data) {
     return element;
 }
 
-function invoke(element, data, fid) {
-    return element.root.vnode.fns[fid](data);
+function invoke(element, data, fid, arg1, arg2) {
+    return element.root.vnode.fns[fid](data, arg1, arg2);
 }
 
 function autoSet(element, name, data, fid) {
@@ -313,3 +326,19 @@ function autoSet(element, name, data, fid) {
     reaction.__propAutoSet = autorun;
     return reaction;
 }
+
+function $setter(key, data) {
+    return Object.create(null, {
+        value: {
+            set(val) {
+                let source = data[key];
+
+                if (source && source.__state) {
+                    source.__state.set(val);
+                } else {
+                    data.__state.set({ [key]: val });
+                }
+            }
+        }
+    });
+};

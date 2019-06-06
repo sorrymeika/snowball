@@ -6,7 +6,9 @@ import { ViewModel, component, Model } from './vm';
 @component({
     tagName: 'Test',
     template: `
-    <ul>
+    
+    <ul @click={a=1}>
+    {a}
     <li sn-repeat="item,i in data">a:{i},{item.name}</li>
     </ul>
     <Test1 data={data} />`

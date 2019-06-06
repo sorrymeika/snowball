@@ -20,7 +20,10 @@ export function component({
         State.prototype.render = function () {
             const data = Object.create(this.state.data || null);
             data.__state = this;
-            render(this.state.component.rootElement, this, data);
+            const { rootElement } = this.state.component;
+            const events = rootElement.events = {};
+            render(rootElement, this, data);
+            console.log(events);
             this.state.renderedVersion = this.state.version;
             return this.state.component;
         };
@@ -51,8 +54,10 @@ export function component({
             constructor(data) {
                 this.state = new State(data);
                 this.state.state.component = this;
-                this.rootElement = createElement(rootVNode);
-                this.rootElement.components = [];
+
+                const rootElement = this.rootElement = createElement(rootVNode);
+                rootElement.id = this.state.state.id;
+                rootElement.components = [];
 
                 this.state.on('destroy', () => {
                     this.remove();
