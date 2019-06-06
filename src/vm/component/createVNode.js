@@ -49,10 +49,12 @@ export function createVNode({ tagName, events, props, attributes }) {
                 vnodeProps.push(key, val);
             }
         }
+    }
 
-        for (let i = 0; i < props.length; i += 2) {
-            const key = props[i],
-                val = props[i + 1];
+    if (attributes) {
+        for (let i = 0; i < attributes.length; i += 2) {
+            const key = attributes[i],
+                val = attributes[i + 1];
 
             if (key === 'sn-repeat') {
                 const match = val.match(RE_REPEAT);
@@ -63,6 +65,7 @@ export function createVNode({ tagName, events, props, attributes }) {
                 const orderBy = match[5];
 
                 vnode.repeatProps = {
+                    value: val,
                     dataSourcePath,
                     alias,
                     indexAlias,
@@ -87,9 +90,11 @@ export function createVNode({ tagName, events, props, attributes }) {
 }
 
 function compileFilter(filter) {
-    const match = readExpression(filter + '}', 0);
-    if (match) {
-        return match.value;
+    if (filter) {
+        const match = readExpression(filter + '}', 0);
+        if (match) {
+            return match.value;
+        }
     }
 }
 

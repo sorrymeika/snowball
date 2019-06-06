@@ -386,6 +386,7 @@ function readEvent(input, cursor) {
 function readAttributeValue(input, cursor) {
     let c;
     let value = '';
+    let match;
 
     while (cursor < input.length) {
         c = input[cursor++];
@@ -407,7 +408,11 @@ function readAttributeValue(input, cursor) {
             case '\'':
             case '"':
                 // 读取string
-                return readString(input, cursor, c);
+                match = readString(input, cursor, c);
+                if (match) {
+                    match.value = match.value.slice(1, -1);
+                }
+                return match;
             default:
                 value += c;
                 break;

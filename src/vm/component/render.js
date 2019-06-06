@@ -42,7 +42,7 @@ export function render(element: IElement, state, data) {
     }
 
     if (vnode.repeatProps && element.type !== 'repeat-item') {
-        return renderRepeat(element, state, data);
+        return renderRepeat(element);
     }
 
     const isComponent = vnode.type === 'component';
@@ -89,8 +89,13 @@ export function render(element: IElement, state, data) {
                         insertElementAfter(prevSibling, child);
                     }
                 }
+                if (child.isRepeat) {
+                    renderRepeatItem(child, state, data);
+                    prevSibling = child.closeNode;
+                } else {
+                    prevSibling = child;
+                }
                 element.childElements.push(child);
-                prevSibling = child;
             }
         }
     }
@@ -130,7 +135,20 @@ export function render(element: IElement, state, data) {
     return element;
 }
 
-function renderRepeat(element: IElement, state, data) {
+function renderRepeat(element: IElement) {
+    const {
+        value
+    } = element.vnode.repeatProps;
+
+    if (!element.node) {
+        element.node = document.createComment('repeat start: ' + value);
+        element.closeNode = document.createComment('repeat end: ' + value);
+        element.isRepeat = true;
+    }
+    return element;
+}
+
+function renderRepeatItem(element: IElement, state, data) {
     const {
         dataSourcePath,
         alias,
@@ -138,7 +156,7 @@ function renderRepeat(element: IElement, state, data) {
         filter,
         orderByType,
         orderBy
-    } = element.repeatProps;
+    } = element.vnode.repeatProps;
 
     const dataSourceName = dataSourcePath[0];
 
@@ -153,12 +171,16 @@ function renderRepeat(element: IElement, state, data) {
 
         if (!sourceState) {
             sourceState = state;
+            paths = dataSourcePath;
         } else {
             paths = dataSourcePath.slice(1);
         }
-        collection = isModel(sourceState)
-            ? sourceState._(paths)
-            : get(sourceState.state.data, paths);
+
+        collection = !paths
+            ? source
+            : isModel(sourceState)
+                ? sourceState._(paths)
+                : get(sourceState.state.data, paths);
     }
 
     if (!isCollection(collection)) {
@@ -250,17 +272,19 @@ function renderRepeat(element: IElement, state, data) {
         });
     }
 
-    let cursorElement;
+    let cursorElement = element;
 
     list.forEach(function (item, index) {
         const elem = item.element;
 
-        indexAlias && (elem.data[indexAlias] = index);
-        render(elem, state, elem.data);
+        indexAlias && (item.data[indexAlias] = index);
+        render(elem, state, item.data);
         insertElementAfter(cursorElement, elem);
 
         cursorElement = elem;
     });
+
+    insertElementAfter(cursorElement, element.closeNode);
 
     const refs = [];
     // 移除过滤掉的element

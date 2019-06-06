@@ -6,7 +6,9 @@ export type IElement = {
     vnode: IVNode,
     node: any,
     parent: IElement,
+    // 所有子元素
     children: IElement[],
+    // 当前可见的子元素
     childElements: IElement[]
 }
 
