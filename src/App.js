@@ -5,7 +5,9 @@ import { ViewModel, component, Model } from './vm';
 
 @component({
     tagName: 'Test',
-    template: `<div>234</div>`
+    template: `<div>234{a}
+    <span>bb<span>aa</span>b</span>
+    </div>`
 })
 class Test extends Model {
 }
@@ -22,11 +24,12 @@ class App extends Component {
                 name: 'xxx'
             }
         });
-
         viewModel.appendTo(root);
 
-        const test = new Test();
-
+        const test = new Test({
+            a: ',,,'
+        });
+        test.appendTo(root);
         console.log(test);
     }
 

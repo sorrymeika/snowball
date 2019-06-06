@@ -14,7 +14,7 @@ export function createElement(vnode: IVNode, root: IElement): IElement {
     const result = {
         vnode
     };
-    result.root = root || result;
+    result.root = root || (root = result);
 
     const vchildren = vnode.children;
     if (vchildren) {

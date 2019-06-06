@@ -95,7 +95,7 @@ export function readExpression(input, cursor) {
     if (tempVars.length) {
         code = 'var ' + tempVars.join(',') + ';' + code;
     }
-    code += match.value + ';}catch(e){';
+    code += match.value.slice(0, -1) + ';}catch(e){';
 
     if (process.env.NODE_ENV === 'development') {
         code += 'console.error(e);';
@@ -166,6 +166,16 @@ function readHtmlString(input) {
     let match: IMatch;
     let parentVNode;
 
+    function appendText() {
+        if (text && (text = text.trim())) {
+            appendChild(vnodes[vnodes.length - 1], {
+                type: 'textNode',
+                nodeValue: text
+            });
+            text = '';
+        }
+    }
+
     while (cursor < length) {
         c = input[cursor++];
 
@@ -174,23 +184,21 @@ function readHtmlString(input) {
                 if (input[cursor] == '/') {
                     match = readEndTag(input, cursor);
                     if (match) {
+                        appendText();
                         cursor = match.cursor;
                     }
                 } else {
                     match = readElement(input, cursor);
                     if (match) {
+                        appendText();
                         parentVNode = vnodes[vnodes.length - 1];
-
-                        if (text && (text = text.trim())) {
-                            appendChild(parentVNode, {
-                                type: 'textNode',
-                                nodeValue: text
-                            });
-                            text = '';
-                        }
-
                         appendChild(parentVNode, match.vnode);
                         cursor = match.cursor;
+
+                        if (!match.selfClose) {
+                            vnodes.push(match.vnode);
+                            parentVNode = match.vnode;
+                        }
                     } else {
                         text += c;
                     }
@@ -199,6 +207,7 @@ function readHtmlString(input) {
             case '{':
                 match = readExpression(input, cursor);
                 if (match) {
+                    appendText();
                     parentVNode = vnodes[vnodes.length - 1];
                     appendChild(parentVNode, {
                         type: 'textNode',
@@ -213,12 +222,7 @@ function readHtmlString(input) {
         }
     }
 
-    if (text && (text = text.trim())) {
-        appendChild(vnodes[vnodes.length - 1], {
-            type: 'textNode',
-            nodeValue: text
-        });
-    }
+    appendText();
 }
 
 function readElement(input, cursor, parent: IVNode) {
@@ -230,13 +234,10 @@ function readElement(input, cursor, parent: IVNode) {
 
     const vnode = createVNode(tag);
 
-    if (!tag.selfClose) {
-        vnodes.push(vnode);
-    }
-
     return {
+        selfClose: tag.selfClose,
         cursor: tag.cursor,
-        vnode: vnode
+        vnode
     };
 }
 
@@ -287,14 +288,14 @@ function readEndTag(input, cursor) {
     let tagName = '';
 
     while (cursor < input.length) {
-        c = input[cursor++];
+        c = input[++cursor];
 
         switch (c) {
             case '>':
                 vnodes.pop();
                 return {
                     tagName,
-                    cursor
+                    cursor: cursor + 1
                 };
             default:
                 if (!validTagName(c)) {
@@ -424,7 +425,7 @@ function readBlock(input, cursor, endChars) {
         if (endChars.includes(c)) {
             return {
                 value: result + c,
-                cursor
+                cursor: cursor
             };
         }
 

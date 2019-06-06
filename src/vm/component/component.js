@@ -2,6 +2,7 @@ import { compile } from "./compile";
 import { createElement, syncRootChildElements } from "./element";
 import { render } from "./render";
 import { $, isFunction } from "../../utils";
+import { nextTick } from "../methods/enqueueUpdate";
 
 const factories = {};
 
@@ -19,55 +20,61 @@ export function component({
         State.prototype.render = function () {
             const data = Object.create(this.state.data || null);
             data.__state = this;
-            render(this.state.rootElement, this, data);
-            this.state.rendered = true;
+            render(this.state.component.rootElement, this, data);
             return this.state.component;
         };
 
         if (isFunction(State.prototype.initialize)) {
             const set = State.prototype.set;
             State.prototype.set = function (data) {
-                this.initialize(data);
                 this.set = set;
+                this.initialize(data);
             };
         }
 
+        function nodeHandler(element, action) {
+            const { rootElement } = this;
+            const handle = () => {
+                $(rootElement.firstChild)[action](element);
+                syncRootChildElements(rootElement);
+            };
+
+            rootElement.firstChild
+                ? handle()
+                : nextTick(handle);
+
+            return this;
+        }
 
         const componentClass = class Component {
             constructor(data) {
                 this.state = new State(data);
                 this.state.state.component = this;
-                this.element = this.state.state.rootElement = createElement(rootVNode);
+                this.rootElement = createElement(rootVNode);
             }
 
             appendTo(element) {
-                $(this.element.firstChild).appendTo(element);
-                syncRootChildElements(this.element);
+                return nodeHandler.call(this, element, 'appendTo');
             }
 
             prependTo(element) {
-                $(this.element.firstChild).prependTo(element);
-                syncRootChildElements(this.element);
+                return nodeHandler.call(this, element, 'prependTo');
             }
 
             before(element) {
-                $(this.element.firstChild).before(element);
-                syncRootChildElements(this.element);
+                return nodeHandler.call(this, element, 'before');
             }
 
             after(element) {
-                $(this.element.firstChild).after(element);
-                syncRootChildElements(this.element);
+                return nodeHandler.call(this, element, 'after');
             }
 
             insertAfter(element) {
-                $(this.element.firstChild).insertAfter(element);
-                syncRootChildElements(this.element);
+                return nodeHandler.call(this, element, 'insertAfter');
             }
 
             insertBefore(element) {
-                $(this.element.firstChild).insertBefore(element);
-                syncRootChildElements(this.element);
+                return nodeHandler.call(this, element, 'insertBefore');
             }
 
             set(data) {
@@ -80,6 +87,7 @@ export function component({
                 return this;
             }
         };
+
         if (tagName) {
             if (factories[tagName]) {
                 throw new Error('`' + tagName + '` is already registered!');

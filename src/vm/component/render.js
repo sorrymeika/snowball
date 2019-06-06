@@ -118,7 +118,7 @@ export function render(element: IElement, state, data) {
             if (!autoruns) {
                 element.autoruns = autoruns = [];
                 for (let i = 0; i < props.length; i += 2) {
-                    autoruns.push(autoSet(element, props[i], props[i + 1]));
+                    autoruns.push(autoSet(element, props[i], data, props[i + 1]));
                 }
             }
             for (let i = 0; i < autoruns.length; i++) {
@@ -277,7 +277,7 @@ function renderRepeat(element: IElement, state, data) {
 }
 
 function invoke(element, data, fid) {
-    return element.root.fns[fid](data);
+    return element.root.vnode.fns[fid](data);
 }
 
 function autoSet(element, name, data, fid) {
