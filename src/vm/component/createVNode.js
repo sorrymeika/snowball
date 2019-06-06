@@ -21,62 +21,66 @@ export function createVNode({ tagName, events, props, attributes }) {
         events
     };
 
-    if (tagName.slice(0, 3) === 'sn-') {
+    if (tagName.slice(0, 3) === 'sn-' || /^[A-Z]/.test(tagName[0])) {
         vnode.type = 'component';
     } else {
         vnode.type = 'node';
     }
 
     const vnodeProps = [];
-    for (let i = 0; i < props.length; i += 2) {
-        let key = props[i],
-            val = props[i + 1];
-
-        if (key === 'sn-if' || key === 'sn-else-if' || key === 'sn-else') {
-            vnode.visibleProps = {
-                type: key.slice(3),
-                fid: val
-            };
-        } else if (key === 'ref') {
-            vnode.refProps = {
-                type: 'func',
-                fid: val
-            };
-        } else {
-            vnodeProps.push(key, val);
-        }
-    }
-    vnode.props = vnodeProps;
-
     const vnodeAttrs = [];
-    for (let i = 0; i < props.length; i += 2) {
-        const key = props[i],
-            val = props[i + 1];
 
-        if (key === 'sn-repeat') {
-            const match = val.match(RE_REPEAT);
-            const alias = match[1];
-            const indexAlias = match[2];
-            const dataSourcePath = match[3].split('.');
-            const filter = match[4];
-            const orderBy = match[5];
+    if (props) {
+        for (let i = 0; i < props.length; i += 2) {
+            let key = props[i],
+                val = props[i + 1];
 
-            vnode.repeatProps = {
-                dataSourcePath,
-                alias,
-                indexAlias,
-                filter: compileFilter(filter),
-                ...compileOrderBy(orderBy)
-            };
-        } else if (key === 'ref') {
-            vnode.refProps = {
-                type: 'string',
-                name: val
-            };
-        } else {
-            vnodeAttrs.push(key, val);
+            if (key === 'sn-if' || key === 'sn-else-if' || key === 'sn-else') {
+                vnode.visibleProps = {
+                    type: key.slice(3),
+                    fid: val
+                };
+            } else if (key === 'ref') {
+                vnode.refProps = {
+                    type: 'func',
+                    fid: val
+                };
+            } else {
+                vnodeProps.push(key, val);
+            }
+        }
+
+        for (let i = 0; i < props.length; i += 2) {
+            const key = props[i],
+                val = props[i + 1];
+
+            if (key === 'sn-repeat') {
+                const match = val.match(RE_REPEAT);
+                const alias = match[1];
+                const indexAlias = match[2];
+                const dataSourcePath = match[3].split('.');
+                const filter = match[4];
+                const orderBy = match[5];
+
+                vnode.repeatProps = {
+                    dataSourcePath,
+                    alias,
+                    indexAlias,
+                    filter: compileFilter(filter),
+                    ...compileOrderBy(orderBy)
+                };
+            } else if (key === 'ref') {
+                vnode.refProps = {
+                    type: 'string',
+                    name: val
+                };
+            } else {
+                vnodeAttrs.push(key, val);
+            }
         }
     }
+
+    vnode.props = vnodeProps;
     vnode.attributes = vnodeAttrs;
 
     return vnode;

@@ -10,14 +10,14 @@ export function createComponent(tagName) {
 }
 
 export function component({
-    selector,
+    tagName,
     template
 }) {
     const rootVNode = compile(template);
 
     return (State) => {
         State.prototype.render = function () {
-            const data = Object.create(this.state.data);
+            const data = Object.create(this.state.data || null);
             data.__state = this;
             render(this.state.rootElement, this, data);
             this.state.rendered = true;
@@ -80,11 +80,13 @@ export function component({
                 return this;
             }
         };
-        if (selector) {
-            if (factories[selector]) {
-                throw new Error('`' + selector + '` is already registered!');
+        if (tagName) {
+            if (factories[tagName]) {
+                throw new Error('`' + tagName + '` is already registered!');
             }
-            factories[selector] = componentClass;
+            factories[tagName] = componentClass;
         }
+
+        return componentClass;
     };
 }

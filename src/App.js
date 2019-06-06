@@ -1,7 +1,14 @@
 import React, { Component } from 'react';
 import ReactDOM from 'react-dom';
 import './App.css';
-import { ViewModel } from './vm';
+import { ViewModel, component, Model } from './vm';
+
+@component({
+    tagName: 'Test',
+    template: `<div>234</div>`
+})
+class Test extends Model {
+}
 
 
 class App extends Component {
@@ -17,6 +24,10 @@ class App extends Component {
         });
 
         viewModel.appendTo(root);
+
+        const test = new Test();
+
+        console.log(test);
     }
 
     render() {

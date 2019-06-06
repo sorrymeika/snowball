@@ -182,14 +182,14 @@ function readHtmlString(input) {
                         parentVNode = vnodes[vnodes.length - 1];
 
                         if (text && (text = text.trim())) {
-                            parentVNode.children.push({
+                            appendChild(parentVNode, {
                                 type: 'textNode',
                                 nodeValue: text
                             });
                             text = '';
                         }
 
-                        parentVNode.children.push(match.vnode);
+                        appendChild(parentVNode, match.vnode);
                         cursor = match.cursor;
                     } else {
                         text += c;
@@ -200,7 +200,7 @@ function readHtmlString(input) {
                 match = readExpression(input, cursor);
                 if (match) {
                     parentVNode = vnodes[vnodes.length - 1];
-                    parentVNode.children.push({
+                    appendChild(parentVNode, {
                         type: 'textNode',
                         props: ['nodeValue', match.value]
                     });
@@ -214,7 +214,7 @@ function readHtmlString(input) {
     }
 
     if (text && (text = text.trim())) {
-        vnodes[vnodes.length - 1].children.push({
+        appendChild(vnodes[vnodes.length - 1], {
             type: 'textNode',
             nodeValue: text
         });
@@ -672,4 +672,8 @@ function parseValue(str) {
     }
     code = '((' + code + ')?' + str + ':"")';
     return code.replace(/\.~\[/g, '[');
+}
+
+function appendChild(vnode, childVNode) {
+    (vnode.children || (vnode.children = [])).push(childVNode);
 }

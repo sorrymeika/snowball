@@ -18,7 +18,8 @@ export function createElement(vnode: IVNode, root: IElement): IElement {
 
     const vchildren = vnode.children;
     if (vchildren) {
-        const children = [];
+        const children = result.children = [];
+
         for (let i = 0; i < vchildren.length; i++) {
             let vchild = vchildren[i];
             let elem = createElement(vchild, root);
@@ -38,8 +39,9 @@ export function createElement(vnode: IVNode, root: IElement): IElement {
             elem.parent = result;
             children.push(elem);
         }
-        result.children = children;
     }
+
+    return result;
 }
 
 export function isComponentElement(element) {
