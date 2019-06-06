@@ -14,16 +14,15 @@ import { ViewModel, component, Model } from './vm';
 class Test extends Model {
 }
 
-@component({
+component({
     tagName: 'Test1',
     template: `<div>asfd:{data.length}
     <ul>
     <li sn-repeat="item,i in data">{i},{item.name}</li>
     </ul>
     </div>`
-})
-class Test1 extends Model {
-}
+})(class extends Model {
+});
 
 class App extends Component {
 
@@ -48,6 +47,10 @@ class App extends Component {
         });
         test.appendTo(root);
         console.log(test);
+
+        setTimeout(() => {
+            // test.destroy();
+        }, 1000);
     }
 
     render() {

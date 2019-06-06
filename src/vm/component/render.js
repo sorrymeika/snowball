@@ -49,6 +49,7 @@ export function render(element: IElement, state, data) {
     if (isComponent) {
         if (!element.component) {
             element.component = createComponent(vnode.tagName);
+            element.root.components.push(element.component);
         }
     } else if (!element.node) {
         if (vnode.type === 'root') {

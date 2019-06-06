@@ -135,6 +135,7 @@ export class ViewModel extends Model {
 
         if (util.isString(el)) {
             el = el.replace(/<sn-template\s+id=(["']?)(.+?)\1>([\s\S]+)<\/sn-template>/g, (match, q, id, template) => {
+
                 class Component extends ViewModel {
                 }
                 Component.isTemplateComponent = true;
@@ -235,7 +236,7 @@ export class ViewModel extends Model {
             });
     }
 
-    removeAllNodes() {
+    removeAll() {
         this.$el
             .each(function (i, el) {
                 if (el.snIfSource) {
@@ -245,7 +246,7 @@ export class ViewModel extends Model {
             .remove();
     }
 
-    takeAway(childNode) {
+    borrows(childNode) {
         childNode = findOwnNode(this, childNode);
         if (!childNode) return null;
 
@@ -256,7 +257,7 @@ export class ViewModel extends Model {
         return childNode;
     }
 
-    bringBack(childNode) {
+    returns(childNode) {
         var index = this.$el.indexOf(childNode);
         if (index != -1) {
             delete childNode.snViewModel;
@@ -266,7 +267,7 @@ export class ViewModel extends Model {
         }
     }
 
-    bringBackAll() {
+    returnsAll() {
         var nodes = this._outerNodes;
         if (nodes) {
             for (var i = nodes.length - 1; i >= 0; i--) {

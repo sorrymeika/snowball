@@ -52,6 +52,14 @@ export function component({
                 this.state = new State(data);
                 this.state.state.component = this;
                 this.rootElement = createElement(rootVNode);
+                this.rootElement.components = [];
+
+                this.state.on('destroy', () => {
+                    this.remove();
+                    this.rootElement.components.forEach((item) => {
+                        item.destroy();
+                    });
+                });
             }
 
             appendTo(element) {
@@ -100,6 +108,10 @@ export function component({
             set(data) {
                 this.state.set(data);
                 return this;
+            }
+
+            destroy() {
+                this.state.destroy();
             }
 
             render() {
