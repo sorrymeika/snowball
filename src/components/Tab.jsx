@@ -1,7 +1,7 @@
 import React, { Component, ReactNode } from "react";
 import ReactDOM from "react-dom";
 
-import { $ } from '../snowball/utils/dom';
+import { $ } from '../utils';
 
 type TabItem = {
     title: string,

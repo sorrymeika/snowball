@@ -1,10 +1,8 @@
-import { validateEventType } from "./internal/validateEventType";
-import { isString } from "../../utils";
-import { IS_CONTROLLER, IS_HANDLER, EVENT_SUBSCRIBERS } from "./symbols";
-import { isFunction } from "util";
+import { isString, isFunction } from "../../utils";
+import { IS_CONTROLLER, IS_HANDLER, MESSAGE_SUBSCRIBERS } from "./symbols";
 
 export function internal_subscribeAllMessagesOnInit(instance) {
-    const eventSubscribers = instance[EVENT_SUBSCRIBERS];
+    const eventSubscribers = instance[MESSAGE_SUBSCRIBERS];
     if (eventSubscribers) {
         const context = instance.getContext();
         for (var i = 0; i < eventSubscribers.length; i++) {
@@ -17,10 +15,6 @@ export function internal_subscribeAllMessagesOnInit(instance) {
 }
 
 export default function onMessage(eventType) {
-    if (!validateEventType(eventType)) {
-        throw new Error('不正确的事件类型格式：' + eventType);
-    }
-
     return (target, name, descriptor, args) => {
         if (process.env.NODE_ENV === 'development') {
             if (!isString(name)) {
@@ -36,9 +30,9 @@ export default function onMessage(eventType) {
             }, 0);
         }
 
-        const eventSubscribers = Object.prototype.hasOwnProperty.call(target, EVENT_SUBSCRIBERS)
-            ? target[EVENT_SUBSCRIBERS]
-            : (target[EVENT_SUBSCRIBERS] = target[EVENT_SUBSCRIBERS] ? [...target[EVENT_SUBSCRIBERS]] : []);
+        const eventSubscribers = Object.prototype.hasOwnProperty.call(target, MESSAGE_SUBSCRIBERS)
+            ? target[MESSAGE_SUBSCRIBERS]
+            : (target[MESSAGE_SUBSCRIBERS] = target[MESSAGE_SUBSCRIBERS] ? [...target[MESSAGE_SUBSCRIBERS]] : []);
 
         if (!eventSubscribers.findIndex(([existsType, existsName]) => existsType == eventType && existsName == name) != -1) {
             eventSubscribers.push([eventType, name]);

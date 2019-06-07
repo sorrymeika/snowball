@@ -1,5 +1,5 @@
 import React from 'react';
-import { Model } from '../../snowball/vm';
+import { Model } from '../../vm';
 import AnyPropType from '../AnyPropType';
 
 export default function provide(mapPropsToStore) {

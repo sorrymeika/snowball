@@ -1,7 +1,6 @@
 import React from "react";
 import VScrollView from './VScrollView';
-import { $ } from '../snowball/utils/dom';
-import { createSpmProps } from '../core/log';
+import { $ } from '../utils';
 
 export default class NavigationView extends VScrollView {
     constructor(props) {
@@ -273,14 +272,6 @@ export default class NavigationView extends VScrollView {
                                         return (
                                             <li
                                                 className={"app-navigation-view-bar-item" + (i === this.state.currentIndex ? ' curr' : '')}
-                                                {...createSpmProps('tab_navigation', {
-                                                    moduleType: 'tab_navigation',
-                                                    materialId: item.title,
-                                                    materialType: 'text',
-                                                    materialTransferType: 'input',
-                                                    posIndex: i + 1,
-                                                    subpageId: item.pageLogicId
-                                                })}
                                                 style={
                                                     i === this.state.currentIndex
                                                         ? selectedNavStyle

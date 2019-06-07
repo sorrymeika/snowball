@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import { $ } from '../snowball/utils/dom';
-import { ViewModel } from '../snowball/vm';
+import { $ } from '../utils';
+import { ViewModel } from '../vm';
 import { transformTFSImageUrl } from '../utils/tfs';
 import { addOnBeforeBackListener, removeOnBeforeBackListener } from '../core/app';
 import { animate, computeFrame } from '../graphics/animation';

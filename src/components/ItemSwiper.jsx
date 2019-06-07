@@ -1,8 +1,8 @@
 import React, { Component } from 'react';
 import ReactDOM from 'react-dom';
-import { $ } from '../snowball/utils/dom';
-import { Event } from '../snowball/core/event';
-import Touch from '../core/touch';
+import { $ } from '../utils/dom';
+import { Event } from '../core/event';
+import { Toucher } from '../widget';
 
 type ItemSwiperProps = {
     // buttons的宽度，即item向左可滑动的距离
@@ -71,7 +71,7 @@ export default class ItemSwiper extends Component<ItemSwiperProps, any> {
                 this._cancel = true;
             });
 
-        this.touch = new Touch(el, {
+        this.touch = new Toucher(el, {
             enableVertical: false,
             enableHorizontal: true,
             maxDuration: 200,

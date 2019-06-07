@@ -1,11 +1,9 @@
 import { IPage, PageLifecycleDelegate } from '../types';
-import { Model, State } from '../../../snowball/vm';
-import { store } from '../../../snowball/utils';
-import { EventEmitter } from '../../../snowball/core/event';
+import { Model, State } from '../../vm';
+import { store } from '../../utils';
+import { EventEmitter } from '../../core/event';
 import preloader from '../../../preloader';
-import { Sharer } from '../../appsdk/share/ShareData';
-import { validateMessageType } from '../../decorators/internal/validateMessageType';
-import { APP_ENV, OUT_BIZ_TYPE } from '../../env';
+import { Sharer } from '../appsdk/share/ShareData';
 
 const extentions = [];
 
@@ -74,7 +72,6 @@ export class Page extends EventEmitter implements IPage {
 
     postMessage(state) {
         if (!state.type) throw new Error('postMessage must has a `type`!');
-        if (!validateMessageType(state.type)) throw new Error('`type` 中不能包含`_`!');
         this.messageChannel.trigger(state.type, state);
     }
 
@@ -88,23 +85,6 @@ export class Page extends EventEmitter implements IPage {
             document.title = title;
         }
         return this;
-    }
-
-    setSpm(id, content: {
-        business: string,
-        pageId?: string
-    }) {
-        content = {
-            channel: APP_ENV,
-            outBizType: OUT_BIZ_TYPE,
-            pageType: 'H5',
-            ...content
-        };
-
-        const contentStr = JSON.stringify(content);
-
-        this.el.setAttribute('data-spm-page', id);
-        this.el.setAttribute('data-spm-cnt', contentStr);
     }
 
     getSharer() {

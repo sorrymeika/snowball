@@ -1,7 +1,8 @@
 
-import { store } from '../../../snowball/utils/storage';
+import { store } from '../../utils';
+import { popup } from '../../widget';
+
 import { IApplication, IRouteManager, IActivityManager } from '../types';
-import { popup } from '../../../widget/popup';
 
 import ActivityManager from './ActivityManager';
 import RouteManager from './RouteManager';

@@ -1,25 +1,25 @@
 import { internal_isControllerCreating, internal_onControllerCreated } from "./controller";
 import { observable } from "../../vm";
 
-const AUTO_DISPOSE = Symbol('autoDispose');
+const AUTO_DISPOSE = Symbol('DISPOSABLE');
 
-export function getAutoDisposedProps(target) {
-    const autoDisposedProps = target[AUTO_DISPOSE];
-    return autoDisposedProps ? Object.keys(autoDisposedProps) : [];
+export function getDisposableProps(target) {
+    const disposableProps = target[AUTO_DISPOSE];
+    return disposableProps ? Object.keys(disposableProps) : [];
 }
 
 /**
  * 创建订阅器，只能在controller和handler的constructor中创建，否则不能自动解除订阅
  * @param {Function} target 监听函数
  * @example
- * const observer = autoDispose((fn)=>{
+ * const observer = disposable((fn)=>{
  *   document.body.addEventListener('click', fn);
  *   return () => {
  *     document.body.removeEventListener('click', fn);
  *   }
  * })
  */
-export default function autoDispose(target, name, descriptor, args) {
+export default function disposable(target, name, descriptor, args) {
     if (!name) {
         if (internal_isControllerCreating()) {
             let observer = observable(target);
@@ -41,11 +41,11 @@ export default function autoDispose(target, name, descriptor, args) {
         }
     }
 
-    const properties = Object.prototype.hasOwnProperty.call(target, AUTO_DISPOSE)
+    const disposableProps = Object.prototype.hasOwnProperty.call(target, AUTO_DISPOSE)
         ? target[AUTO_DISPOSE]
         : (target[AUTO_DISPOSE] = target[AUTO_DISPOSE] ? { ...target[AUTO_DISPOSE] } : {});
 
-    properties[name] = true;
+    disposableProps[name] = true;
 
     if (!('value' in descriptor) && !('get' in descriptor) && !('writable' in descriptor) && descriptor.initializer == null) {
         return {

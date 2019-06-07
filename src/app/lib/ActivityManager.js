@@ -1,11 +1,11 @@
-import { castStyle, Animation } from '../../../graphics/animation';
-import { $ } from '../../../snowball/utils/dom';
-import Activity from './Activity';
-import Touch from '../../touch';
+import { castStyle, Animation } from '../../graphics/animation';
+import { Toucher, loader } from '../../widget';
+import { $, isThenable } from '../../utils';
+
+import { CONTROLLER } from '../decorators/symbols';
 import { IApplication, IActivityManager } from '../types';
-import loader from "../../../widget/loader";
-import { CONTROLLER_PAGE } from '../../decorators/symbols';
-import { isThenable } from '../../utils';
+
+import Activity from './Activity';
 
 const ANIMATION = {
     openEnterZIndex: 2,
@@ -149,8 +149,8 @@ async function createActivity(location, application) {
         loader.hideLoader();
     }
 
-    const viewFactory = container.default[CONTROLLER_PAGE]
-        ? container.default[CONTROLLER_PAGE]
+    const viewFactory = container.default[CONTROLLER]
+        ? container.default[CONTROLLER]
         : container.default;
 
     return viewFactory.__is_activity_factory__
@@ -171,7 +171,7 @@ export default class ActivityManager implements IActivityManager {
     }
 
     bindBackGesture(rootElement, application) {
-        var touch = new Touch(rootElement, {
+        var touch = new Toucher(rootElement, {
             enableVertical: false,
             enableHorizontal: true,
             momentum: false

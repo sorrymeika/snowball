@@ -10,7 +10,9 @@ import * as navigation from './navigation';
  */
 export { navigation };
 
-export * from './lib/backEventHandlers';
-export { default as createPage } from './lib/createPage';
 export { createApplication } from './lib/createApplication';
 export { registerRoutes } from './lib/registerRoutes';
+export * from './lib/backEventHandlers';
+export { default as AnyPropType } from './AnyPropType';
+
+export * from './decorators';

@@ -1,8 +1,8 @@
 import { registerRoutes } from "../lib/registerRoutes";
 import { createPage } from "../lib/createPage";
-import { CONTROLLER_PAGE, IS_CONTROLLER, EXPOSED_PROPS } from "./symbols";
+import { CONTROLLER, IS_CONTROLLER, INJECTABLE_PROPS } from "./symbols";
 import { internal_subscribeAllMessagesOnInit } from "./onMessage";
-import { getAutoDisposedProps } from "./autoDispose";
+import { getDisposableProps } from "./disposable";
 
 let isCreating = false;
 export function internal_isControllerCreating() {
@@ -26,7 +26,7 @@ export function internal_onControllerCreated(fn) {
  *     pgOnResume: 页面从后台进入前台，且动画结束时触发
  *     pgOnPause: 页面从前台进入后台，且动画结束时触发
  *     pgOnDestroy: 页面被销毁后触发
- * @param {*} [route] 路由，非必填，尽量将路由收敛到 routes/index.js中
+ * @param {*} [route] 路由，非必填，尽量将路由收敛到 routers.js中
  * @param {*} componentClass 页面组件
  */
 export default function controller(route, componentClass, options) {
@@ -44,7 +44,7 @@ export default function controller(route, componentClass, options) {
         };
         Target.prototype[IS_CONTROLLER] = true;
 
-        Target[CONTROLLER_PAGE] = createPage((props, page) => {
+        Target[CONTROLLER] = createPage((props, page) => {
             if (isCreating) {
                 throw new Error('不能同时初始化化两个controller');
             }
@@ -73,13 +73,13 @@ export default function controller(route, componentClass, options) {
             internal_subscribeAllMessagesOnInit(target);
 
             page.on('destroy', () => {
-                getAutoDisposedProps(target).forEach((name) => {
+                getDisposableProps(target).forEach((name) => {
                     target[name] && target[name].destroy();
                 });
             });
 
             return (setState) => {
-                const injectableProps = target[EXPOSED_PROPS];
+                const injectableProps = target[INJECTABLE_PROPS];
                 const store = {};
 
                 injectableProps && Object.keys(injectableProps)

@@ -1,6 +1,6 @@
-import * as util from '../snowball/utils';
-import { $ } from '../snowball/utils/dom';
-import Touch from '../core/touch';
+import * as util from '../utils';
+import { $ } from '../utils/dom';
+import { Toucher } from '../widget';
 
 function SelectorItem(options) {
     Object.assign(this, util.pick(options, ['itemHeight', 'template']));
@@ -12,7 +12,7 @@ function SelectorItem(options) {
     this.scroller = this.$scroller[0];
     this.$content = $('<ul></ul>').appendTo(this.$scroller);
 
-    this.touch = new Touch(this.$el, {
+    this.touch = new Toucher(this.$el, {
         divisorY: this.itemHeight
     });
 

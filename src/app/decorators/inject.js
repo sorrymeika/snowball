@@ -1,6 +1,6 @@
 import { Component, createElement } from 'react';
 import AnyPropType from '../AnyPropType';
-import { isString, isArray } from '../../snowball/utils';
+import { isString, isArray } from '../../utils';
 
 function isStateless(component) {
     // `function() {}` has prototype, but `() => {}` doesn't

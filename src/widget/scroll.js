@@ -7,7 +7,7 @@
 
 import { iOS, android, osVersion, IS_SNOWBALL_WEBVIEW } from "../env";
 
-import Touch from "../core/touch";
+import Toucher from "./Toucher";
 import { $ } from "../core/dom";
 
 import { computeFrame, animate } from "../graphics/animation";
@@ -34,7 +34,7 @@ export function ScrollView(el, options) {
     self.$scroller = insertScroller(self.$el);
     self.scroller = self.$scroller[0];
 
-    var toucher = new Touch(self.$el, {
+    var toucher = new Toucher(self.$el, {
         enableVertical: options.vScroll,
         enableHorizontal: options.hScroll
     });

@@ -1,6 +1,6 @@
 import { Component } from "react";
 import inject from "./inject";
-import { Reaction } from "../../snowball/vm";
+import { Reaction } from "../../vm";
 
 const ReactionProperty = Symbol('ReactionProperty');
 

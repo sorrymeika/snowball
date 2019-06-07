@@ -1,10 +1,10 @@
 import { isString } from "../../utils";
-import { EXPOSED_PROPS } from "./symbols";
+import { INJECTABLE_PROPS } from "./symbols";
 
 function _injectable(proto, exposureName, name, descriptor, args) {
-    const injectableProps = Object.prototype.hasOwnProperty.call(proto, EXPOSED_PROPS)
-        ? proto[EXPOSED_PROPS]
-        : (proto[EXPOSED_PROPS] = proto[EXPOSED_PROPS] ? { ...proto[EXPOSED_PROPS] } : {});
+    const injectableProps = Object.prototype.hasOwnProperty.call(proto, INJECTABLE_PROPS)
+        ? proto[INJECTABLE_PROPS]
+        : (proto[INJECTABLE_PROPS] = proto[INJECTABLE_PROPS] ? { ...proto[INJECTABLE_PROPS] } : {});
 
     injectableProps[exposureName] = name;
 

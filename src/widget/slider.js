@@ -1,5 +1,6 @@
-import util, { encodeHTML, $ } from '../utils';
-import Touch from './touch';
+import * as util from '../utils';
+import { encodeHTML, $ } from '../utils';
+import Toucher from './Toucher';
 
 function Slider(options) {
     options = Object.assign({
@@ -40,7 +41,7 @@ function Slider(options) {
     self.slider = $slider[0];
     self.$dots = self.$el.find('.js_slide_navs').appendTo(self.$el);
 
-    this.touch = new Touch(self.$el, {
+    this.touch = new Toucher(self.$el, {
         enableVertical: options.vScroll,
         enableHorizontal: options.hScroll,
         momentum: false
