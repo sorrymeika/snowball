@@ -5,7 +5,7 @@
  * 不支持原生滚动的os，使用transform方式滚动
  */
 
-import { iOS, android, osVersion, IS_JSB, IS_PAJK, IS_SHOUXIAN, IS_SCH } from "../core/env";
+import { iOS, android, osVersion, IS_SNOWBALL_WEBVIEW } from "../env";
 
 import Touch from "../core/touch";
 import { $ } from "../core/dom";
@@ -13,14 +13,14 @@ import { $ } from "../core/dom";
 import { computeFrame, animate } from "../graphics/animation";
 import util from "../core/util";
 
-var insertScroller = function ($el) {
-    var $scroller = $el.children(".scroller_container");
+function insertScroller($el) {
+    var $scroller = $el.children(".app-scroller-container");
     return $scroller.length
         ? $scroller
-        : $('<div class="scroller_container" style="width:100%;"></div>')
+        : $('<div class="app-scroller-container" style="width:100%;"></div>')
             .append($el.children())
             .appendTo($el.html(""));
-};
+}
 
 const TOUCH_AVAILABLE = 'ontouchstart' in document.body;
 
@@ -767,7 +767,7 @@ export function bind(selector, options) {
             });
         }
 
-        if (android && (IS_JSB || IS_PAJK || IS_SHOUXIAN || IS_SCH)) {
+        if (android && IS_SNOWBALL_WEBVIEW) {
             $el.on(
                 "focus touchend",
                 "input:not(readonly),textarea:not(readonly)",
@@ -794,13 +794,13 @@ export function bind(selector, options) {
         }
 
         if (options && options.pullToRefresh) {
-            var $scroller = $el.children(".scroller_container");
-            var $refresh = $el.children(".pull_to_refresh");
+            var $scroller = $el.children(".app-scroller-container");
+            var $refresh = $el.children(".app-scroller-pull-to-refresh");
 
             if (!$scroller.length) $scroller = ScrollView.insertScroller($el);
             if (!$refresh.length)
                 $refresh = $(
-                    '<div class="pull_to_refresh" style="height:50px;text-align:center;line-height:50px;">下拉刷新</div>'
+                    '<div class="app-scroller-pull-to-refresh" style="height:50px;text-align:center;line-height:50px;">下拉刷新</div>'
                 ).prependTo($scroller);
 
             $scroller.css({ marginTop: -50 });

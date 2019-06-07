@@ -1,9 +1,8 @@
-import util, { encodeHTML } from '../core/util';
-import Touch from '../core/touch';
-import { $ } from '../core/dom';
+import util, { encodeHTML, $ } from '../utils';
+import Touch from './touch';
 
-var Slider = function (options) {
-    options = $.extend({
+function Slider(options) {
+    options = Object.assign({
         hScroll: true,
         vScroll: false,
         width: '100%',
@@ -16,16 +15,14 @@ var Slider = function (options) {
         container: null
     }, options);
 
-    $.extend(this, util.pick(options, ['width', 'loop', 'renderItem', 'template', 'itemTemplate', 'navTemplate']));
+    Object.assign(this, util.pick(options, ['width', 'loop', 'renderItem', 'template', 'itemTemplate', 'navTemplate']));
 
-    var self = this,
+    let self = this,
         data = options.data,
         $slider;
 
     if (typeof self.itemTemplate === 'string') self.itemTemplate = util.template(self.itemTemplate);
     if (typeof self.width === 'string') self.width = parseInt(self.width.replace('%', ''), 10);
-
-    if (options.index !== undefined) options.index = options.index;
 
     this.options = options;
 
@@ -83,8 +80,8 @@ var Slider = function (options) {
     self.set(data);
 
     if (options.arrow) {
-        self._prev = $('<span class="slider-pre js_pre"></span>').appendTo(self.$el);
-        self._next = $('<span class="slider-next js_next"></span>').appendTo(self.$el);
+        self._prev = $('<span class="app-slider-pre js_pre"></span>').appendTo(self.$el);
+        self._next = $('<span class="app-slider-next js_next"></span>').appendTo(self.$el);
 
         self.$el.on('tap', '.js_pre', function (e) {
             self._toPage(options.index - 1, 250);
@@ -100,13 +97,13 @@ var Slider = function (options) {
     }
 
     self.$el.css({ overflow: '' });
-};
+}
 
-$.extend(Slider.prototype, {
+Object.assign(Slider.prototype, {
     loop: false,
     x: 0,
     itemTemplate: '<a app-link="<%=$data.url%>" <%=$data.attributes%> forward><img src="<%=$data.src%>" /></a>',
-    template: util.template('<div class="slider"><ul class="js_slider slider-con flex"></ul><ol class="js_slide_navs slider-nav"></ol></div>'),
+    template: util.template('<div class="app-slider"><ul class="js_slider app-slider-con flex"></ul><ol class="js_slide_navs app-slider-nav"></ol></div>'),
 
     _loadImage: function () {
         var self = this;

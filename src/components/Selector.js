@@ -8,7 +8,7 @@ function SelectorItem(options) {
 
     this.$el = $(this.el);
     this.el = this.$el[0];
-    this.$scroller = $('<div class="scroller_container app-selector-con" style="width:100%;"></div>').appendTo(this.$el);
+    this.$scroller = $('<div class="app-scroller-container app-selector-con" style="width:100%;"></div>').appendTo(this.$el);
     this.scroller = this.$scroller[0];
     this.$content = $('<ul></ul>').appendTo(this.$scroller);
 
@@ -195,7 +195,7 @@ Selector.prototype = {
 
     show: function () {
         if (!this._visible) {
-            const $scroll = this.$selector.find('.scroller_container').css({ color: "#fff" });
+            const $scroll = this.$selector.find('.app-scroller-container').css({ color: "#fff" });
 
             this.$container.show();
             this.$mask.show();

@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import ScrollElement from './ScrollElement';
-import Scroll from '../widget/scroll';
+import scroll from '../widget/scroll';
 
 interface IScrollViewProps {
     vScroll: boolean;
@@ -37,7 +37,7 @@ export default class ScrollView extends Component<IScrollViewProps, any> {
 
         var { vScroll = true, hScroll = false, onScrollToTop, onReachBottom, pullToRefresh } = this.props;
 
-        this.scroll = Scroll.bind(container, {
+        this.scroll = scroll.bind(container, {
             vScroll,
             hScroll,
             onScroll: this._onScroll,

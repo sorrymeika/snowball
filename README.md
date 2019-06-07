@@ -202,8 +202,7 @@ class AppController {
 * `ViewModel`, `Model`, `Collection`, `List`, `Dictionary`, `DictionaryList`, `Emitter`, `State` 都是 `Observer` 的子类，分别有不同的作用
 
 ```js
-import { vm } from 'snowball';
-const { Observer, ViewModel, Model, Collection, List, Emitter, State } = vm;
+import { Observer, ViewModel, Model, Collection, List, Emitter, State } from 'snowball';
 
 var viewModel = new ViewModel({
     el: `<div>

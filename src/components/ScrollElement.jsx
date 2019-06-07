@@ -9,7 +9,7 @@ export default function ScrollElement(props) {
             <div className="app-scroller-container" style={props.containerStyle}>
                 {
                     props.pullToRefresh
-                        ? <div class="pull_to_refresh" style={{
+                        ? <div class="app-scroller-pull-to-refresh" style={{
                             height: 50,
                             textAlign: 'center',
                             lineHeight: '50px'

@@ -1,10 +1,9 @@
-import { $ } from '../core/dom';
+import { $ } from '../utils';
 
 var loaderTimer;
 var showTimer;
 var $dataLoader = document.querySelector('.app-loader');
 $dataLoader = $dataLoader ? transEnd($($dataLoader)) : null;
-
 
 function transEnd($dataLoader) {
     return $dataLoader.on($.fx.transitionEnd, function () {
@@ -55,5 +54,5 @@ export default {
         loaderTimer = setTimeout(function () {
             $dataLoader && $dataLoader.removeClass('show');
         }, 100);
-    },
+    }
 };
