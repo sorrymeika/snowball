@@ -1,17 +1,10 @@
-var ReactSkeleton = require('./react-skeleton');
 var fs = require('fs');
 var JsUtils = require('../../../../node-libs/js-utils');
 
 function createPreloaderJS(options) {
-    var skeleton = ReactSkeleton.create(
-        options.skeletonConfig,
-        options.appSrc,
-        options.bundle
-    );
-
     var preloader = fs.readFileSync(options.preloader, 'utf8');
 
-    preloader = preloader.replace('`skeleton`', skeleton)
+    preloader = preloader
         .replace('`preloadOptions`', JSON.stringify({
             bundle: options.bundle,
             bundleLevel: options.bundleLevel,
