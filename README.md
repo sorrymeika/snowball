@@ -196,6 +196,138 @@ class AppController {
 * vm是一个MVVM框架，主要由 `Observer`、`ViewModel`、`Model`、`Collection`组成
 * 在React项目中，我们一般使用他来替换`redux`
 
+### 模版引擎
+
+* 这是一个简单的 `template` 
+* 使用 `{expression}` 和 `sn-属性` 来绑定数据
+
+```html
+<header class="header {titleClass}">这是标题{title}{title?'aaa':encodeURIComponent(title)}</header>
+<div class="main">
+    <h1>{title}</h1>
+    <ul>
+        <li>时间:{util.formateDate(date,'yyyy-MM-dd')}</li>
+        <li>user:{user.userName}</li>
+        <li>friend:{friend.friendName}</li>
+        <li sn-repeat="msg in messages">msg:{msg.content}</li>
+        <li sn-repeat="item in collection">item:{item.name}</li>
+    </ul>
+    <sn-template id="item"><li>{name}</li></sn-template>
+    <ul>
+        <li sn-repeat="item in list">{item.name}</li>
+        <sn-item props="{{ name: item.name }}" sn-repeat="item in list"></sn-item>
+    </ul>
+</div>
+```
+
+# sn-属性
+
+* `sn-[events]` dom事件
+
+```js
+
+model.onButtonClick = function(userName) {
+    alert(userName);
+}
+
+// 设置 `model` 的事件代理
+model.delegate = {
+    onButtonClick: function(user) {
+        alert(user.userName);
+    }
+}
+```
+
+```html
+<div>
+    <button sn-tap="this.onButtonClick(user.userName)">Click 0</button>
+    <button sn-tap="delegate.onButtonClick(user)">Click 1</button>
+</div>
+```
+
+
+* `sn-repeat` 循环
+
+```js
+var model = new ViewModel(this.$el, {
+    title: '标题',
+    list: [{
+        name: 1,
+        children: [{
+            name: '子'
+        }]
+    }, {
+        name: 2
+    }]
+});
+```
+
+```html
+<div class="item" sn-repeat="item,i in list|filter:like(item.name,'2')|orderBy:name asc,id desc,{orderByWhat} {ascOrDesc}">
+    <p>这是标题{title}，加上{item.name}</p>
+    <ul>
+        <li sn-repeat="child in item.children|orderBy:this.orderByFunction">{i}/{child.name+child.age}</li>
+    </ul>
+</div>
+```
+
+* `[sn-if]` `[sn-else-if]` `[sn-else]` 条件控制
+
+```html
+<div class="item" sn-if="{!title}">当title不为空时插入该element</div>
+<div class="item" sn-else-if="{title==3}">当title不为空时插入该element</div>
+<div class="item" sn-else>当title不为空时插入该element</div>
+```
+
+* `sn-display` 控件是否显示（有淡入淡出效果，若不需要动画效果可使用`sn-visible`或`sn-if`）
+
+```html
+<div class="item" sn-display="{title}">当title不为空时显示</div>
+```
+
+* `sn-html` 设置innerHTML
+
+```html
+<div class="item" sn-html="{title}"></div>
+```
+
+
+* `sn-component` 引入其他组建
+
+```js
+
+var model = new ViewModel({
+
+    components: {
+        tab: require('widget/tab')
+    },
+
+    el: template,
+    
+    delegate: this,
+
+    attributes:  {
+        title: '标题',
+        list: [{
+            name: 1,
+            children: [{
+                name: '子'
+            }]
+        }, {
+            name: 2
+        }]
+    }
+});
+
+```
+
+```html
+
+<div class="tab" sn-component="tab" sn-props="{{items:['生活服务','通信服务']}}"></div>
+或
+<sn-tab class="tab" props="{{items:['生活服务','通信服务']}}"></sn-tab>
+```
+
 #### `vm.Observer` 类
 
 * 可观察对象，类的数据变化可被监听
