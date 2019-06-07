@@ -1,66 +1,48 @@
 import React, { Component } from 'react';
-import { uploadImgV2, fetchPrivateFileGWKey } from '../core/filegw';
-import { openCameraOrGallery } from '../core/appsdk/photo';
-import { FILEGW } from '../core/env';
-import { transformTFSImageUrl } from '../utils/tfs';
 
 export class ImageUploader extends Component {
     onFileInputClick = e => {
-        const { isPublic = true, onCameraClick } = this.props;
-        if (onCameraClick && typeof onCameraClick === 'function') {
-            onCameraClick();
+        const {
+            onClick,
+            nativeUpload
+        } = this.props;
+
+        if (onClick && typeof onClick === 'function') {
+            onClick();
         }
-        var supportNative = openCameraOrGallery(
-            { isPublic: isPublic.toString() },
-            res => {
-                if (res.img) {
-                    this.uploadCallback(res.img);
-                }
-            }
-        );
-        if (supportNative) {
+
+        if (nativeUpload) {
+            nativeUpload(this.uploadCallback);
             e.preventDefault();
             e.stopPropagation();
         }
         // 连续上传同一文件不触发onChange事件
         // onChange事件触发的条件为其value发生变化
         e.target.value = null;
-    };
+    }
 
-    uploadCallback = async key => {
-        const { isPublic = true } = this.props;
+    uploadCallback = async ({ success, src }) => {
         const { onChange } = this.props;
-        if (isPublic) {
-            onChange({
-                key,
-                src: transformTFSImageUrl(key)
-            });
-        } else {
-            let res = await fetchPrivateFileGWKey(key);
-            if (res.success && res.data.fileToken) {
-                const fullUrl =
-                    FILEGW +
-                    `file?token=${encodeURIComponent(res.data.fileToken)}`;
-                onChange({
-                    key,
-                    src: fullUrl
-                });
-            }
-        }
-    };
+        onChange({
+            success,
+            src
+        });
+    }
 
     onFileChange = e => {
-        var file = e.target.files[0];
+        const file = e.target.files[0];
+        const {
+            doUpload,
+            quality = 70
+        } = this.props;
+
         if (!file) return;
-        const { isPublic = true } = this.props;
-        updloadImage(
-            file,
-            key => {
-                this.uploadCallback(key);
-            },
-            isPublic
-        );
-    };
+
+        compressImage(file, quality, async blob => {
+            var res = await doUpload(blob);
+            this.uploadCallback(res);
+        });
+    }
 
     render() {
         return (
@@ -76,14 +58,6 @@ export class ImageUploader extends Component {
             </div>
         );
     }
-}
-
-function updloadImage(imageFile, cb, isPublic) {
-    compressImage(imageFile, 70, async blob => {
-        var res = await uploadImgV2(blob, 'CC_CMS', isPublic);
-        var values = Object.values(res);
-        cb(values ? values[0] : null);
-    });
 }
 
 function compressImage(imageFile, quality, cb) {
