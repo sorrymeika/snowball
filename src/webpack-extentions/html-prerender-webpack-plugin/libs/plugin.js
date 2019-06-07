@@ -15,7 +15,9 @@ function createPreloaderJS(options) {
         .replace(/\bprocess\.env\.NODE_ENV\s?!==?\s?('|")PRELOAD\1/g, 'false')
         .replace(/('|")PRELOAD\1\s?!==?\s?process\.env\.NODE_ENV/g, 'false');
 
-    return options.bundle.indexOf('main') != -1 ? JsUtils.minify(preloader) : preloader;
+    return options.bundle.indexOf('main') != -1
+        ? JsUtils.minify(JsUtils.toES5(preloader))
+        : preloader;
 }
 
 var config = {};
