@@ -1,8 +1,8 @@
 import React, { Component } from "react";
 import ReactDOM from 'react-dom';
-import { $, debounce, throttle } from "../snowball/utils";
+import { $, debounce, throttle } from "../utils";
 import { computeFrame, animate } from "../graphics/animation";
-import { android, IS_JSB, IS_PAJK, IS_SHOUXIAN, IS_SCH } from "../core/env";
+import { android, IS_SNOWBALL_WEBVIEW } from "../env";
 
 const getCurrentTime = typeof performance !== 'undefined' && typeof performance.now === 'function'
     ? () => performance.now()
@@ -24,7 +24,7 @@ const [rAF, cAF] = false
     }]
     : [requestAnimationFrame, cancelAnimationFrame];
 
-const SHOULD_ADJUST_SCROLLTOP_FOR_INPUTS = android && (IS_JSB || IS_PAJK || IS_SHOUXIAN || IS_SCH);
+const SHOULD_ADJUST_SCROLLTOP_FOR_INPUTS = android && IS_SNOWBALL_WEBVIEW;
 
 const touchMoveEventStore = new WeakSet();
 (document.getElementById('root') || document.body).addEventListener('touchmove', (e) => {
@@ -384,7 +384,7 @@ export default class VScrollView extends Component {
                             $img.animate({
                                 opacity: 1
                             }, 300, () => {
-                                $img.removeClass('img-lazyloading');
+                                $img.removeClass('app-img-lazyloading');
                             });
                         }, 0);
                         complete();
@@ -400,7 +400,7 @@ export default class VScrollView extends Component {
                     }
 
                     $img
-                        .addClass('img-lazyloading')
+                        .addClass('app-img-lazyloading')
                         .on('load', onload)
                         .on('error', onerror);
                 }

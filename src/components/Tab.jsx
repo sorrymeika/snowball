@@ -143,7 +143,7 @@ export default class Tab extends Component<TabProps, { index: number }> {
     }
 
     adjustCursorPosition() {
-        var $title = $(ReactDOM.findDOMNode(this)).find('.tab-head .curr .tab-title');
+        var $title = $(ReactDOM.findDOMNode(this)).find('.app-tab-head .curr .app-tab-title');
         $(this.cursor).addClass('t_3');
 
         var title = $title[0];
@@ -163,8 +163,8 @@ export default class Tab extends Component<TabProps, { index: number }> {
         let { items, className } = this.props;
 
         return (
-            <div className={className + " tab-wrap ps_r"}>
-                <div className="tab-head bd_b ps_r ta_c bg_fff">
+            <div className={className + " app-tab-wrap ps_r"}>
+                <div className="app-tab-head bd_b ps_r ta_c bg_fff">
                     <ul className="flex">
                         {
                             items.map((item, i) => {
@@ -174,20 +174,20 @@ export default class Tab extends Component<TabProps, { index: number }> {
                                         key={i}
                                         onClick={this.onTabTitleClick.bind(this, i)}
                                         className={(this.state.index === i ? 'curr ' : '') + "flexitem " + (item.titleClassName || '')}
-                                    >{item.titlePrefix}<span class="tab-title">{item.title}</span></li>
+                                    >{item.titlePrefix}<span class="app-tab-title">{item.title}</span></li>
                                 );
                             })
                         }
                     </ul>
-                    <div className="tab-head-cursor ps_a" ref={this.setCursorRef}></div>
+                    <div className="app-tab-head-cursor ps_a" ref={this.setCursorRef}></div>
                 </div>
-                <div className="dock tab-body bg_fff flex fd_c w_1x">
+                <div className="dock app-tab-body bg_fff flex fd_c w_1x">
                     <div
                         ref={this.setBodyRef}
                         onTouchStart={this.onBodyTouchStart}
                         onTouchMove={this.onBodyTouchMove}
                         onTouchEnd={this.onBodyTouchEnd}
-                        className="dock tab-body-inner dp_f t_3"
+                        className="dock app-tab-body-inner dp_f t_3"
                         style={{
                             width: items.length * 100 + '%',
                             transform: 'translate(' + this.x + 'px,0px)',

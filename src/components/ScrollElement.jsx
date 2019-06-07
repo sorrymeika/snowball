@@ -5,8 +5,8 @@ export default function ScrollElement(props) {
     const { loadMoreStatus } = props;
 
     return (
-        <div style={props.style} className={(props.className || "") + " scrollview"} ref={props.refElement}>
-            <div className="scroller_container" style={props.containerStyle}>
+        <div style={props.style} className={(props.className || "") + " app-scrollview"} ref={props.refElement}>
+            <div className="app-scroller-container" style={props.containerStyle}>
                 {
                     props.pullToRefresh
                         ? <div class="pull_to_refresh" style={{

@@ -59,7 +59,7 @@
 .app-main-iframe { width: 100%; }
 .app-main-iframe iframe { width: 100%; height: 100%; margin-bottom: -10px; }
 
-.app-main > .scroller_container { min-height: 100%; margin-bottom: 1px; overflow: hidden; }
+.app-main > .app-scroller-container { min-height: 100%; margin-bottom: 1px; overflow: hidden; }
 
 .app-header { background-size: 100% auto; background-position-y: bottom; }
 .app-fix-statusbar .app-header { border-top: 20px solid transparent; height: 64px; }
