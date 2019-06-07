@@ -10,7 +10,7 @@ interface IScrollViewProps {
     onScrollViewInit?: (scrollView: any, element: HTMLElement) => never;
     onScrollViewDestroy?: () => never;
     onScroll?: () => never;
-    onScrollToBottom?: () => never;
+    onReachBottom?: () => never;
     onScrollToTop?: () => never;
     pullToRefresh?: (resolve: () => never, reject: () => never) => any;
 }
@@ -35,13 +35,13 @@ export default class ScrollView extends Component<IScrollViewProps, any> {
     setRef = (container) => {
         if (!container || this.container == container) return;
 
-        var { vScroll = true, hScroll = false, onScrollToTop, onScrollToBottom, pullToRefresh } = this.props;
+        var { vScroll = true, hScroll = false, onScrollToTop, onReachBottom, pullToRefresh } = this.props;
 
         this.scroll = Scroll.bind(container, {
             vScroll,
             hScroll,
             onScroll: this._onScroll,
-            onScrollToBottom,
+            onReachBottom,
             onScrollToTop,
             pullToRefresh
         });
