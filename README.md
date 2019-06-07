@@ -1,3 +1,29 @@
+# Snowball
+
+* `snowball` 是一个全套的`web app/hybrid app`开发框架，包括：路由、状态管理和视图。
+* snowball-app: 强大的路由系统，拥有多工程跨工程加载、可配置前进后退动画效果、动态管理内存(DOM)、手势返回等功能。 
+* snowball-model：状态管理框架，immutable、高性能。
+* snowball-view：view层框架，fiber模式渲染，高性能，双向绑定。 采用运行时模版编译。同时提供`React`支持。
+
+# 优点
+1. 一个核心框架库＋多个业务库。业务库之间不依赖，可单独发布
+2. 发布后到业务库共用一份核心库的js/css/image/iconfont，减少下载资源的大小
+3. 业务库编码时调用核心库方法时有智能提示并能用cmd+click快速定位到方法位置
+4. 多个业务库，却又是单页应用。保证用户体验的统一和代码风格的统一
+
+# 实现方式
+
+## 路由
+```
+该路由方案将多个库整合成一个单页应用，使所有业务都使用相同的跳转动画、手势返回、页面缓存
+```
+1. 核心框架 `snowball` 统一控制路由，需要在 `snowball` 中注册需要加载的业务
+2. 业务库打包后会生成`asset-manifest.json`文件，`snowball` 通过路由匹配到业务，并加载manifest中的js和css。
+3. 业务js加载时调用`registerRoutes({...})` 方法注册子路由
+4. `snowball` 在业务js／css加载完成后，根据业务注册的子路由跳至对应页面。
+
+## 开发
+
 
 ### Getting Start
 
@@ -19,32 +45,14 @@
 
 * see the [Installation OSX](https://github.com/Automattic/node-canvas/wiki/Installation---OSX) to install without **brew** command
 
-
-# 优点
-1. 一个核心框架库＋多个业务库。业务库之间不依赖，可单独发布
-2. 发布后到业务库共用一份核心库的js/css/image/iconfont，减少下载资源的大小
-3. 业务库编码时调用核心库方法时有智能提示并能用cmd+click快速定位到方法位置
-4. 多个业务库，却又是单页应用。保证用户体验的统一和代码风格的统一
-
-# 实现方式
-
-## 路由
-```
-该路由方案将多个库整合成一个单页应用，使所有业务都使用相同的跳转动画、手势返回、页面缓存
-```
-1. 核心框架 `snowball` 统一控制路由，需要在 `snowball` 中注册需要加载的业务
-2. 业务库打包后会生成`asset-manifest.json`文件，`snowball` 通过路由匹配到业务，并加载manifest中的js和css。
-3. 业务js加载时调用`registerRoutes({...})` 方法注册子路由
-4. `snowball` 在业务js／css加载完成后，根据业务注册的子路由跳至对应页面。
-
-## 开发
+### Use Snowball
 
 1. 将`snowball`放到当前项目的父文件夹下(与当前项目同级)
 2. 运行命令
 ```sh
 ln -s ../../snowball ./node_modules
 ```
-3. `import { env, vm } from "snowball"`
+3. `import { env, Model } from "snowball"`
 
 ## 打包
 ```
@@ -59,9 +67,10 @@ ln -s ../../snowball ./node_modules
 1. `snowball` 会分大版本（1.x和2.x）和小版本（1.x.x和1.x.x），小版本升级(自动化测试)业务不感知。大版本升级业务需处理。
 2. `snowball` 会尽量保证兼容性。让大版本升级尽量平滑。
 
-## 代码规范、项目结构
+## 项目结构
 
-* TODO
+* 项目主要分为`Controller`、`Service`、`View`层
+* `Controller`层用来组织`Service`层，并通过`injectable`注解将数据注入到`View`层
 
 ## 项目代码示例
 
