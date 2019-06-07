@@ -1,7 +1,6 @@
 
 import { store } from '../../../snowball/utils/storage';
 import { IApplication, IRouteManager, IActivityManager } from '../types';
-import waitImagesComplete from '../../../utils/waitImagesComplete';
 import { popup } from '../../../widget/popup';
 
 import ActivityManager from './ActivityManager';
@@ -37,9 +36,9 @@ class Application implements IApplication {
         this.navigation.startNavigateListener();
 
         if (history.length == 1) {
-            store('MALL_PAGE_HISTORY', null);
+            store('SNOWBALL_LAST_PAGE_CACHE', null);
         } else {
-            var pageHistory = store('MALL_PAGE_HISTORY');
+            var pageHistory = store('SNOWBALL_LAST_PAGE_CACHE');
 
             var cache;
             if (pageHistory && pageHistory.length) {
@@ -48,7 +47,7 @@ class Application implements IApplication {
                     cache = null;
                     pageHistory = null;
                 }
-                store('MALL_PAGE_HISTORY', pageHistory);
+                store('SNOWBALL_LAST_PAGE_CACHE', pageHistory);
             }
         }
 
@@ -78,7 +77,6 @@ class Application implements IApplication {
                         if (main) {
                             main.scrollTop(cache.scrollTop);
                             main.detectImageLazyLoad();
-                            await waitImagesComplete(main.el, false);
                         }
                     } while (count-- > 0 && ((main && main.scrollTop()) || 0) < cache.scrollTop);
                 })();

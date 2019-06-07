@@ -195,9 +195,9 @@ export class Page extends EventEmitter implements IPage {
                 };
             }
 
-            var pageHistory = store('MALL_PAGE_HISTORY') || [];
+            var pageHistory = store('SNOWBALL_LAST_PAGE_CACHE') || [];
             pageHistory.push(cachedPageState);
-            store('MALL_PAGE_HISTORY', pageHistory);
+            store('SNOWBALL_LAST_PAGE_CACHE', pageHistory);
         }
     }
 
