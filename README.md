@@ -69,7 +69,7 @@ ln -s ../../snowball ./node_modules
 
 ```js
 import { Model, Collection, Reaction, attributes } from 'snowball';
-import { controller, expose, service, observer } from 'snowball/app';
+import { controller, injectable, service, observer } from 'snowball/app';
 
 // Model 的接口必须定义
 interface IUser {
@@ -170,8 +170,8 @@ class App extends Component<{ userService: IUserService }, never> {
 // Controller
 @controller(App)
 class AppController {
-    @expose userService: IUserService;
-    @expose buttonStatus;
+    @injectable userService: IUserService;
+    @injectable buttonStatus;
 
     constructor({ location }) {
         this.userService = new UserService();
@@ -182,7 +182,7 @@ class AppController {
         this.userService.loadUser();
     }
 
-    @expose
+    @injectable
     buttonClick() {
         this.buttonStatus.set(0);
     }
@@ -691,7 +691,7 @@ for (var key in user) {
 #### `withNotifyEvent` 高阶组件
 * 给组件注入 `notifyEvent` 方法
 
-#### `subscribeEvent` 修饰符
+#### `onMessage` 修饰符
 * 为`controller` 或 `handler` 的方法增加事件监听
 
 <br>
@@ -758,7 +758,7 @@ export default class UserService implements IUserService {
 
 * 关联页面/组件跟Controller类的方法，一般使用修饰符模式
 
-#### `@expose` 方法
+#### `@injectable` 方法
 
 * 将Controller类的属性或方法传递给 `@controller` 关联的页面 (注入到props里)
 
@@ -827,14 +827,14 @@ export default class HomeController {
     }
 
     // `user` 把注入给 `Home` 组件
-    @expose
+    @injectable
     get user() {
         return this.service.getModel();
     }
 
     // 把 `onTitleClick` 注入到 `Home` 组件
-    // 使用 `@expose` 后不要使用箭头函数
-    @expose
+    // 使用 `@injectable` 后不要使用箭头函数
+    @injectable
     onTitleClick() {
         this.service.update();
     }
@@ -987,7 +987,7 @@ provide((props)=>{
 
 ### `inject` 方法
 
-* 可将`controller`里`expose`的和`provide`方法返回的属性和方法，通过inject方法跨组件注入到子组件的props中
+* 可将`controller`里`injectable`的和`provide`方法返回的属性和方法，通过inject方法跨组件注入到子组件的props中
 
 ```js
 import { inject } from 'snowball';
@@ -1405,13 +1405,13 @@ await jsonp('src', params);
 
 <br>
 
-###  `loadJS` 加载js
+###  `loadJs` 加载js
 
 ```js
-import { loadJS } from 'snowball';
+import { loadJs } from 'snowball';
 
-await loadJS('src');
-await loadJS(['src', 'src1']);
+await loadJs('src');
+await loadJs(['src', 'src1']);
 ```
 
 <br>

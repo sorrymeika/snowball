@@ -1,5 +1,5 @@
 var fs = require('fs');
-var JsUtils = require('../../../../node-libs/js-utils');
+var JsUtils = require('../../../node-libs/js-utils');
 
 function createPreloaderJS(options) {
     var preloader = fs.readFileSync(options.preloader, 'utf8');

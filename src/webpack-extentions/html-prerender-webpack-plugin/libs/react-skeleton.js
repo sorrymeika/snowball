@@ -2,7 +2,7 @@
 
 var fs = require('fs');
 var path = require('path');
-var JsUtils = require('../../../../node-libs/js-utils');
+var JsUtils = require('../../../node-libs/js-utils');
 
 var stringRE = "'(?:(?:\\\\{2})+|\\\\'|[^'])*'|\"(?:(?:\\\\{2})+|\\\\\"|[^\"])*\"";
 

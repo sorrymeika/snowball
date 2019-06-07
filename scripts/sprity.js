@@ -1,5 +1,5 @@
 var fs = require('fs');
-var fse = require('../node-libs/fs');
+var fse = require('../src/node-libs/fs');
 var path = require('path');
 
 var Canvas = require('canvas');

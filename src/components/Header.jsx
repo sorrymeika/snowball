@@ -1,14 +1,16 @@
 import React from 'react';
 import { $ } from '../utils';
 import * as appsdk from '../app/appsdk';
-import { getActivedPage } from '../app';
+import { internal_getApplication } from '../app/lib/createApplication';
 
 let closeWebViewTimer;
 function goBack() {
     if (closeWebViewTimer) clearTimeout(closeWebViewTimer);
     closeWebViewTimer = setTimeout(() => {
         try {
-            getActivedPage().activity.destroy();
+            internal_getApplication()
+                .currentActivity
+                .destroy();
         } catch (e) {
             console.error(e);
         }
@@ -38,7 +40,7 @@ export default function Header({
 }) {
     if (typeof back == 'string' && !backText) {
         backText = back;
-    } else if (back === undefined && process.env.NODE_ENV != "SNAPSHOT") {
+    } else if (back === undefined && process.env.NODE_ENV != "PRELOAD") {
         back = true;
     }
 

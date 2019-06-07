@@ -21,7 +21,7 @@ module.exports = function (host, port, replace) {
             method: request.method,
             headers: Object.assign({}, request.headers, {
                 host: port == 80 || port == 443 ? host : (host + ":" + port),
-                origin: (port == 443 ? 'https://' : "http://") + (host === 'dev.pajkdc.com' ? 'www.' + host : host)
+                origin: (port == 443 ? 'https://' : "http://") + host
             })
         };
 

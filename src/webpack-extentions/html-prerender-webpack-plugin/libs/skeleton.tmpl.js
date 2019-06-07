@@ -109,7 +109,7 @@
     });
 
     var view = document.createElement('div');
-    view.className = "view actived";
+    view.className = "app-view app-view-actived";
     view.setAttribute('route-path', path);
     view.setAttribute('ssr', 'ssr');
 

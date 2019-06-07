@@ -11,7 +11,7 @@ export const LoadMoreStatus = {
 export default class LoadMore extends Component {
     render() {
         var message =
-            process.env.NODE_ENV === 'SNAPSHOT'
+            process.env.NODE_ENV === 'PRELOAD'
                 ? '正在加载中...'
                 : typeof this.props.status === 'string'
                     ? this.props.status

@@ -5,9 +5,9 @@
 .app-viewport { position: absolute; overflow: hidden; width: 100%; background: #fff; bottom: 0px; top: 0px; right: 0; left: 0; z-index: 1; }
 .app-view, .app-skeleton { position: absolute; width: 100%; top: 0; left: 0; bottom: 0; background: $bgc; overflow: hidden; box-shadow: -3px 2px 5px rgba(49,60,75,.35); z-index: 0; }
 .app-prevent-click:before,.app-view:before { display: block; content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 10000; }
-.app-view.actived { z-index: 4; }
-.app-view.actived:before { display: none; }
-.app-view.actived .app-main { z-index: 100; }
+.app-view.app-view-actived { z-index: 4; }
+.app-view.app-view-actived:before { display: none; }
+.app-view.app-view-actived .app-main { z-index: 100; }
 .app-view.transparent { background: rgba(0,0,0,0); border: 0; box-shadow: none; }
 .app-skeleton { z-index: 5; }
 

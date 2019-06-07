@@ -106,7 +106,8 @@ exports.copy = copy;
 
 var firstExistentFile = function (paths, files, callback) {
     if (typeof files == 'function') {
-        callback = files, files = null;
+        callback = files;
+        files = null;
     }
     if (typeof paths == 'string') {
         paths = [paths];
@@ -127,8 +128,7 @@ var firstExistentFile = function (paths, files, callback) {
     }
 
     var count = 0;
-    (function () {
-        var fn = arguments.callee;
+    (function fn() {
         if (count < reads.length) {
             var file = reads[count];
             fs.exists(file, function (exists) {
