@@ -73,15 +73,16 @@ export function render(element: IElement, state, data) {
         }
     }
 
+    element.data = data;
+
     const events = vnode.events;
     if (events) {
-        element.eventData = data;
         if (!element.bindEvent) {
             element.bindEvent = true;
             for (let i = 0; i < events.length; i += 2) {
                 const fid = events[i + 1];
                 element.node.addEventListener(events[i], () => {
-                    return invoke(element, element.eventData, fid, $setter);
+                    return invoke(element, element.data, fid, $setter);
                 });
             }
         }
@@ -124,7 +125,7 @@ export function render(element: IElement, state, data) {
                         children: element.childElements
                     };
                     for (let i = 0; i < props.length; i += 2) {
-                        nextProps[props[i]] = invoke(element, data, props[i + 1]);
+                        nextProps[props[i]] = invoke(element, element.data, props[i + 1]);
                     }
                     element.component.set(nextProps);
                     element.component.render();
@@ -138,7 +139,7 @@ export function render(element: IElement, state, data) {
             if (!autoruns) {
                 element.autoruns = autoruns = [];
                 for (let i = 0; i < props.length; i += 2) {
-                    autoruns.push(autoSet(element, props[i], data, props[i + 1]));
+                    autoruns.push(autoSet(element, props[i], props[i + 1]));
                 }
             }
             for (let i = 0; i < autoruns.length; i++) {
@@ -320,8 +321,8 @@ function invoke(element, data, fid, arg1, arg2) {
     return element.root.vnode.fns[fid](data, arg1, arg2);
 }
 
-function autoSet(element, name, data, fid) {
-    const autorun = () => setAttribute(element, name, invoke(element, data, fid));
+function autoSet(element, name, fid) {
+    const autorun = () => setAttribute(element, name, invoke(element, element.data, fid));
     const reaction = new Reaction(autorun);
     reaction.__propAutoSet = autorun;
     return reaction;
