@@ -76,13 +76,13 @@ class DOMMainScrollView extends ScrollView {
 export default function MainScrollView(props) {
     const { scrollViewRef } = props;
     if (process.env.NODE_ENV === 'SNAPSHOT' || USE_DOM_SCROLL) {
-        return <DOMMainScrollView {...props} className={(props.className || '') + ' main'} ref={scrollViewRef}></DOMMainScrollView>;
+        return <DOMMainScrollView {...props} className={(props.className || '') + ' app-main'} ref={scrollViewRef}></DOMMainScrollView>;
     }
     const { className, children, loadMoreStatus, onScrollViewInit, onScrollViewDestroy, ...moreProps } = props;
     return (
         <VScrollView
             {...moreProps}
-            className={(className || '') + ' main'}
+            className={(className || '') + ' app-main'}
             ref={(ref) => {
                 scrollViewRef && scrollViewRef(ref);
                 if (ref) {

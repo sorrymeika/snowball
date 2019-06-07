@@ -240,7 +240,7 @@ export default class NavigationView extends VScrollView {
                 onTouchMove={this.onTouchMove}
                 onTouchEnd={this.onTouchEnd}
                 onTouchCancel={this.onTouchCancel}
-                className={(className || '') + ' main'}
+                className={(className || '') + ' app-main'}
                 style={{
                     overflow: 'hidden',
                     ...mainStyle
