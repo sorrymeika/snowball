@@ -8,18 +8,18 @@
 import { iOS, android, osVersion, IS_SNOWBALL_WEBVIEW } from "../env";
 
 import Toucher from "./Toucher";
-import { $ } from "../core/dom";
+import { $ } from "../utils";
 
 import { computeFrame, animate } from "../graphics/animation";
-import util from "../core/util";
+import * as util from "../utils";
 
 function insertScroller($el) {
     var $scroller = $el.children(".app-scroller-container");
     return $scroller.length
         ? $scroller
         : $('<div class="app-scroller-container" style="width:100%;"></div>')
-            .append($el.children())
-            .appendTo($el.html(""));
+            .append($el.contents())
+            .appendTo($el);
 }
 
 const TOUCH_AVAILABLE = 'ontouchstart' in document.body;
@@ -667,7 +667,7 @@ ScrollBindResult.prototype = {
     }
 };
 
-exports.get = function (el) {
+export function get(el) {
     return el.__widget_scroll__;
 };
 
@@ -683,7 +683,7 @@ exports.get = function (el) {
  * @return {ScrollBindResult}
  *
  * @example
- * exports.bind({
+ * scroll.bind({
  *      pullToRefresh: function(resolve, reject) {
  *          setTimeout(function() {
  *              reject('出错啦');

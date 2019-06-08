@@ -6,7 +6,6 @@ export { default as NavigationView } from './NavigationView';
 export { default as MainScrollView, MainScrollViewWithHandler } from './MainScrollView';
 export { default as TextCarousel } from './TextCarousel';
 export { default as Slider } from './Slider';
-export { default as TFSImage } from './TFSImage';
 export { default as Tab } from './Tab';
 export { default as PhotoViewer } from './PhotoViewer';
 export { default as Header } from './Header';

@@ -1,10 +1,10 @@
 import React from 'react';
 import ScrollView from './ScrollView';
-import inject from '../decorators/inject';
+import inject from '../app/decorators/inject';
 
 import VScrollView from './VScrollView';
 import LoadMore from './LoadMore';
-import { android, osVersion } from '../core/env';
+import { android, osVersion } from '../env';
 
 let USE_DOM_SCROLL = !(android && osVersion <= 4.3);
 

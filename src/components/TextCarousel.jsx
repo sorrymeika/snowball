@@ -1,4 +1,4 @@
-import { $ } from "../core/dom";
+import { $ } from "../utils";
 
 export default class TextCarousel {
 

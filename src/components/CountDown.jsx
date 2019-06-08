@@ -1,5 +1,5 @@
 import React from 'react';
-import util, { isFunction } from '../core/util';
+import { splitTime, isFunction } from '../utils';
 
 type Props = {
     endTime: number,
@@ -85,7 +85,6 @@ class CountDown extends React.Component<Props, any> {
     generateCountDown = (props) => {
         return () => {
             const { endTime, offsetTime, onCountDownEnd } = props || this.props;
-            const { splitTime } = util;
             let duration = endTime - (Date.now() + offsetTime);
             if (duration <= 0) {
                 duration = 0;

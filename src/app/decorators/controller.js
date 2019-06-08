@@ -1,5 +1,5 @@
 import { registerRoutes } from "../lib/registerRoutes";
-import { createPage } from "../lib/createPage";
+import createPage from "../lib/createPage";
 import { CONTROLLER, IS_CONTROLLER, INJECTABLE_PROPS } from "./symbols";
 import { internal_subscribeAllMessagesOnInit } from "./onMessage";
 import { getDisposableProps } from "./disposable";

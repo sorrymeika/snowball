@@ -1,6 +1,14 @@
 import React, { Component } from 'react';
-import { PaginationStatus } from '../models/PaginationResult';
 import LoadingStatusBar from './LoadingStatusBar';
+
+export const LoadStatus = {
+    Error: -3,
+    Loading: -2,
+    Start: -1,
+    None: 0,
+    Continue: 1,
+    End: 2
+};
 
 export const LoadMoreStatus = {
     Default: '上拉加载更多',
@@ -15,11 +23,11 @@ export default class LoadMore extends Component {
                 ? '正在加载中...'
                 : typeof this.props.status === 'string'
                     ? this.props.status
-                    : this.props.status === PaginationStatus.Loading
+                    : this.props.status === LoadStatus.Loading
                         ? LoadMoreStatus.Loading
-                        : this.props.status === PaginationStatus.End
+                        : this.props.status === LoadStatus.End
                             ? LoadMoreStatus.Done
-                            : this.props.status === PaginationStatus.None
+                            : this.props.status === LoadStatus.None
                                 ? ''
                                 : LoadMoreStatus.Default;
         return <LoadingStatusBar message={message}></LoadingStatusBar>;

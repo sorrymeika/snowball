@@ -28,7 +28,7 @@ export async function loadProject(projectUrl) {
         ).then(response => response.text());
 
         mainUrl = projectUrl;
-        mainCSS = result.match(/<link\s+href="(?:\.\/)?([\w\./]+\.css)"/)[1];
+        mainCSS = result.match(/<link\s+href="(?:\.\/)?([\w./]+\.css)"/)[1];
         mainJS = result.match(/<script[^>]+?src="(?:\.\/)?(static\/js\/[\w.]+\.js)"/)[1];
     }
 

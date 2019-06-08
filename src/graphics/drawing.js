@@ -1,4 +1,4 @@
-import { osVersion, android } from '../core/env';
+import { osVersion, android } from '../env';
 import '../libs/canvas-to-blob';
 import { base64 } from '../utils';
 

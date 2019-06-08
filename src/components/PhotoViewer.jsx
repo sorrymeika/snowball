@@ -2,8 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import { $ } from '../utils';
 import { ViewModel } from '../vm';
-import { transformTFSImageUrl } from '../utils/tfs';
-import { addOnBeforeBackListener, removeOnBeforeBackListener } from '../core/app';
+import { addOnBeforeBackListener, removeOnBeforeBackListener } from '../app';
 import { animate, computeFrame } from '../graphics/animation';
 
 export class PhotoViewer extends ViewModel {
@@ -396,10 +395,6 @@ export default class PhotoViewerComponent extends React.Component<IPhotoViewerCo
         onLongTap,
         ...options
     } = {}) {
-        images = images.map((img) => ({
-            ...img,
-            src: transformTFSImageUrl(img.src)
-        }));
         if (!this.photoViewer) {
             this.photoViewer = new PhotoViewer({
                 images,

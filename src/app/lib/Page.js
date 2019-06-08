@@ -2,7 +2,7 @@ import { IPage, PageLifecycleDelegate } from '../types';
 import { Model, State } from '../../vm';
 import { store } from '../../utils';
 import { EventEmitter } from '../../core/event';
-import preloader from '../../../preloader';
+import preloader from '../../preloader';
 import { Sharer } from '../appsdk/share/ShareData';
 
 const extentions = [];

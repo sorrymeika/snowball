@@ -1,4 +1,4 @@
-import { WX_JS_URL, IS_WX, WX_APP_ID } from "../env";
+import { WX_JS_URL, IS_WX, WX_APP_ID } from "../../../env";
 import { loadJs } from "../../../utils";
 import { popup } from "../../../widget/popup";
 import toast from "../../../widget/toast";
@@ -65,7 +65,7 @@ async function prepareShareData(shareData = {}, wechatConfig) {
 
 function verifyWX(cb) {
     if (IS_WX) {
-        cb();
+        loadJs(WX_JS_URL).then(cb);
         return true;
     }
     return false;
@@ -79,7 +79,7 @@ export class WeiXin {
     prepareShareData(data) {
         return verifyWX(() => {
             // 调用微信js接口，设置分享信息
-            Promise.all([this.requester.requestConfig(location.href), loadJs(WX_JS_URL)])
+            this.requester.requestConfig(location.href)
                 .then(([wechatConfig]) => {
                     wechatConfig && prepareShareData({
                         title: data.shareTitle,

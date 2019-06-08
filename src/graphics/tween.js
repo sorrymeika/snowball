@@ -1,4 +1,4 @@
-Object.assign(exports, {
+const Tween = {
     linear: function (t, b, c, d) { return c * t / d + b; },
     ease: function (t, b, c, d) {
         return -c * (t /= d) * (t - 2) + b;
@@ -107,7 +107,7 @@ Object.assign(exports, {
         return c / 2 * ((t -= 2) * t * (((s *= (1.525)) + 1) * t + s) + 2) + b;
     },
     easeInBounce: function (t, b, c, d) {
-        return c - Tween.Bounce.easeOut(d - t, 0, c, d) + b;
+        return c - Tween.easeOutBounce(d - t, 0, c, d) + b;
     },
     easeOutBounce: function (t, b, c, d) {
         if ((t /= d) < (1 / 2.75)) {
@@ -124,6 +124,6 @@ Object.assign(exports, {
         if (t < d / 2) return Tween.easeInOutBounce(t * 2, 0, c, d) * .5 + b;
         else return Tween.easeInOutBounce(t * 2 - d, 0, c, d) * .5 + c * .5 + b;
     }
-});
+};
 
-export default exports;
+export default Tween;

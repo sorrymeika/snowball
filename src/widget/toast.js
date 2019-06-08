@@ -1,4 +1,4 @@
-import { $ } from '../core/dom';
+import { $ } from '../utils';
 
 var promise = Promise.resolve();
 var timer;

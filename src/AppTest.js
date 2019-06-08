@@ -1,12 +1,10 @@
 import React, { Component } from 'react';
 import ReactDOM from 'react-dom';
-import './App.css';
 import { ViewModel, component, Model } from './vm';
 
 @component({
     tagName: 'Test',
     template: `
-    
     <ul @click={a=1}>
     {a}
     <li sn-repeat="item,i in data">a:{i},{item.name}</li>

@@ -17,3 +17,9 @@ export const android = PLATFORM === 'android';
 export const osVersion = parseFloat(ov[0] + '.' + ov[1]);
 
 export const IS_SNOWBALL_WEBVIEW = /snowball/i.test(ua);
+
+export const IS_WX = /MicroMessenger/.test(ua);
+export const WX_APP_ID = process.env.REACT_APP_WX_APP_ID;
+export const WX_JS_URL = 'https://res.wx.qq.com/open/js/jweixin-1.3.2.js';
+
+

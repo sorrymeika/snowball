@@ -24,39 +24,6 @@ export class SnowballWebView {
         });
     }
 
-    renewToken() {
-        return this.callSdk((data) => {
-            location.reload();
-        }, null, {
-            action: 1,
-            type: 3,
-            data: {},
-            source: 2
-        });
-    }
-
-    releaseBack() {
-        return this.callSdk(null, null, {
-            action: 9,
-            type: 7,
-            data: {
-                catchBack: "no"
-            },
-            source: 1
-        });
-    }
-
-    preventBack() {
-        return this.callSdk(null, null, {
-            action: 9,
-            type: 7,
-            data: {
-                catchBack: "yes"
-            },
-            source: 1
-        });
-    }
-
     getLocation(callback, error) {
         return this.callSdk(callback, error, {
             action: 4,

@@ -1,6 +1,7 @@
 import * as attributes from './attributes';
+import * as Operators from './operators';
 
-export * from './predicates';
+export { isObserver, isObservable, isModel, isCollection, isList } from './predicates';
 
 export { Observer } from './Observer';
 export { default as List, ObserverList } from './List';
@@ -18,4 +19,4 @@ export { nextTick } from "./methods/enqueueUpdate";
 export { component } from './component';
 export { ViewModel, registerComponent } from './view-model';
 
-export * from './operators';
+export { Operators };

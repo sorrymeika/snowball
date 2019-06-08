@@ -3,10 +3,10 @@
  * 作者: sunlu
  */
 
-import * as appsdk from '../../appsdk';
+import * as appsdk from '../appsdk';
 import * as env from '../../env';
 import { IApplication, INavigation } from '../types';
-import { $, appendQueryString, session } from '../../../utils';
+import { $, appendQueryString, session } from '../../utils';
 
 const NavigateType = {
     Forward: 1,
@@ -111,20 +111,19 @@ export default class Navigation implements INavigation {
         if (backUrl) {
             this.transitionTo(backUrl, NavigateType.Back, props, withAnimation);
         } else {
-            if (env.IS_PAJK || env.IS_JSB || env.IS_SHOUXIAN || env.IS_HCZ || env.IS_HRX || env.IS_CBW) {
-                if (closeWebViewTimer) clearTimeout(closeWebViewTimer);
-                closeWebViewTimer = setTimeout(() => {
-                    this.application.currentActivity && this.application.currentActivity.destroy();
-                    appsdk.exitWebView();
-                }, 600);
+            if (closeWebViewTimer) clearTimeout(closeWebViewTimer);
+            closeWebViewTimer = setTimeout(() => {
+                this.application.currentActivity && this.application.currentActivity.destroy();
+                appsdk.exitWebView();
+            }, 600);
 
-                $(window).on('hashchange popstate unload', () => {
-                    if (closeWebViewTimer) {
-                        clearTimeout(closeWebViewTimer);
-                        closeWebViewTimer = null;
-                    }
-                });
-            }
+            $(window).on('hashchange popstate unload', () => {
+                if (closeWebViewTimer) {
+                    clearTimeout(closeWebViewTimer);
+                    closeWebViewTimer = null;
+                }
+            });
+
             history.back();
         }
         return this;

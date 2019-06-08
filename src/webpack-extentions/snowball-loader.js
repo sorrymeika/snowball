@@ -41,11 +41,12 @@ module.exports = function (source, inputSourceMap) {
     // console.log(options);
 
     var content = replaceImport(source, "snowball", "window.Snowball");
-    content = replaceImport(content, "snowball/components", "window.Snowball.components");
-    content = replaceImport(content, "snowball/widget", "window.Snowball.widget");
-    content = replaceImport(content, "snowball/graphics", "window.Snowball.graphics");
+    content = replaceImport(content, "snowball/app", "window.Snowball._app");
+    content = replaceImport(content, "snowball/components", "window.Snowball._components");
+    content = replaceImport(content, "snowball/graphics", "window.Snowball._graphics");
+    content = replaceImport(content, "snowball/widget", "window.Snowball._widget");
     content = replaceImport(content, "snowball/.+", (packageName) => "{};throw new Error('unavaliable import `" + packageName + "`!!')");
-    content = replaceImport(content, "react", "window.Snowball.React");
-    content = replaceImport(content, "react-dom", "window.Snowball.ReactDOM");
+    content = replaceImport(content, "react", "window.Snowball._React");
+    content = replaceImport(content, "react-dom", "window.Snowball._ReactDOM");
     this.callback(null, content, inputSourceMap);
 };

@@ -1,5 +1,5 @@
 {
-  "name": "app1",
+  "name": "snowball",
   "version": "0.1.0",
   "private": true,
   "devDependencies": {
@@ -63,6 +63,8 @@
   "scripts": {
     "start": "node scripts/start.js",
     "build": "node scripts/build.js",
+    "sprity": "node scripts/sprity.js",
+    "project": "node scripts/project.js",
     "test": "node scripts/test.js"
   },
   "eslintConfig": {
@@ -130,7 +132,12 @@
       "react-app"
     ],
     "plugins": [
-      ["@babel/plugin-proposal-decorators", { "legacy": true }]
+      [
+        "@babel/plugin-proposal-decorators",
+        {
+          "legacy": true
+        }
+      ]
     ]
   }
 }

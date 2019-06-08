@@ -1,10 +1,7 @@
 import {
-    sdk,
-    addTabResumeListener,
-    addPajkMessageListener,
-    removePajkMessageListener
+    sdk
 } from './sdk';
-import { login, treasureBox, renewToken, addOnBeforeLoginListener, removeOnBeforeLoginListener , queryMessageSettings } from './user';
+import { login, addOnBeforeLoginListener, removeOnBeforeLoginListener } from './user';
 
 import * as webview from './webview';
 import * as GIS from './GIS';
@@ -14,16 +11,10 @@ import ShareContentTypes from './share/ShareContentTypes';
 
 export {
     sdk,
-    addTabResumeListener,
-    addPajkMessageListener,
-    removePajkMessageListener,
     addOnBeforeLoginListener,
     removeOnBeforeLoginListener,
     login,
-    treasureBox,
-    renewToken,
-    GIS,
-    queryMessageSettings
+    GIS
 };
 
 export const preventBack = () => sdk.execute('preventBack');
@@ -36,6 +27,6 @@ export const getAppVersion = () => new Promise(resolve => sdk.execute('getAppVer
 export const exitWebView = webview.exit;
 export const openWebView = webview.open;
 
-export * from './share/index';
+export * from './share';
 export { ShareContentTypes, ShareTypes };
 
