@@ -23,6 +23,12 @@
 
 ## 开发
 
+### Use Snowball
+
+1. run `git clone git@github.com:sorrymeika/snowball.git`
+2. run `cd snowball && npm install`
+3. run `npm run project yourProjectName` to create your own project
+4. `import { env, Model } from "snowball"`
 
 ### Getting Start
 
@@ -43,15 +49,6 @@
 **or**
 
 * see the [Installation OSX](https://github.com/Automattic/node-canvas/wiki/Installation---OSX) to install without **brew** command
-
-### Use Snowball
-
-1. 将`snowball`放到当前项目的父文件夹下(与当前项目同级)
-2. 运行命令
-```sh
-ln -s ../../snowball ./node_modules
-```
-3. `import { env, Model } from "snowball"`
 
 ## 打包
 ```
