@@ -19,11 +19,11 @@ window.preloader = (function (window, document, preloadOptions, undefined) {
                 : /Chrome\/(\d+)/i.test(ua)
                     ? 'chrome'
                     : 'unknow';
-    var IS_SNOWBALL_WEBVIEW = /snowball/i.test(ua);
     var ov = RegExp.$2 ? RegExp.$2.split(/_|\./) : [0, 0];
     var osVersion = parseFloat(ov[0] + '.' + ov[1]);
     var iOS = PLATFORM === 'iOS';
     var isAndroid = PLATFORM === 'android';
+    var IS_SNOWBALL_WEBVIEW = /snowball/i.test(ua);
 
     (function initialize(initializers) {
         console.time("Start React App spend");
