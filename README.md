@@ -32,7 +32,6 @@
 
 ### Getting Start
 
-* run `npm install`
 * run `npm start` to start development server, it'll open the project url in browser automatically!
 * run `npm run test` to run test cases!
 * run `npm run build` to build the production bundle.
