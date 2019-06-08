@@ -208,7 +208,7 @@ export function createApplication({
         options
     );
     actionsBeforeAppStart.forEach((action) => {
-        action();
+        action(application);
     });
     actionsBeforeAppStart = null;
 

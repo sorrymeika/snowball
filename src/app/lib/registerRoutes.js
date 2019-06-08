@@ -2,12 +2,11 @@ import { internal_getApplication, internal_beforeStartApplication } from "./crea
 
 export function registerRoutes(routes) {
     const application = internal_getApplication();
-    const routeManager = application.routeManager;
     if (!application) {
-        internal_beforeStartApplication(() => {
-            routeManager.registerRoutes(routes);
+        internal_beforeStartApplication((application) => {
+            application.routeManager.registerRoutes(routes);
         });
     } else {
-        routeManager.registerRoutes(routes);
+        application.routeManager.registerRoutes(routes);
     }
 }
