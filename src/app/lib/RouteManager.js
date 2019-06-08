@@ -53,11 +53,11 @@ class Route {
 class Project {
     state = 0;
     url;
-    roots;
+    path;
 
-    constructor(url, roots) {
+    constructor(path, url) {
+        this.path = new RegExp(path);
         this.url = url;
-        this.roots = roots;
     }
 
     async loadResources() {
@@ -74,14 +74,11 @@ class Project {
     }
 
     async load(path) {
-        for (var j = 0; j < this.roots.length; j++) {
-            var root = this.roots[j];
-            if (path === '/' + root || path.startsWith('/' + root + '/')) {
-                if (this.state === 1) {
-                    return true;
-                }
-                return await (this.promise || (this.promise = this.loadResources()));
+        if (this.path.test(path)) {
+            if (this.state === 1) {
+                return true;
             }
+            return await (this.promise || (this.promise = this.loadResources()));
         }
         return false;
     }
@@ -103,8 +100,8 @@ export default class RouteManager implements IRouteManager {
     }
 
     registerProjects(projects) {
-        Object.keys(projects).forEach((url) => {
-            this.projects.push(new Project(url, projects[url]));
+        Object.keys(projects).forEach((path) => {
+            this.projects.push(new Project(path, projects[path]));
         });
     }
 
