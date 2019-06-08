@@ -26,6 +26,9 @@ const ModuleNotFoundPlugin = require('react-dev-utils/ModuleNotFoundPlugin');
 const ForkTsCheckerWebpackPlugin = require('react-dev-utils/ForkTsCheckerWebpackPlugin');
 const typescriptFormatter = require('react-dev-utils/typescriptFormatter');
 
+const HtmlPreRenderWebpackPlugin = require('snowball/webpack-extentions/html-prerender-webpack-plugin');
+
+
 const postcssNormalize = require('postcss-normalize');
 
 // Source maps are resource heavy and can cause out of memory issue for large source files.
@@ -526,6 +529,11 @@ module.exports = function (webpackEnv) {
             : undefined
         )
       ),
+      new HtmlPreRenderWebpackPlugin({
+        appSrc: paths.appSrc,
+        skeleton: {},
+        preloader: require.resolve('snowball/preloader/preloader.tpl.js')
+      }),
       // Inlines the webpack runtime script. This script is too small to warrant
       // a network request.
       isEnvProduction &&

@@ -1,6 +1,6 @@
 
 var UglifyJS = require('uglify-js');
-var babel = require('babel-core');
+var babel = require('@babel/core');
 
 function replaceBOM(text) {
     return text.replace(/^\uFEFF/i, '');

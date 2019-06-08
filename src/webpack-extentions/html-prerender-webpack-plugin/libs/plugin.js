@@ -35,6 +35,7 @@ var debugPreloader = false;
 function HtmlPreRenderWebpackPlugin(options) {
     this.options = options;
 
+    config.projects = options.projects || [];
     config.skeletonConfig = options.skeleton;
     config.appSrc = options.appSrc;
     config.preloader = options.preloader;
@@ -59,17 +60,16 @@ HtmlPreRenderWebpackPlugin.prototype.apply = function (compiler) {
         if (asset) {
             var html = asset.source();
             var bundleLevel = self.options.bundleLevel;
-            var bundleIsHighLevel = bundleLevel === 'high';
+            var bundleIsHighLevel = bundleLevel !== 'low';
 
             html = html
-                .replace(/<script type="text\/javascript" src="([^"]*(?:static\/js\/bundle\.js|static\/js\/main\.(?:\w+)\.js))"><\/script>/, (match, bundlejs) => {
+                .replace(/<script (?:type="text\/javascript"\s+)?src="([^"]*(?:static\/js\/bundle\.js|static\/js\/main\.(?:\w+)\.js))"><\/script>/, (match, bundlejs) => {
                     var replacement = '%__PRELOADER_AND_SKELETON__%';
                     if (bundleIsHighLevel) {
                         replacement += match;
-                        config.bundle = '';
-                    } else {
-                        config.bundle = bundlejs;
                     }
+                    config.bundleLevel = bundleLevel;
+                    config.bundle = bundlejs;
                     return replacement;
                 })
                 .replace('%__PRELOADER_AND_SKELETON__%', function () {
