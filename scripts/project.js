@@ -35,10 +35,10 @@ function execSync(command, options) {
 ['package.json', 'package-lock.json', 'scripts', 'config', 'public'].forEach((fileName) => {
   copySync(fileName, path.join(projectDir, fileName));
 });
+execSync('cp -af ../snowball/template/* ./');
 
 execSync('npm install');
 execSync('ln -s ../../snowball/src ./node_modules/snowball');
-execSync('cp -af ../snowball/template/* ./');
 execSync('open ' + projectDir);
 
 
