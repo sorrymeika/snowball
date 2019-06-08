@@ -87,13 +87,6 @@ function replaceActivityWithAnimation(activityManager, prevActivity, activity, c
     var duration = 400;
     var { enterFrom, enterTo, exitFrom, exitTo } = getAnimation(isForward);
 
-    if (activityManager.options.useWindowScroll === true) {
-        duration = 0.01;
-        if (isForward) {
-            prevActivity.scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
-            window.scrollTo(0, 0);
-        }
-    }
     prevActivity.$el.removeClass('app-view-actived');
 
     var $prevElement = $(prevActivity.el).css(castStyle(exitFrom));

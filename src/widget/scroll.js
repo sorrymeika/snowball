@@ -515,14 +515,11 @@ Scroll.prototype = {
 
             var distX = x - startX;
             var distY = y - startY;
-            var computedStyle = getComputedStyle(el, '');
-            var useWindowScroll = computedStyle.overflowY === 'visible';
 
             animate(
                 (progress) => {
                     this._scrollLeft = el.scrollLeft = startX + computeFrame(0, distX, progress);
                     this._scrollTop = el.scrollTop = startY + computeFrame(0, distY, progress);
-                    useWindowScroll && window.scrollTo(this._scrollLeft, this._scrollTop);
                 },
                 duration,
                 "ease",
@@ -536,7 +533,6 @@ Scroll.prototype = {
         } else {
             this._scrollLeft = el.scrollLeft = x;
             this._scrollTop = el.scrollTop = y;
-            useWindowScroll && window.scrollTo(this._scrollLeft, this._scrollTop);
         }
     }
 };

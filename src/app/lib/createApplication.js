@@ -19,7 +19,7 @@ class Application implements IApplication {
         activityManagerFactory: (app: IApplication) => IActivityManager,
         routeManager: IRouteManager,
         rootElement,
-        options
+        options = {}
     ) {
         this.routeManager = routeManager;
         this.rootElement = rootElement;
