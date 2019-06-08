@@ -29,10 +29,11 @@
 2. run `cd snowball && npm install`
 3. run `npm run project yourProjectName` to create your own project
 4. `import { env, Model } from "snowball"`
+5. see `https://github.com/sorrymeika/juicy` to get the full example!
 
 ### Getting Start
 
-* run `npm start` to start development server, it'll open the project url in browser automatically!
+* run `cd yourProject && npm start` to start development server, it'll open the project url in browser automatically!
 * run `npm run test` to run test cases!
 * run `npm run build` to build the production bundle.
 * run `npm run sprity` to build sprity images.
