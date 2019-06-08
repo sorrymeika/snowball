@@ -59,7 +59,10 @@
     "webpack-manifest-plugin": "2.0.4",
     "workbox-webpack-plugin": "4.2.0"
   },
-  "dependencies": {},
+  "dependencies": {
+    "canvas": "^2.5.0",
+    "node-sass": "^4.12.0"
+  },
   "scripts": {
     "start": "node scripts/start.js",
     "build": "node scripts/build.js",

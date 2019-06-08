@@ -49,6 +49,10 @@
 
 * see the [Installation OSX](https://github.com/Automattic/node-canvas/wiki/Installation---OSX) to install without **brew** command
 
+**or**
+
+* just remove the `canvas` module from `package.json`
+
 ## 打包
 ```
 业务项目打包后会剔除掉`react`,`react-dom`,`polyfill`等框架和框架中的公共组件/公共样式

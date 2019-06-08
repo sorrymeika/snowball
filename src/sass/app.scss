@@ -105,7 +105,7 @@
 .app-slider img { width: 100%; display: block; }
 
 /* 图片浏览 */
-.app-photoviewer { opacity: 0; background: #000; z-index: 3000; overflow: hidden; @extend .viewport; }
+.app-photoviewer { opacity: 0; background: #000; z-index: 3000; overflow: hidden; @extend .app-viewport; }
 .app-photoviewer.show { opacity: 1; }
 .app-photoviewer-con { width: 100%; height: 100%; display: flex; position: relative; }
 .app-photoviewer-item { flex: 1; width: 0px; height: 100%; overflow: hidden; }
@@ -147,19 +147,18 @@
 
 /* 选项卡 */
 .app-tab-head { height: 46px; }
-.app-tab-head-cursor { position: absolute; height: 2px; background: $tuancolor; bottom: 0; left: 0px; width: 50px; }
+.app-tab-head-cursor { position: absolute; height: 2px; background: $color; bottom: 0; left: 0px; width: 50px; }
 .app-tab-head > ul { height: 100%; }
-.app-tab-head .curr .app-tab-title { color: $tuancolor; }
+.app-tab-head .curr .app-tab-title { color: $color; }
 .app-tab-body { top: 46px; }
 .app-tab-body-inner > div { -webkit-box-flex: 1; flex: 1; height: 100%; width: 0px; }
 
-.app-loader { top: 50%; left: 50%; margin: -16px 0 0 -16px; position: absolute; width: 32px; height: 32px; text-indent: -10000px; background: #fff url(images/loading@2x.gif) center center no-repeat; background-size: 80% 80%; animation-duration: 1s; animation-iteration-count: infinite; animation-timing-function: step-start; z-index: 10000; opacity: 0; transition: opacity 300ms ease-out 0ms; pointer-events: none; border-radius: 50%; }
+.app-loader { top: 50%; left: 50%; margin: -16px 0 0 -16px; position: absolute; width: 32px; height: 32px; text-indent: -10000px; background: url(./images/loading@2x.png) center center no-repeat; background-size: 80% 80%; animation-duration: 1s; animation-iteration-count: infinite; animation-timing-function: step-start; z-index: 10000; opacity: 0; transition: opacity 300ms ease-out 0ms; pointer-events: none; border-radius: 50%; animation-name: app-loading-anim; -webkit-animation-duration: 1s; -webkit-animation-iteration-count: infinite; -webkit-animation-timing-function: step-start; }
 .app-loader.show { opacity: 1; }
 .app-placeholder { height: 14px; background: #e7e7e7; margin-top: 10px; }
 
 .app-loading { height: 40px; padding-top: 8px; text-align: center; }
-.app-loading::after { display: inline-block; content: ''; background: url(images/loading@2x.gif); width: 25px; height: 25px; background-size: 100% auto; }
-.app-loading-large::after { display: inline-block; content: ''; background: url(images/big-loading.gif); width: 80px; height: 80px; background-size: 100% auto; }
+.app-loading::after { display: inline-block; content: ''; background: url(./images/loading@2x.png); width: 25px; height: 25px; background-size: 100% auto; animation-name: app-loading-anim; animation-duration: 1s; animation-iteration-count: infinite; animation-timing-function: step-start; }
 
 .app-navigation-view { position: relative; padding-top: 34px; }
 .app-navigation-view-bars { position: absolute; right: 0; left: 0; top: 0; height: 34px; overflow: hidden; overflow-x: auto; }
@@ -194,3 +193,39 @@
 .app-smalltext-fix { width: 0px; overflow: hidden; display: inline-block; font-size: 12px }
 
 .app-outside-screen { position: absolute !important; left: 4rem !important; }
+
+@keyframes app-loading-anim {
+    from { -webkit-transform: rotate(0deg); }
+    8.32% { -webkit-transform: rotate(0deg); }
+    8.33% { -webkit-transform: rotate(30deg); }
+    16.65% { -webkit-transform: rotate(30deg); }
+    16.66% { -webkit-transform: rotate(60deg); }
+    24.99% { -webkit-transform: rotate(60deg); }
+    25% { -webkit-transform: rotate(90deg); }
+    33.32% { -webkit-transform: rotate(90deg); }
+    33.33% { -webkit-transform: rotate(120deg); }
+    41.65% { -webkit-transform: rotate(120deg); }
+    41.66% { -webkit-transform: rotate(150deg); }
+    49.99% { -webkit-transform: rotate(150deg); }
+    50% { -webkit-transform: rotate(180deg); }
+    58.32% { -webkit-transform: rotate(180deg); }
+    58.33% { -webkit-transform: rotate(210deg); }
+    66.65% { -webkit-transform: rotate(210deg); }
+    66.66% { -webkit-transform: rotate(240deg); }
+    74.99% { -webkit-transform: rotate(240deg); }
+    75% { -webkit-transform: rotate(270deg); }
+    83.32% { -webkit-transform: rotate(270deg); }
+    83.33% { -webkit-transform: rotate(300deg); }
+    91.65% { -webkit-transform: rotate(300deg); }
+    91.66% { -webkit-transform: rotate(330deg); }
+    99.99% { -webkit-transform: rotate(330deg); }
+    to { -webkit-transform: rotate(360deg); }
+}
+
+@keyframes motion-anim {
+    from { -webkit-transform: rotate(0deg); }
+    25% { -webkit-transform: rotate(45deg); }
+    50% { -webkit-transform: rotate(0deg); }
+    75% { -webkit-transform: rotate(-45deg); }
+    to { -webkit-transform: rotate(0deg); }
+}

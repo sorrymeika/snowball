@@ -253,7 +253,7 @@ export class Activity {
 
         this.$el = $('[route-path="' + location.path + '"][ssr]');
         if (!this.$el.length) {
-            this.$el = $('<div class="view"'
+            this.$el = $('<div class="app-view"'
                 + (!application.currentActivity ? ' style="opacity:0"' : '')
                 + ' route-path="' + location.path + '"></div>')
                 .appendTo(application.rootElement);

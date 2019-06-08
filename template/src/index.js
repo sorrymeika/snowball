@@ -1,11 +1,14 @@
 import { createApplication } from "snowball/app";
 import Home from "./Home";
+import Test from "./Test";
+import "./sass/style.scss";
 
 const projects = {
 };
 
 const routes = {
-    '/': Home
+    '/': Home,
+    '/test': Test
 };
 
 createApplication({
