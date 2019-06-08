@@ -1,9 +1,11 @@
 # Snowball
 
-* `snowball` 是一个全套的`web app/hybrid app`开发框架，包括：路由、状态管理和视图。
-* snowball-app: 路由系统，拥有多工程跨工程加载、可配置前进后退动画效果、动态管理DOM、手势返回等功能。 
-* snowball-model：状态管理框架，immutable。
-* snowball-view：view层框架，fiber模式渲染，高性能，双向绑定。 采用运行时模版编译。同时提供`React`支持。
+* `snowball` 是一个一站式前端开发框架，你可以使用`snowball`轻松构建出一套`web app/hybrid app`。
+* 路由系统：拥有多工程跨工程加载、前进后退动画效果、手势返回、动态管理DOM等功能。 
+* 状态管理：immutable、响应式，和`redux`不同，`snowball`的状态管理更符合`OOP`思想。
+* 视图：fiber模式渲染，高性能，双向绑定。 采用运行时模版编译，在需要从服务端拉取模版渲染的场景优于`React`。
+* 路由系统和状态管理都完全适配`React`。
+* 业务项目采用分层架构，主要分为`Controller`、`Service`、`View`层，`Controller`层用来组织`Service`层，并通过`injectable`注解将数据注入到`View`层。
 
 # 优点
 1. 一个核心框架库＋多个业务库。业务库之间不依赖，可单独发布
@@ -202,8 +204,7 @@ class AppController {
 
 ### vm
 
-* vm是一个MVVM框架，主要由 `Observer`、`ViewModel`、`Model`、`Collection`组成
-* 在React项目中，我们一般使用他来替换`redux`
+* vm是一个MVVM框架，内置模版引擎和多种数据类型
 
 ### 模版引擎
 
