@@ -149,9 +149,10 @@ async function createActivity(location, application) {
         loader.hideLoader();
     }
 
-    const viewFactory = container.default[CONTROLLER]
-        ? container.default[CONTROLLER]
-        : container.default;
+    const pageFactory = container.default || container;
+    const viewFactory = pageFactory[CONTROLLER]
+        ? pageFactory[CONTROLLER]
+        : pageFactory;
 
     return viewFactory.__is_activity_factory__
         ? viewFactory(location, application)

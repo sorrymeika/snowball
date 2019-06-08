@@ -1,0 +1,105 @@
+{
+    "extends": [
+        "react-app",
+        "plugin:flowtype/recommended"
+    ],
+    "rules": {
+        "no-restricted-globals": "off",
+        "semi": "error",
+        "no-multi-spaces": "error",
+        "eqeqeq": "off",
+        "no-new-func": "off",
+        "no-cond-assign": "off",
+        "guard-for-in": "off",
+        "no-loop-func": "off",
+        "no-restricted-syntax": "off",
+        "no-labels": "off",
+        "no-script-url": "off",
+        "no-unneeded-ternary": "error",
+        "space-unary-ops": "warn",
+        "semi-spacing": [
+            "warn", {
+                "before": false,
+                "after": true
+            }
+        ],
+        "space-before-blocks": "warn",
+        "space-before-function-paren": [
+            "error", {
+                "anonymous": "always",
+                "named": "never",
+                "asyncArrow": "always"
+            }
+        ],
+        "no-trailing-spaces": "warn",
+        "object-curly-spacing": [
+            "warn",
+            "always"
+        ],
+        "array-bracket-spacing": [
+            "warn",
+            "never"
+        ],
+        "space-infix-ops": "error",
+        "spaced-comment": [
+            "warn",
+            "always"
+        ],
+        "space-in-parens": [
+            "warn",
+            "never"
+        ],
+        "key-spacing": [
+            "warn", {
+                "beforeColon": false,
+                "afterColon": true
+            }
+        ],
+        "keyword-spacing": [
+            "warn", {
+                "before": true,
+                "after": true
+            }
+        ],
+        "line-comment-position": [
+            "warn", {
+                "position": "above"
+            }
+        ],
+        "func-call-spacing": [
+            "warn",
+            "never"
+        ],
+        "template-curly-spacing": [
+            "warn",
+            "never"
+        ],
+        "no-multiple-empty-lines": [
+            "error", {
+                "max": 2
+            }
+        ],
+        "new-cap": [
+            "error", {
+                "newIsCap": true
+            }
+        ],
+        "newline-per-chained-call": [
+            "error", {
+                "ignoreChainWithDepth": 2
+            }
+        ],
+        "max-statements": [
+            "error",
+            95
+        ],
+        "indent": [
+            "error",
+            4, {
+                "SwitchCase": 1
+            }
+        ],
+        "default-case": "off",
+        "flowtype/no-types-missing-file-annotation": "off"
+    }
+}

@@ -2,10 +2,11 @@ import { IPage, PageLifecycleDelegate } from '../types';
 import { Model, State } from '../../vm';
 import { store } from '../../utils';
 import { EventEmitter } from '../../core/event';
-import preloader from '../../preloader';
 import { Sharer } from '../appsdk/share/ShareData';
 
 const extentions = [];
+
+const defaultTitle = document.title;
 
 export class Page extends EventEmitter implements IPage {
 
@@ -22,7 +23,7 @@ export class Page extends EventEmitter implements IPage {
         super();
         this.activity = activity;
         this._cache = new Model();
-        this.title = preloader.defaultTitle;
+        this.title = defaultTitle;
         this.sharer = new Sharer();
 
         this.messageChannel = new EventEmitter();
