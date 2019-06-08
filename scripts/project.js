@@ -37,6 +37,8 @@ function execSync(command, options) {
 });
 
 execSync('npm install');
-execSync('ln -s ../../snowball/src ./node_modules');
+execSync('ln -s ../../snowball/src ./node_modules/snowball');
+execSync('cp -af ../snowball/template/* ./');
 execSync('open ' + projectDir);
+
 
