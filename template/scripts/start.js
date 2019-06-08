@@ -1,4 +1,4 @@
-'use strict';
+
 
 // Do this as the first thing so that any code reading it knows the right env.
 process.env.BABEL_ENV = 'development';
@@ -16,6 +16,11 @@ require('../config/env');
 
 
 const fs = require('fs');
+
+if (!fs.existsSync('./node_modules/snowball')) {
+  require('child_process').execSync('ln -s ../../snowball/src ./node_modules/snowball');
+}
+
 const chalk = require('react-dev-utils/chalk');
 const webpack = require('webpack');
 const WebpackDevServer = require('webpack-dev-server');
@@ -38,10 +43,6 @@ const isInteractive = process.stdout.isTTY;
 // Warn and crash if required files are missing
 if (!checkRequiredFiles([paths.appHtml, paths.appIndexJs])) {
   process.exit(1);
-}
-
-if (!fs.existsSync('./node_modules/snowball')) {
-  require('child_process').execSync('ln -s ../../snowball/src ./node_modules/snowball');
 }
 
 // Tools like Cloud9 rely on this.
