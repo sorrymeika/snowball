@@ -26,7 +26,7 @@ export function internal_onControllerCreated(fn) {
  *     pgOnResume: 页面从后台进入前台，且动画结束时触发
  *     pgOnPause: 页面从前台进入后台，且动画结束时触发
  *     pgOnDestroy: 页面被销毁后触发
- * @param {*} [route] 路由，非必填，尽量将路由收敛到 routers.js中
+ * @param {*} [route] 路由，非必填，尽量将路由收敛到 routes.js中
  * @param {*} componentClass 页面组件
  */
 export default function controller(route, componentClass, options) {

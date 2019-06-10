@@ -39,11 +39,11 @@ class PageProvider extends React.Component {
     }
 
     render() {
-        return createElement(this.props.viewClass, this.props.model.attributes);
+        return createElement(this.props.viewFactory, this.props.model.attributes);
     }
 }
 
-class ReactView {
+class ReactViewHandler {
     constructor(props) {
         this.props = props;
         this.el = props.el;
@@ -168,7 +168,7 @@ class ReactView {
         ReactDOM.render(createElement(PageProvider, {
             model: this.model,
             page: this.props.page,
-            viewClass: this.props.viewClass
+            viewFactory: this.props.viewFactory
         }), this.el, () => {
             callback && callback();
             if (process.env.NODE_ENV !== 'test') {
@@ -187,10 +187,10 @@ class ReactView {
     }
 }
 
-class SnowballView {
+class SnowballViewHandler {
 
     constructor(props) {
-        const ViewClass = props.viewClass;
+        const ViewClass = props.viewFactory;
 
         this.props = props;
         this.model = new ViewClass({
@@ -245,11 +245,10 @@ class SnowballView {
  */
 export class Activity {
 
-    constructor(viewClass, location, application, mapStoreToProps) {
+    constructor(viewFactory, location, application, mapStoreToProps) {
         this.application = application;
         this.isActive = true;
         this.status = ACTIVITY_STATUS_INIT;
-        this.viewClass = viewClass;
 
         this.$el = $('[route-path="' + location.path + '"][ssr]');
         if (!this.$el.length) {
@@ -264,14 +263,14 @@ export class Activity {
         this.el = this.$el[0];
         this.page = new Page(this);
 
-        const ViewClass = viewClass.prototype instanceof ViewModel
-            ? SnowballView
-            : ReactView;
+        const ViewHandler = viewFactory.prototype instanceof ViewModel
+            ? SnowballViewHandler
+            : ReactViewHandler;
 
-        this.view = new ViewClass({
+        this.view = new ViewHandler({
             el: this.el,
             stores: application.stores,
-            viewClass,
+            viewFactory,
             location,
             mapStoreToProps,
             activity: this,

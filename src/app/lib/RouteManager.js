@@ -4,9 +4,9 @@ import { loadProject } from "./resource";
 import loader from "../../widget/loader";
 
 class Route {
-    constructor(name, container) {
+    constructor(name, viewFactory) {
         this.name = name;
-        this.container = container;
+        this.viewFactory = viewFactory;
 
         const paths = name.split('/').map((item) => {
             return !item
@@ -20,10 +20,9 @@ class Route {
     }
 
     match(path, search) {
-        var match = path.match(this.regex);
+        const match = path.match(this.regex);
         if (match) {
-            var result = {
-                route: this,
+            const location = {
                 match: this.regex,
                 url: path + search,
                 path: path,
@@ -32,19 +31,19 @@ class Route {
                 params: {}
             };
 
-            var i = 1;
-            var len = match.length;
+            let i = 1;
+            const len = match.length;
             if (this.map) {
                 for (; i < len; i++) {
-                    result.params[this.map[i - 1]] = match[i];
+                    location.params[this.map[i - 1]] = match[i];
                 }
             } else {
                 for (; i < len; i++) {
-                    result.params[i - 1] = match[i];
+                    location.params[i - 1] = match[i];
                 }
             }
 
-            return result;
+            return location;
         }
         return null;
     }
@@ -85,7 +84,7 @@ class Project {
 }
 
 export default class RouteManager implements IRouteManager {
-    routes = [];
+    routes: Route[] = [];
     projects = [];
 
     constructor(projects, routes) {
@@ -115,8 +114,7 @@ export default class RouteManager implements IRouteManager {
     }
 
     async match(url) {
-        var routes = this.routes;
-        var match;
+        const routes = this.routes;
         var searchMatch = /\?|!|&/.exec(url);
         var searchIndex = searchMatch ? searchMatch.index : -1;
         var path = (searchIndex === -1 ? url : url.substr(0, searchIndex)).replace(/^#/, '') || '/';
@@ -124,10 +122,13 @@ export default class RouteManager implements IRouteManager {
 
         await this.loadProject(path);
 
-        for (var i = 0, len = routes.length; i < len; i++) {
-            match = routes[i].match(path, search);
-            if (match) {
-                return match;
+        for (let i = 0, len = routes.length; i < len; i++) {
+            const location = routes[i].match(path, search);
+            if (location) {
+                return {
+                    route: routes[i],
+                    location
+                };
             }
         }
         return null;

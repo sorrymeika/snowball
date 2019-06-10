@@ -1169,7 +1169,7 @@ var projects = {
     [env.PROJECTS.TRADE]: ['trade', 'spu', 'item', 'order', 'cart', 'address']
 };
 // 主应用路由注册，不可和子应用根路由重合
-// 尽量把路由收敛到 `routers.js` 中
+// 尽量把路由收敛到 `routes.js` 中
 var routes = {
     '/': HomeController,
     '/product': require('bundle?lazy&name=product!controllers/ProductController')

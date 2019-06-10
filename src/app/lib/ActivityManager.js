@@ -126,26 +126,19 @@ function replaceActivityWithAnimation(activityManager, prevActivity, activity, c
 *
 * @param {Route} 页面路由
 */
-async function createActivity(location, application) {
-    const route = location.route;
-    let container = route.container;
+async function createActivity(route, location, application) {
+    let viewFactory = route.viewFactory;
 
-    if (isThenable(container)) {
-        const timer = 'getActivityFactory from network spend';
-        console.time(timer);
-
+    if (isThenable(viewFactory)) {
         loader.showLoader();
-
-        route.container = container = await container;
-
-        console.timeEnd(timer);
+        route.viewFactory = viewFactory = await viewFactory;
         loader.hideLoader();
     }
 
-    const pageFactory = container.default || container;
-    const viewFactory = pageFactory[CONTROLLER]
-        ? pageFactory[CONTROLLER]
-        : pageFactory;
+    viewFactory = viewFactory.default || viewFactory;
+    viewFactory = viewFactory[CONTROLLER]
+        ? viewFactory[CONTROLLER]
+        : viewFactory;
 
     return viewFactory.__is_activity_factory__
         ? viewFactory(location, application)
@@ -269,11 +262,11 @@ export default class ActivityManager implements IActivityManager {
         return null;
     }
 
-    async getOrCreate(location, forceCreate: boolean): Activity {
+    async getOrCreate(route, location, forceCreate: boolean): Activity {
         var activity;
 
         if (forceCreate || !(activity = this.findLatest(location.path))) {
-            activity = await createActivity(location, this.application);
+            activity = await createActivity(route, location, this.application);
             this.activitiesCache.push(activity);
         }
 
