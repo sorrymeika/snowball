@@ -290,7 +290,7 @@ export default class ActivityManager implements IActivityManager {
     replaceActivity(prevActivity, activity, withAnimation, intentProps) {
         var application = this.application;
 
-        activity.$el.siblings('.view').each(function () {
+        activity.$el.siblings('.app-view').each(function () {
             if (!prevActivity || this !== prevActivity.el) {
                 this.style.display = 'none';
             }
