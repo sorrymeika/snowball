@@ -616,23 +616,22 @@ export class Collection extends Observer {
                 setMapper(this, this[offsetIndex] = this[i], offsetIndex);
                 this.state.data[offsetIndex] = this.state.data[i];
             }
-            if (offsetIndex >= this.length) {
-                this.length = offsetIndex + 1;
-            }
         } else if (offset < 0) {
             i = end - 1;
             length = this.length;
             newLength = length + offset;
+
             while (++i < length) {
                 offsetIndex = offset + i;
                 setMapper(this, this[offsetIndex] = this[i], offsetIndex);
                 this.state.data[offsetIndex] = this.state.data[i];
-                if (i >= newLength)
+                if (i >= newLength) {
                     delete this[i];
+                }
             }
             this.state.data.splice(newLength, this.length - newLength);
-            this.length = newLength;
         }
+        this.length += offset;
 
         i = -1;
         while (++i < arrayLength) {
@@ -858,6 +857,18 @@ Collection.prototype[OBSERVER_TYPE_KEY] = 'Collection';
 //         id: 2,
 //         name: 'b',
 //         ext: 'x2'
+//     }, {
+//         id: 2,
+//         name: 'b',
+//         ext: 'x2'
+//     }, {
+//         id: 3,
+//         name: 'b',
+//         ext: 'x2'
+//     }, {
+//         id: 4,
+//         name: 'b',
+//         ext: 'x2'
 //     }]);
 
 //     console.log(test.array);
@@ -869,4 +880,16 @@ Collection.prototype[OBSERVER_TYPE_KEY] = 'Collection';
 //     test.updateTo([{ id: 1, name: 'b' }, { id: 2, name: 'c' }, { id: 3, name: 'e' }], 'id');
 
 //     console.log(test, test.array);
+
+//     let a = test.splice(0, 1);
+
+//     console.log('unshift');
+
+//     test.unshift(a);
+
+//     a = test.splice(1, 1);
+
+//     test.unshift(a);
+
+//     console.log(test, a);
 // }, 0);
