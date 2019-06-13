@@ -1,27 +1,75 @@
 # Snowball
 
 * `snowball` 是一个一站式前端开发框架，你可以使用`snowball`轻松构建出一套`web app/hybrid app`。`snowball`内置了`view`层，但同时也支持`React`。它比`React`全家桶轻量又支持更多功能，如下：
-* 路由系统：拥有多工程跨工程加载、前进后退动画效果、手势返回、动态管理DOM等功能。 
+* 路由系统：拥有多工程跨工程加载、页面切换前进后退动画效果、手势返回、动态管理DOM等功能。 
 * 状态管理：immutable、响应式，和`redux`不同，`snowball`的状态管理更符合`OOP`思想。
-* 视图：fiber模式渲染，高性能，双向绑定。 采用运行时模版编译，在需要从服务端拉取模版渲染的场景优于`React`。
+* 视图：fiber模式渲染，高性能，双向绑定。 采用运行时模版编译，在需要从服务端拉取模版渲染的场景优于`React`、`Vue`和`Angular`等框架。
 * 路由系统和状态管理都完全适配`React`。
 * 业务项目采用分层架构，主要分为`Controller`、`Service`、`View`层，`Controller`层用来组织`Service`层，并通过`injectable`注解将数据注入到`View`层。
 
-# 优点
-1. 一个核心框架库＋多个业务库。业务库之间不依赖，可单独发布
-2. 发布后到业务库共用一份核心库的js/css/image/iconfont，减少下载资源的大小
-3. 多个业务库组成的单页应用。保证用户体验的统一和代码风格的统一
-
-# 实现方式
 
 ## 路由
+
 ```
-该路由方案将多个库整合成一个单页应用，使所有业务都使用相同的跳转动画、手势返回、页面缓存
+该路由方案专为多团队协作开发设计，将多个库整合成一个单页应用，让所有业务都使用相同的跳转动画、手势返回、页面缓存。
+发布后到业务库共用一份核心库的js/css/image/iconfont，减少下载资源的大小。
+一个核心框架库＋多个业务库。业务库之间不依赖，可单独发布。
 ```
+
+### 多工程跨工程加载
+
 1. 核心框架 `snowball` 统一控制路由，需要在 `snowball` 中注册需要加载的业务
 2. 业务库打包后会生成`asset-manifest.json`文件，`snowball` 通过路由匹配到业务，并加载manifest中的js和css。
 3. 业务js加载时调用`registerRoutes({...})` 方法注册子路由
 4. `snowball` 在业务js／css加载完成后，根据业务注册的子路由跳至对应页面。
+
+### 跳转动画和手势返回
+
+1. 应用启动后，可使用 `navigation.forward` 和 `navigation.back` 方法来控制页面跳转的动画效果。使用 `navigation.forward` 跳转页面后，点击浏览器`返回上一页`会自带返回动画。若无需跳转动画可使用 `navigation.transitionTo` 方法。
+2. 应用默认开启`手势返回`功能，`navigation.forward` 跳转到新页面之后，左滑页面可返回上一页。
+3. 页面`render`时会监听dom数量，若dom数量超过指定数量(默认20k)，会自动umount老页面的dom。
+
+
+## 视图和状态管理
+
+`snowball`的视图层采用专有的模版语言、实时模版编译和`fiber`模式渲染。视图层接收`string`类型模版，组件实例化后，`snowball`会对模版进行实时编译，生成虚拟`dom`。渲染阶段会对实体`dom`的生成和变更进行`分片`渲染，避免界面卡顿。
+
+```js
+// 这是一个简单的 `component` 示例
+@component({
+    tagName: 'Order',
+    template: `<div @click={user.name='new name'}>{user.name}</div>
+    <ul>
+        <li sn-repeat="item,i in orderList" @click={this.handleOrder(item, i)}>{i}:{item.tradeCode}</li>
+    </ul>`
+})
+class Order extends Model {
+    handleOrder(item, i) {
+        console.log(item, i);
+    }
+}
+
+new Order({
+    user: {
+        name: 'UserName'
+    },
+    orderList: [{
+        tradeCode: '1234'
+    }]
+}).appendTo(document.body)
+```
+
+### 优点
+
+1. 在需要从服务端拉取模版渲染的场景优于`React`和`Angular`等框架。
+2. 状态管理优于`React`等框架。
+3. 使用脏数据检查和`fiber`模式进行异步渲染，性能好。
+
+### 状态管理
+
+1. 内置多种数据类型，如`Model`和`Collection`，`Collection`类中包含多种常用数组操作方法
+2. `immutable`，数据变更后对比非常方便
+3. 使用观察者模式并且提供多种操作函数，轻松监听数据的变化
 
 ## 开发
 
