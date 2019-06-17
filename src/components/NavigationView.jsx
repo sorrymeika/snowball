@@ -175,6 +175,9 @@ export default class NavigationView extends VScrollView {
     }
 
     onNavContentTouchMove = (e) => {
+        if (e.nativeEvent.isFromScrollMove) {
+            return;
+        }
         if (android && osVersion <= 4.3) {
             e.preventDefault();
         }
