@@ -1,6 +1,9 @@
 import React from "react";
+import ReactDOM from "react-dom";
+
 import VScrollView from './VScrollView';
 import { $ } from '../utils';
+import { android, osVersion } from "../env";
 
 export default class NavigationView extends VScrollView {
     constructor(props) {
@@ -85,6 +88,15 @@ export default class NavigationView extends VScrollView {
         this._navigationViewHeight = this.container.offsetHeight;
         this._navigationView.style.height = this._navigationViewHeight + 'px';
         this._adjustNavBarContentWidth();
+        ReactDOM.findDOMNode(this).addEventListener('scroll', this._scroll, true);
+    }
+
+    componentWillUnmount() {
+        ReactDOM.findDOMNode(this).removeEventListener('scroll', this._scroll, true);
+    }
+
+    _scroll = (e) => {
+        this.isTriggerScroll = true;
     }
 
     _setWrapperRef = (ref) => {
@@ -163,7 +175,9 @@ export default class NavigationView extends VScrollView {
     }
 
     onNavContentTouchMove = (e) => {
-        e.preventDefault();
+        if (android && osVersion <= 4.3) {
+            e.preventDefault();
+        }
 
         if (this.isNavTouchStarted) {
             // touchmove事件触发两次后可能才触发scroll事件
