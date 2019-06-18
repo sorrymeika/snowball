@@ -1,4 +1,4 @@
-import { IRouteManager } from "../types";
+import { IRouter } from "../types";
 import { qs } from "../../utils";
 import { loadProject } from "./resource";
 import loader from "../../widget/loader";
@@ -83,7 +83,7 @@ class Project {
     }
 }
 
-export default class RouteManager implements IRouteManager {
+export default class Router implements IRouter {
     routes: Route[] = [];
     projects = [];
 

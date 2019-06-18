@@ -1,5 +1,5 @@
 import ActivityManager from './ActivityManager';
-import RouteManager from './RouteManager';
+import Router from './Router';
 import Navigation from './Navigation';
 import Application from './Application';
 
@@ -24,8 +24,10 @@ function beforeAppStart() {
 
 /**
  * 创建应用
- * @param {Array} projects
- * @param {Array} routes
+ * @param {Array} props 应用参数
+ * @param {Object} props.projects 子项目映射
+ * @param {Object} props.routes 路由映射
+ * @param {Object} props.stores 全局stores
  * @param {Element} rootElement 页面根元素
  */
 export function createApplication({
@@ -40,7 +42,7 @@ export function createApplication({
     application = new Application(
         (application) => new Navigation(application),
         (application) => new ActivityManager(application, options),
-        new RouteManager(projects, routes),
+        new Router(projects, routes),
         rootElement,
         options
     );

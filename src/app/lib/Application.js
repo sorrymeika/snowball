@@ -2,18 +2,18 @@
 import { store } from '../../utils';
 import { popup } from '../../widget';
 
-import { IApplication, IRouteManager, IActivityManager } from '../types';
+import { IApplication, IRouter, IActivityManager } from '../types';
 
 export default class Application implements IApplication {
 
     constructor(
         navigationFactory: (app: IApplication) => INavigation,
         activityManagerFactory: (app: IApplication) => IActivityManager,
-        routeManager: IRouteManager,
+        router: IRouter,
         rootElement,
         options = {}
     ) {
-        this.routeManager = routeManager;
+        this.router = router;
         this.rootElement = rootElement;
         this.options = options;
 
@@ -86,7 +86,7 @@ export default class Application implements IApplication {
     }
 
     registerRoutes(routes) {
-        this.routeManager.registerRoutes(routes);
+        this.router.registerRoutes(routes);
     }
 
     /**
@@ -109,7 +109,7 @@ export default class Application implements IApplication {
      * 匹配路由并跳转至关联页面
      */
     async _navigate(url, options = {}, props?) {
-        const location = await this.routeManager.match(url);
+        const location = await this.router.match(url);
         if (!location) return false;
 
         const prevActivity = this.currentActivity;

@@ -1,7 +1,7 @@
 
-var beforeBackListeners = [];
-var hasBindBeforeBack = false;
-var beforeBackListener = (e) => {
+let hasBindBeforeBack = false;
+const beforeBackListeners = [];
+const beforeBackListener = (e) => {
     if (e.isDefaultPrevented() || e.isPropagationStopped()) return false;
     var i = beforeBackListeners.length;
 

@@ -112,7 +112,7 @@ export interface IActivityManager {
     replaceActivity: (prevActivity: any, activity: any, withAnimation: boolean, intentProps: any) => IActivity,
 }
 
-export interface IRouteManager {
+export interface IRouter {
     registerProjects: (projects: any) => never,
     registerRoutes: (routes: any) => never,
     match: (url: string) => Promise<boolean>
@@ -140,7 +140,7 @@ export interface IApplication {
     currentActivity: IActivity;
     prevActivity: IActivity;
     activityManager: IActivityManager;
-    routeManager: IRouteManager;
+    router: IRouter;
     rootElement: HTMLElement;
     navigate: (url: string, options: NavigateOptions, props?: any) => Promise<boolean>;
     start: (cb: () => never) => IApplication;
