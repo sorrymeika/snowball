@@ -15,15 +15,18 @@ export function internal_beforeStartApplication(fn) {
     actionsBeforeAppStart.push(fn);
 }
 
-/**
- * 应用控制器
- * @param {Element} rootElement 页面根元素
- */
+function beforeAppStart() {
+    actionsBeforeAppStart.forEach((action) => {
+        action(application);
+    });
+    actionsBeforeAppStart = null;
+}
+
 /**
  * 创建应用
  * @param {Array} projects
  * @param {Array} routes
- * @param {Element} rootElement
+ * @param {Element} rootElement 页面根元素
  */
 export function createApplication({
     projects,
@@ -41,14 +44,21 @@ export function createApplication({
         rootElement,
         options
     );
-    actionsBeforeAppStart.forEach((action) => {
-        action(application);
-    });
-    actionsBeforeAppStart = null;
+
+    const app = {
+        navigate: application.navigation.transitionTo,
+        registerRoutes: application.registerRoutes.bind(application)
+    };
 
     if (autoStart) {
+        beforeAppStart();
         application.start(callback);
+    } else {
+        app.start = (cb) => {
+            beforeAppStart();
+            application.start(cb);
+        };
     }
 
-    return application;
+    return app;
 }

@@ -85,6 +85,10 @@ export default class Application implements IApplication {
             : fn();
     }
 
+    registerRoutes(routes) {
+        this.routeManager.registerRoutes(routes);
+    }
+
     /**
      * 匹配路由并跳转至关联页面
      * 队列方式，避免hashchange多次同时触发出错

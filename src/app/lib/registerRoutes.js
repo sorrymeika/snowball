@@ -4,9 +4,9 @@ export function registerRoutes(routes) {
     const application = internal_getApplication();
     if (!application) {
         internal_beforeStartApplication((application) => {
-            application.routeManager.registerRoutes(routes);
+            application.registerRoutes(routes);
         });
     } else {
-        application.routeManager.registerRoutes(routes);
+        application.registerRoutes(routes);
     }
 }
