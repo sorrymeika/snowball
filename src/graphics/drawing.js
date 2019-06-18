@@ -1,4 +1,4 @@
-import { osVersion, android } from '../env';
+import { osVersion, android, IS_LTE_ANDROID_4_3 } from '../env';
 import '../libs/canvas-to-blob';
 import { base64 } from '../utils';
 
@@ -75,7 +75,7 @@ class Drawing {
 
             const img = new Image();
             if (!src.startsWith('data')) {
-                if (android && osVersion <= 4.3 && !src.startsWith(location.origin)) {
+                if (IS_LTE_ANDROID_4_3 && !src.startsWith(location.origin)) {
                     src = await new Promise((success, fail) => {
                         var xhr = new XMLHttpRequest();
                         xhr.addEventListener('load', function () {

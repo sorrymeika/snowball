@@ -84,8 +84,8 @@ window.preloader = (function (window, document, preloadOptions, undefined) {
             }
             newStyle(
                 'cssHack',
-                '.app-screen-width,.vw_1{width:' + window.innnerWith + '}' +
-                '.app-screen-height,.vh_1{height:' + window.innnerHeight + '}'
+                '.app-screen-width,.vw_1{width:' + window.innnerWith + 'px}' +
+                '.app-screen-height,.vh_1{height:' + window.innnerHeight + 'px}'
             );
         }
     ]);

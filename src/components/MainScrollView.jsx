@@ -4,9 +4,9 @@ import inject from '../app/decorators/inject';
 
 import VScrollView from './VScrollView';
 import LoadMore from './LoadMore';
-import { android, osVersion } from '../env';
+import { IS_LTE_ANDROID_4_3 } from '../env';
 
-let USE_DOM_SCROLL = !(android && osVersion <= 4.3);
+let USE_DOM_SCROLL = !IS_LTE_ANDROID_4_3;
 
 export default function MainScrollView(props) {
     const { scrollViewRef } = props;

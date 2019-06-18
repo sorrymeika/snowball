@@ -3,7 +3,7 @@ import ReactDOM from "react-dom";
 
 import VScrollView from './VScrollView';
 import { $ } from '../utils';
-import { android, osVersion } from "../env";
+import { IS_LTE_ANDROID_4_3 } from "../env";
 
 export default class NavigationView extends VScrollView {
     constructor(props) {
@@ -178,7 +178,7 @@ export default class NavigationView extends VScrollView {
         if (e.nativeEvent.isFromScrollMove) {
             return;
         }
-        if (android && osVersion <= 4.3) {
+        if (IS_LTE_ANDROID_4_3) {
             e.preventDefault();
         }
 

@@ -15,6 +15,7 @@ const ov = RegExp.$2 ? RegExp.$2.split(/_|\./) : [0, 0];
 export const iOS = PLATFORM === 'iOS';
 export const android = PLATFORM === 'android';
 export const osVersion = parseFloat(ov[0] + '.' + ov[1]);
+export const IS_LTE_ANDROID_4_3 = android && osVersion <= 4.3;
 
 export const IS_SNOWBALL_WEBVIEW = /snowball/i.test(ua);
 
