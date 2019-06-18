@@ -4,6 +4,7 @@ import * as _app from './app';
 import * as _components from './components';
 import * as _graphics from './graphics';
 import * as _widget from './widget';
+import * as _nativeSdk from './native-sdk';
 
 export {
     _React,
@@ -11,7 +12,8 @@ export {
     _app,
     _components,
     _graphics,
-    _widget
+    _widget,
+    _nativeSdk
 };
 
 export * from "./vm";

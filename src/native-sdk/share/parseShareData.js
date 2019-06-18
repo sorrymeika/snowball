@@ -1,6 +1,6 @@
-import ShareTypes from "./share/ShareTypes";
-import { ShareDataProps } from "./share/ShareData";
-import { ShareContentTypes } from ".";
+import ShareTypes from "./ShareTypes";
+import { ShareDataProps } from "./ShareData";
+import { ShareContentTypes } from "..";
 
 
 export default function parseShareData(data: ShareDataProps) {
@@ -14,7 +14,7 @@ export default function parseShareData(data: ShareDataProps) {
         shareList
     } = data;
 
-    var shareData = {
+    const shareData = {
         appTit: shareTitle,
         appContent: shareContent,
         appPage: shareUrl,

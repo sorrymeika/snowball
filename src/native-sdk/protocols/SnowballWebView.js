@@ -1,5 +1,5 @@
 import { IS_SNOWBALL_WEBVIEW } from "../../../env";
-import parseShareData from "../parseShareData";
+import parseShareData from "../share/parseShareData";
 
 
 export class SnowballWebView {
@@ -13,15 +13,6 @@ export class SnowballWebView {
             return true;
         }
         return false;
-    }
-
-    login(url, success, error) {
-        return this.callSdk(success, error, {
-            action: 1,
-            type: 2,
-            data: {},
-            source: 2
-        });
     }
 
     getLocation(callback, error) {
