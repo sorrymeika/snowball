@@ -109,9 +109,10 @@ export default class Application implements IApplication {
      * 匹配路由并跳转至关联页面
      */
     async _navigate(url, options = {}, props?) {
-        const location = await this.router.match(url);
-        if (!location) return false;
+        const routeMatch = await this.router.match(url);
+        if (!routeMatch) return false;
 
+        const { route, location } = routeMatch;
         const prevActivity = this.currentActivity;
         const { withAnimation, beforeNavigate, onNavigateFailure } = options;
 
@@ -132,7 +133,7 @@ export default class Application implements IApplication {
         let { isForward } = options;
 
         const activityManager = this.activityManager;
-        const newActivity = await activityManager.getOrCreate(location, isForward);
+        const newActivity = await activityManager.getOrCreate(route, location, isForward);
         if (!newActivity) {
             onNavigateFailure && onNavigateFailure();
             return false;
@@ -161,7 +162,10 @@ export default class Application implements IApplication {
         this.prevActivity = prevActivity;
         this.currentActivity = newActivity;
 
-        await activityManager.replaceActivity(prevActivity, newActivity, withAnimation !== false, props);
+        await activityManager.replaceActivity(prevActivity, newActivity, {
+            isForward,
+            withAnimation: withAnimation !== false
+        }, props);
 
         newActivity.resume();
 

@@ -3,7 +3,7 @@ import { Toucher, loader } from '../../widget';
 import { $, isThenable } from '../../utils';
 
 import { CONTROLLER } from '../decorators/symbols';
-import { IApplication, IActivityManager } from '../types';
+import { IApplication, IActivityManager, ToggleOptions } from '../types';
 
 import Activity from './Activity';
 
@@ -38,21 +38,21 @@ const ANIMATION = {
     }
 };
 
-function getAnimation(isForward) {
+function getAnimation(isForward, animConfig = ANIMATION) {
     var type = isForward ? "open" : "close",
-        enterFrom = Object.assign({}, ANIMATION[type + 'EnterAnimationFrom']),
-        exitFrom = Object.assign({}, ANIMATION[type + 'ExitAnimationFrom']);
+        enterFrom = Object.assign({}, animConfig[type + 'EnterAnimationFrom']),
+        exitFrom = Object.assign({}, animConfig[type + 'ExitAnimationFrom']);
 
-    enterFrom.zIndex = isForward ? ANIMATION.openEnterZIndex : ANIMATION.closeEnterZIndex;
+    enterFrom.zIndex = isForward ? animConfig.openEnterZIndex : animConfig.closeEnterZIndex;
     enterFrom.display = 'block';
-    exitFrom.zIndex = isForward ? ANIMATION.openExitZIndex : ANIMATION.closeExitZIndex;
+    exitFrom.zIndex = isForward ? animConfig.openExitZIndex : animConfig.closeExitZIndex;
     exitFrom.display = 'block';
 
     return {
         enterFrom,
-        enterTo: ANIMATION[type + 'EnterAnimationTo'],
+        enterTo: animConfig[type + 'EnterAnimationTo'],
         exitFrom: exitFrom,
-        exitTo: ANIMATION[type + 'ExitAnimationTo']
+        exitTo: animConfig[type + 'ExitAnimationTo']
     };
 }
 
@@ -81,18 +81,17 @@ function disposeUselessActivities(activityManager, prevActivity, activity) {
     }
 }
 
-function replaceActivityWithAnimation(activityManager, prevActivity, activity, callback) {
-    var ease = 'cubic-bezier(.34,.86,.54,.99)';
-    var isForward = activity.isForward;
-    var duration = 400;
-    var { enterFrom, enterTo, exitFrom, exitTo } = getAnimation(isForward);
+function replaceActivityWithAnimation(activityManager, prevActivity, activity, isForward, callback) {
+    const ease = 'cubic-bezier(.34,.86,.54,.99)';
+    const duration = 400;
+    const { enterFrom, enterTo, exitFrom, exitTo } = getAnimation(isForward);
 
     prevActivity.$el.removeClass('app-view-actived');
 
-    var $prevElement = $(prevActivity.el).css(castStyle(exitFrom));
-    var $currentElement = $(activity.el).css(castStyle(enterFrom));
+    const $prevElement = $(prevActivity.el).css(castStyle(exitFrom));
+    const $currentElement = $(activity.el).css(castStyle(enterFrom));
 
-    var outAnimTask = new Promise((resolve, reject) => {
+    const outAnimTask = new Promise((resolve, reject) => {
         $prevElement.animate(castStyle(exitTo), duration, ease, () => {
             prevActivity.el.style.zIndex = '';
             if (!isForward) {
@@ -104,7 +103,7 @@ function replaceActivityWithAnimation(activityManager, prevActivity, activity, c
         });
     });
 
-    var inAnimTask = new Promise((resolve, reject) => {
+    const inAnimTask = new Promise((resolve, reject) => {
         $currentElement.animate(castStyle(enterTo), duration, ease, () => {
             activity.el.style.zIndex = '';
             outAnimTask.then(() => {
@@ -277,11 +276,12 @@ export default class ActivityManager implements IActivityManager {
      * 页面切换
      * @param {Activity} prevActivity 当前要被替换掉的页面
      * @param {Activity} activity 当前要切换到的页面
-     * @param {boolean}  withAnimation 是否带动画
+     * @param {ToggleOptions}  toggleOptions 切换选项
      * @param {object} intentProps 传给下个页面的props
      */
-    replaceActivity(prevActivity, activity, withAnimation, intentProps) {
-        var application = this.application;
+    replaceActivity(prevActivity, activity, toggleOptions: ToggleOptions, intentProps) {
+        const application = this.application;
+        const { withAnimation, isForward } = toggleOptions;
 
         activity.$el.siblings('.app-view').each(function () {
             if (!prevActivity || this !== prevActivity.el) {
@@ -320,7 +320,7 @@ export default class ActivityManager implements IActivityManager {
         }
 
         if (prevActivity && withAnimation) {
-            replaceActivityWithAnimation(this, prevActivity, activity, next);
+            replaceActivityWithAnimation(this, prevActivity, activity, isForward, next);
         } else {
             activity.$el.css({
                 opacity: 1,

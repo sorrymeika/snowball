@@ -1,4 +1,4 @@
-import { IS_SNOWBALL_WEBVIEW } from "../../../env";
+import { IS_SNOWBALL_WEBVIEW } from "../../env";
 import parseShareData from "../share/parseShareData";
 
 

@@ -2,7 +2,7 @@ import { IPage, PageLifecycleDelegate } from '../types';
 import { Model, State } from '../../vm';
 import { store } from '../../utils';
 import { EventEmitter } from '../../core/event';
-import { Sharer } from '../native-sdk/share/ShareData';
+import { Sharer } from '../../native-sdk/share/ShareData';
 
 const extentions = [];
 

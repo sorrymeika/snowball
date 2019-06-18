@@ -3,7 +3,7 @@
  * 作者: sunlu
  */
 
-import * as appsdk from '../native-sdk';
+import * as appsdk from '../../native-sdk';
 import * as env from '../../env';
 import { IApplication, INavigation } from '../types';
 import { $, appendQueryString, session } from '../../utils';

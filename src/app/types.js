@@ -107,9 +107,11 @@ export interface INavigation {
     replace: (url: string) => any;
 }
 
+export type ToggleOptions = { isForward: boolean, withAnimation: boolean };
+
 export interface IActivityManager {
-    getOrCreate: (url: string, isForward) => IActivity,
-    replaceActivity: (prevActivity: any, activity: any, withAnimation: boolean, intentProps: any) => IActivity,
+    getOrCreate: (route, location: Location, isForward) => IActivity,
+    replaceActivity: (prevActivity: any, activity: any, toggleOptions: ToggleOptions, intentProps: any) => IActivity,
 }
 
 export interface IRouter {

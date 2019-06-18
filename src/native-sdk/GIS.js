@@ -1,6 +1,6 @@
 import { sdk } from './sdk';
-import { iOS } from '../../env';
-import { jsonp } from '../../utils';
+import { iOS } from '../env';
+import { jsonp } from '../utils';
 
 var x_PI = 3.14159265358979324 * 3000.0 / 180.0;
 var PI = 3.1415926535897932384626;
