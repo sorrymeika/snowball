@@ -13,7 +13,7 @@ import { observeProp, unobserveProp } from './methods/observeProp';
 import compute from './operators/compute';
 import { source } from './attributes/symbols';
 
-var RE_COLL_QUERY = /\[((?:'(?:\\'|[^'])*'|"(?:\\"|[^"])*"|[^\]])+)\](?:\[([+-]?)(\d+)?\])?(?:\.(.*))?/;
+const RE_COLL_QUERY = /\[((?:'(?:\\'|[^'])*'|"(?:\\"|[^"])*"|[^\]])+)\](?:\[([+-]?)(\d+)?\])?(?:\.(.*))?/;
 
 function matcher(key, val) {
     return isString(key)
@@ -76,14 +76,15 @@ function collectionDidUpdate(collection) {
  * @param {String|Function} comparator 唯一健 或 (a, b)=>boolean
  * @param {boolean} [appendMatched] 是否追加不匹配的
  * @param {boolean} [renewItem] 是否覆盖匹配项
+ * @param {boolean} [updateAll] 是否更新全部匹配的
  *
  * @return {Collection} input collection
  */
-function update(collection, arr, comparator, appendUnmatched = true, renewItem = false) {
+function update(collection, arr, comparator, appendUnmatched = true, renewItem = false, updateAll = false) {
     if (!arr) return collection;
 
-    var fn;
-    var length = collection.length;
+    let fn;
+    const length = collection.length;
 
     if (!length) {
         appendUnmatched && collection.add(arr);
@@ -96,23 +97,24 @@ function update(collection, arr, comparator, appendUnmatched = true, renewItem =
         fn = function (a, b) {
             return a[comparator] == b[comparator];
         };
-    } else fn = comparator;
+    } else if (isFunction(fn))
+        fn = comparator;
+    else {
+        fn = contains;
+    }
 
-    var data;
-    var arrItem;
 
     if (!isArray(arr)) arr = [arr];
     else arr = [].concat(arr);
 
-    var n = arr.length;
+    let n = arr.length;
 
-    for (var i = length - 1; i >= 0; i--) {
-        data = collection.state.data[i];
+    for (let i = length - 1; i >= 0; i--) {
+        let arrItem;
+        let data = collection.state.data[i];
 
-        for (var j = 0; j < n; j++) {
-            arrItem = arr[j];
-
-            if (arrItem !== undefined) {
+        for (let j = 0; j < n; j++) {
+            if ((arrItem = arr[j]) !== undefined) {
                 if (fn.call(collection, data, arrItem)) {
                     const item = collection[i];
                     if (isModel(item)) {
@@ -123,7 +125,10 @@ function update(collection, arr, comparator, appendUnmatched = true, renewItem =
                     if (collection[i].state.changed) {
                         collection.state.changed = true;
                     }
-                    arr[j] = undefined;
+                    if (!updateAll) {
+                        // 只匹配一次，提高性能
+                        arr[j] = undefined;
+                    }
                     break;
                 }
             }
@@ -131,8 +136,8 @@ function update(collection, arr, comparator, appendUnmatched = true, renewItem =
     }
 
     if (appendUnmatched) {
-        var appends = [];
-        for (i = 0; i < n; i++) {
+        const appends = [];
+        for (let i = 0; i < n; i++) {
             if (arr[i] !== undefined) {
                 appends.push(arr[i]);
             }
@@ -487,7 +492,7 @@ export class Collection extends Observer {
      * @return {Collection} self
      */
     updateBy(comparator, data, renewItem = false) {
-        return update(this, data, comparator, false, renewItem);
+        return update(this, data, comparator, false, renewItem, true);
     }
 
     /**
@@ -742,6 +747,7 @@ export class Collection extends Observer {
 
         this.state.inEach = false;
         if (this.state.arrayIsNew) {
+            this.state.data.withMutations = this.state.withMutations;
             if (process.env.NODE_ENV === 'development') {
                 Object.freeze(this.state.data);
             }
