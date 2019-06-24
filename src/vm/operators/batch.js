@@ -9,7 +9,7 @@ export default function batch(observers, calc, initialValue) {
     let olds = getArgs();
     const compute = () => {
         const args = getArgs();
-        state = calc(args, olds, state, next);
+        state = calc(state, args, olds, next);
         olds = args;
     };
     observers.forEach((item) => item.observe(compute));
