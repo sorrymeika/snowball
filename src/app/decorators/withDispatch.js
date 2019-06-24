@@ -1,14 +1,12 @@
 import { createFactory, Component } from 'react';
-import AnyPropType from '../AnyPropType';
+import { PageContext } from '../lib/ReactViewHandler';
 
 export default function withDispatch(type) {
     const wrapper = (BaseComponent) => {
         const factory = createFactory(BaseComponent);
 
         class WithNotifyEvent extends Component {
-            static contextTypes = {
-                __postMessage: AnyPropType
-            };
+            static contextType = PageContext;
 
             constructor(props, context) {
                 super(props, context);

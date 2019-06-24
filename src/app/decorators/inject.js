@@ -1,5 +1,5 @@
 import React, { Component, createElement } from 'react';
-import { isString, isArray } from '../../utils';
+import { isString, isArray, isFunction } from '../../utils';
 import observer from './observer';
 import { PageContext } from '../lib/ReactViewHandler';
 
@@ -17,7 +17,7 @@ function createStoreInjector(grabStoresFn, target) {
         render() {
             const { forwardRef, ...props } = this.props;
 
-            const additionalProps = grabStoresFn(this.context || {}, props, target.injectorName || target.name) || {};
+            const additionalProps = grabStoresFn(this.context.store || {}, props, target.injectorName || target.name, this) || {};
             for (let key in additionalProps) {
                 props[key] = additionalProps[key];
             }
@@ -56,27 +56,9 @@ function compose(grabStoresFns) {
 }
 
 function grabStoresByName(storeNames) {
-    return function (baseStores, nextProps, injectorName) {
+    return function (baseStores, nextProps, injectorName, injector) {
         storeNames.forEach(function (storeName) {
-            // prefer props over stores
-            if (storeName in nextProps)
-                return;
-
-            if (injectorName) {
-                const nameWithPrefix = injectorName.replace(/^[A-Z]/, (c) => c.toLowerCase()) + storeName.replace(/^[a-z]/, (c) => c.toUpperCase());
-                if (nameWithPrefix in baseStores) {
-                    nextProps[storeName] = baseStores[nameWithPrefix];
-                    return;
-                }
-            }
-
-            if (!(storeName in baseStores))
-                throw new Error(
-                    "Snowball injector: Store '" +
-                    storeName +
-                    "' is not available! Make sure it is provided by some Provider"
-                );
-            nextProps[storeName] = baseStores[storeName];
+            mapStoreToProps(baseStores, nextProps, injectorName, injector, storeName);
         });
         return nextProps;
     };
@@ -84,18 +66,55 @@ function grabStoresByName(storeNames) {
 
 function renameProps(mapper) {
     const keys = Object.keys(mapper);
-    return function (baseStores, nextProps) {
+    return function (baseStores, nextProps, injectorName, injector) {
         keys.forEach(function (storeName) {
-            const propName = mapper[storeName];
-            // prefer props over stores
-            if (propName in nextProps)
-                return;
-
-            if (storeName in baseStores)
-                nextProps[propName] = baseStores[storeName];
+            mapStoreToProps(baseStores, nextProps, injectorName, injector, storeName, mapper[storeName]);
         });
         return nextProps;
     };
+}
+
+function mapStoreToProps(baseStores, nextProps, injectorName, injector, storeName, mapName = storeName) {
+    // prefer props over stores
+    if (mapName in nextProps)
+        return;
+
+    if (injectorName) {
+        const nameWithPrefix = injectorName.replace(/^[A-Z]/, (c) => c.toLowerCase()) + storeName.replace(/^[a-z]/, (c) => c.toUpperCase());
+        if (nameWithPrefix in baseStores) {
+            nextProps[mapName] = baseStores[nameWithPrefix];
+            return;
+        }
+
+        if (injectFactoryInstance(baseStores, nextProps, nameWithPrefix + 'Factory', mapName)) {
+            return;
+        }
+    }
+
+    if (injectFactoryInstance(baseStores, nextProps, storeName + 'Factory', mapName)) {
+        return;
+    }
+
+    if (!(storeName in baseStores))
+        throw new Error(
+            "Snowball injector: Store '" +
+            storeName +
+            "' is not available! Make sure it is provided by some Provider"
+        );
+    nextProps[mapName] = baseStores[storeName];
+}
+
+function injectFactoryInstance(baseStores, nextProps, injector, factoryName, mapName) {
+    const factory = baseStores[factoryName];
+    if (injector[factoryName]) {
+        nextProps[mapName] = injector[factoryName];
+        return true;
+    }
+    if (isFunction(factory)) {
+        injector[factoryName] = nextProps[mapName] = factory(nextProps);
+        return true;
+    }
+    return false;
 }
 
 /**

@@ -28,7 +28,7 @@ export default class ReactViewHandler {
                 <PageContext.Provider
                     value={{
                         __postMessage: postMessage,
-                        __store: this.model.attributes
+                        store: this.model.attributes
                     }}
                 >{createElement(viewFactory)}</PageContext.Provider>
             );

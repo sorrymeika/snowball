@@ -1,23 +1,13 @@
 import React from 'react';
 import { Model } from '../../vm';
-import AnyPropType from '../AnyPropType';
+import { PageContext } from '../lib/ReactViewHandler';
 
 export default function provide(mapPropsToStore) {
     return (componentClass) => {
         const factory = React.createFactory(componentClass);
 
         class Provider extends React.Component {
-            static contextTypes = {
-                store: AnyPropType
-            };
-
-            static childContextTypes = {
-                store: AnyPropType
-            }
-
-            getChildContext() {
-                return { store: this.store };
-            }
+            static contextType = PageContext
 
             constructor(props, context) {
                 super(props, context);
@@ -41,18 +31,20 @@ export default function provide(mapPropsToStore) {
                 };
             }
 
-            componentWillReceiveProps(nextProps, nextContext) {
-                if (nextContext.store != this.context.store) {
-                    this.setupStore(nextContext, this.model);
-                }
-            }
-
-            setupStore(context, model) {
-                this.store = Object.assign(Object.create(context.store || {}), model.attributes);
-            }
-
             render() {
-                return factory({ ...this.state.attributes, ...this.props });
+                const { context } = this;
+                if (this._store !== context.store) {
+                    this._store = context.store;
+                    this.store = Object.assign(Object.create(context.store || null), this.model.attributes);
+                }
+                return (
+                    <PageContext.Provider
+                        value={{
+                            ...this.context,
+                            store: this.store
+                        }}
+                    >{factory({ ...this.state.attributes, ...this.props })}</PageContext.Provider>
+                );
             }
         }
 
