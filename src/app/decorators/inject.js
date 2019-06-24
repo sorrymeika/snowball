@@ -1,6 +1,7 @@
-import { Component, createElement } from 'react';
-import AnyPropType from '../AnyPropType';
+import React, { Component, createElement } from 'react';
 import { isString, isArray } from '../../utils';
+import observer from './observer';
+import { PageContext } from '../lib/ReactViewHandler';
 
 function isStateless(component) {
     // `function() {}` has prototype, but `() => {}` doesn't
@@ -11,33 +12,32 @@ function isStateless(component) {
 function createStoreInjector(grabStoresFn, target) {
 
     class Injector extends Component {
-        static contextTypes = { store: AnyPropType }
-        wrappedComponent = target;
-
-        storeRef = instance => {
-            this.wrappedInstance = instance;
-        }
+        static contextType = PageContext;
 
         render() {
-            let newProps = {};
-            for (let key in this.props)
-                if (this.props.hasOwnProperty(key)) {
-                    newProps[key] = this.props[key];
-                }
-            var additionalProps = grabStoresFn(this.context.store || {}, newProps, this.context) || {};
+            const { forwardRef, ...props } = this.props;
+
+            const additionalProps = grabStoresFn(this.context || {}, props, target.injectorName || target.name) || {};
             for (let key in additionalProps) {
-                newProps[key] = additionalProps[key];
+                props[key] = additionalProps[key];
             }
 
             if (!isStateless(target)) {
-                newProps.ref = this.storeRef;
+                props.ref = forwardRef;
             }
 
-            return createElement(target, newProps);
+            return createElement(target, props);
         }
     }
 
-    return Injector;
+    Injector = observer(Injector);
+
+    const InjectHocRef = React.forwardRef((props, ref) =>
+        React.createElement(Injector, { ...props, forwardRef: ref })
+    );
+    InjectHocRef.wrappedComponent = target;
+
+    return InjectHocRef;
 }
 
 function compose(grabStoresFns) {
@@ -56,11 +56,20 @@ function compose(grabStoresFns) {
 }
 
 function grabStoresByName(storeNames) {
-    return function (baseStores, nextProps) {
+    return function (baseStores, nextProps, injectorName) {
         storeNames.forEach(function (storeName) {
             // prefer props over stores
             if (storeName in nextProps)
                 return;
+
+            if (injectorName) {
+                const nameWithPrefix = injectorName.replace(/^[A-Z]/, (c) => c.toLowerCase()) + storeName.replace(/^[a-z]/, (c) => c.toUpperCase());
+                if (nameWithPrefix in baseStores) {
+                    nextProps[storeName] = baseStores[nameWithPrefix];
+                    return;
+                }
+            }
+
             if (!(storeName in baseStores))
                 throw new Error(
                     "Snowball injector: Store '" +
@@ -81,8 +90,9 @@ function renameProps(mapper) {
             // prefer props over stores
             if (propName in nextProps)
                 return;
+
             if (storeName in baseStores)
-                nextProps[storeName] = baseStores[storeName];
+                nextProps[propName] = baseStores[storeName];
         });
         return nextProps;
     };
@@ -101,6 +111,7 @@ function renameProps(mapper) {
  */
 export default function inject(injection) {
     let grabStoresFn;
+
     if (typeof injection === "function") {
         grabStoresFn = compose([].slice.call(arguments));
     } else if (isString(injection)) {

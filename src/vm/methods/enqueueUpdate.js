@@ -5,7 +5,7 @@ var taskCount = 1;
 var callbacks = [];
 var rendering = false;
 
-const defer = Promise.prototype.then.bind(Promise.resolve());
+export const defer = Promise.prototype.then.bind(Promise.resolve());
 const doAsap = () => defer(flushCallbacks);
 
 const getCurrentTime = typeof performance !== 'undefined' && typeof performance.now === 'function'

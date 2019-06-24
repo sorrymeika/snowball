@@ -1,5 +1,5 @@
 import { registerRoutes } from "../lib/registerRoutes";
-import createPage from "../lib/createPage";
+import Activity from "../lib/Activity";
 import { CONTROLLER, IS_CONTROLLER, INJECTABLE_PROPS } from "./symbols";
 import { internal_subscribeAllMessagesOnInit } from "./onMessage";
 import { getDisposableProps } from "./disposable";
@@ -15,6 +15,12 @@ export function internal_onControllerCreated(fn) {
         throw new Error('只能在controller创建时调用!');
     }
     controllerCreationHandlers.push(fn);
+}
+
+function bindMethod(method, instance) {
+    return typeof method === 'function' && method.prototype
+        ? () => method.apply(instance, arguments)
+        : method;
 }
 
 /**
@@ -44,7 +50,7 @@ export default function controller(route, componentClass, options) {
         };
         Target.prototype[IS_CONTROLLER] = true;
 
-        Target[CONTROLLER] = createPage((props, page) => {
+        const createActivity = (location, application) => new Activity(componentClass, location, application, (props, page) => {
             if (isCreating) {
                 throw new Error('不能同时初始化化两个controller');
             }
@@ -85,12 +91,6 @@ export default function controller(route, componentClass, options) {
                 injectableProps && Object.keys(injectableProps)
                     .forEach((injectorName) => {
                         const propertyName = injectableProps[injectorName];
-                        const property = target[propertyName];
-
-                        store[injectorName] = typeof property === 'function' && property.prototype
-                            ? property.bind(target)
-                            : property;
-
                         let proto = target;
                         let descriptor;
 
@@ -107,36 +107,42 @@ export default function controller(route, componentClass, options) {
                                 proto = parent;
                             }
                         }
+                        const newDescriptor = {
+                            enumerable: descriptor.enumerable,
+                            configurable: descriptor.configurable,
+                        };
 
-                        if (descriptor.writable) {
-                            Object.defineProperty(target, propertyName, {
-                                enumerable: descriptor.enumerable,
-                                configurable: descriptor.configurable,
-                                get() {
-                                    return store[injectorName];
-                                },
-                                set(val) {
-                                    store[injectorName] = val;
+                        if (descriptor.get === undefined && descriptor.set === undefined) {
+                            store[injectorName] = bindMethod(target[propertyName], target);
+
+                            newDescriptor.get = function () {
+                                return store[injectorName];
+                            };
+                            if (descriptor.writable) {
+                                newDescriptor.set = function (val) {
+                                    store[injectorName] = bindMethod(val, this);
                                     setState(store);
-                                }
-                            });
-                        } else if (descriptor.set) {
-                            Object.defineProperty(target, propertyName, {
-                                enumerable: descriptor.enumerable,
-                                configurable: descriptor.configurable,
-                                get: descriptor.get,
-                                set(val) {
-                                    descriptor.set.call(this);
-                                    store[injectorName] = descriptor.get.call(this);
+                                };
+                            }
+                        } else {
+                            newDescriptor.get = descriptor.get;
+                            if (descriptor.set) {
+                                newDescriptor.set = function (val) {
+                                    descriptor.set.call(this, val);
+                                    store[injectorName] = bindMethod(descriptor.get.call(this), this);
                                     setState(store);
-                                }
-                            });
+                                };
+                            }
                         }
+                        Object.defineProperty(target, propertyName, newDescriptor);
                     });
 
                 setState(store);
             };
-        })(componentClass);
+        });
+        createActivity.__is_activity_factory__ = true;
+
+        Target[CONTROLLER] = createActivity;
 
         if (route) {
             registerRoutes({

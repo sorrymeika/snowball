@@ -1,24 +1,9 @@
 import { Component } from "react";
-import inject from "./inject";
 import { Reaction } from "../../vm";
 
 const ReactionProperty = Symbol('ReactionProperty');
 
-export default function observer(arg1) {
-    if (typeof arg1 !== 'function') {
-        let injector;
-        if (Array.isArray(arg1)) {
-            injector = inject.apply(null, arg1);
-        } else {
-            injector = inject.apply(null, arguments);
-        }
-        return (componentClass) => {
-            return injector(observer(componentClass));
-        };
-    }
-
-    const componentClass = arg1;
-
+export default function observer(componentClass) {
     if (!componentClass.prototype || !componentClass.prototype.render) {
         return observer(class extends Component {
             render() {

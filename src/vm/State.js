@@ -1,7 +1,6 @@
 import { Observer } from "./Observer";
-import { enqueueUpdate, nextTick } from "./methods/enqueueUpdate";
+import { enqueueUpdate, defer } from "./methods/enqueueUpdate";
 
-const resolvedPromise = Promise.resolve();
 
 export default class State extends Observer {
     static isState = (state) => {
@@ -14,18 +13,14 @@ export default class State extends Observer {
      * @param {any} data 数据
      */
     set(data) {
-        return new Promise((done) => {
-            this.state.next = (this.state.next || resolvedPromise).then(() => {
-                return new Promise((resolve) => {
-                    nextTick(() => {
-                        super.set.call(this, data);
-                        const newData = this.state.data;
-                        enqueueUpdate(this);
-                        resolve();
-                        nextTick(() => done(newData));
-                    });
-                });
-            });
-        });
+        if (this.state.next) {
+            return this.state.next.then(() => this.set(data));
+        }
+
+        super.set.call(this, data);
+        const newData = this.state.data;
+        enqueueUpdate(this);
+
+        return this.state.next = defer(() => newData);
     }
 }
