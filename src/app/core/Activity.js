@@ -68,7 +68,7 @@ class SnowballViewHandler {
  */
 export class Activity {
 
-    constructor(viewFactory, location, application, mapStoreToProps) {
+    constructor(viewFactory, location, application, mapStoreToProps, options) {
         this.application = application;
         this.isActive = true;
         this.status = ACTIVITY_STATUS_INIT;
@@ -85,6 +85,10 @@ export class Activity {
         this.location = location;
         this.el = this.$el[0];
         this.page = new Page(this);
+
+        if (options) {
+            this.transition = options.transition;
+        }
 
         const ViewHandler = viewFactory.prototype instanceof ViewModel
             ? SnowballViewHandler

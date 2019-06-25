@@ -2,12 +2,13 @@ import { castStyle, Animation } from '../../graphics/animation';
 import { Toucher, loader } from '../../widget';
 import { $, isThenable } from '../../utils';
 
-import { ACTIVITY_CREATOR } from '../controller/symbols';
 import { IApplication, IActivityManager, ToggleOptions } from '../types';
 
 import Activity from './Activity';
 
-const ANIMATION = {
+export const ACTIVITY_CREATOR = Symbol('ACTIVITY_CREATOR');
+
+const defaultAnimation = {
     openEnterZIndex: 2,
     closeEnterZIndex: 1,
     openExitZIndex: 1,
@@ -38,8 +39,12 @@ const ANIMATION = {
     }
 };
 
-function getAnimation(isForward, animConfig = ANIMATION) {
-    var type = isForward ? "open" : "close",
+function getAnimation(isForward, animConfig) {
+    animConfig = {
+        ...defaultAnimation,
+        ...animConfig
+    };
+    const type = isForward ? "open" : "close",
         enterFrom = Object.assign({}, animConfig[type + 'EnterAnimationFrom']),
         exitFrom = Object.assign({}, animConfig[type + 'ExitAnimationFrom']);
 
@@ -84,15 +89,19 @@ function disposeUselessActivities(activityManager, prevActivity, activity) {
 function replaceActivityWithAnimation(activityManager, prevActivity, activity, isForward, callback) {
     const ease = 'cubic-bezier(.34,.86,.54,.99)';
     const duration = 400;
-    const { enterFrom, enterTo, exitFrom, exitTo } = getAnimation(isForward);
+    const { enterFrom, enterTo, exitFrom, exitTo } = getAnimation(isForward, isForward ? activity.transition : prevActivity.transition);
+
+    const { className: enterFromClassName, ...enterFromStyle } = enterFrom;
+    const { className: enterToClassName, ...enterToStyle } = enterTo;
+    const { className: exitFromClassName, ...exitFromStyle } = exitFrom;
+    const { className: exitToClassName, ...exitToStyle } = exitTo;
 
     prevActivity.$el.removeClass('app-view-actived');
 
-    const $prevElement = $(prevActivity.el).css(castStyle(exitFrom));
-    const $currentElement = $(activity.el).css(castStyle(enterFrom));
-
     const outAnimTask = new Promise((resolve, reject) => {
-        $prevElement.animate(castStyle(exitTo), duration, ease, () => {
+        const $prevElement = $(prevActivity.el).css(castStyle(exitFromStyle));
+        if (exitFromClassName) $prevElement.addClass(exitFromClassName);
+        $prevElement.animate(castStyle(exitToStyle), duration, ease, () => {
             prevActivity.el.style.zIndex = '';
             if (!isForward) {
                 disposeUselessActivities(activityManager, prevActivity, activity);
@@ -101,10 +110,13 @@ function replaceActivityWithAnimation(activityManager, prevActivity, activity, i
             }
             resolve();
         });
+        if (exitToClassName) $prevElement.addClass(exitToClassName);
     });
 
     const inAnimTask = new Promise((resolve, reject) => {
-        $currentElement.animate(castStyle(enterTo), duration, ease, () => {
+        const $currentElement = $(activity.el).css(castStyle(enterFromStyle));
+        if (enterFromClassName) $currentElement.addClass(enterFromClassName);
+        $currentElement.animate(castStyle(enterToStyle), duration, ease, () => {
             activity.el.style.zIndex = '';
             outAnimTask.then(() => {
                 activity.show();
@@ -113,6 +125,7 @@ function replaceActivityWithAnimation(activityManager, prevActivity, activity, i
             resolve();
             activity.scrollTop && window.scrollTo(0, activity.scrollTop);
         });
+        if (enterToClassName) $currentElement.addClass(enterToClassName);
     });
 
     return Promise.all([outAnimTask, inAnimTask]).then(() => {
@@ -135,12 +148,9 @@ async function createActivity(route, location, application) {
     }
 
     viewFactory = viewFactory.default || viewFactory;
-    viewFactory = viewFactory[ACTIVITY_CREATOR]
-        ? viewFactory[ACTIVITY_CREATOR]
-        : viewFactory;
 
-    return viewFactory.__is_activity_factory__
-        ? viewFactory(location, application)
+    return viewFactory[ACTIVITY_CREATOR]
+        ? viewFactory[ACTIVITY_CREATOR](location, application)
         : new Activity(viewFactory, location, application);
 }
 

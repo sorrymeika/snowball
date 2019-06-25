@@ -1,6 +1,8 @@
+import { isFunction } from "../../utils";
 import { registerRoutes } from "../core/registerRoutes";
 import Activity from "../core/Activity";
-import { ACTIVITY_CREATOR, IS_CONTROLLER, INJECTABLE_PROPS } from "./symbols";
+import { ACTIVITY_CREATOR } from "../core/ActivityManager";
+import { IS_CONTROLLER, INJECTABLE_PROPS } from "./symbols";
 import { internal_subscribeAllMessagesOnInit } from "./onMessage";
 import { getDisposableProps } from "./disposable";
 
@@ -34,9 +36,11 @@ function bindMethod(method, instance) {
  *     onDestroy: 页面被销毁后触发
  * @param {*} [route] 路由，非必填，尽量将路由收敛到 routes.js中
  * @param {*} componentClass 页面组件
+ * @param {*} options
  */
 export function controller(route, componentClass, options) {
-    if (!componentClass) {
+    if (!isFunction(componentClass)) {
+        options = componentClass;
         componentClass = route;
         route = undefined;
     }
@@ -140,8 +144,7 @@ export function controller(route, componentClass, options) {
 
                 setState(store);
             };
-        });
-        createActivity.__is_activity_factory__ = true;
+        }, options);
 
         Target[ACTIVITY_CREATOR] = createActivity;
 
