@@ -15,7 +15,12 @@ function isStateless(component) {
     return !(component.prototype && component.prototype.render);
 }
 
-function createStoreInjector(grabStoresFn, target, makeReactive) {
+function createStoreInjector(grabStoresFn, componentClass, makeReactive) {
+
+    const _isStateless = isStateless(componentClass);
+    if (_isStateless && !makeReactive) {
+        componentClass = observer(componentClass);
+    }
 
     class Injector extends Component {
         static contextType = PageProviderContext;
@@ -23,16 +28,16 @@ function createStoreInjector(grabStoresFn, target, makeReactive) {
         render() {
             const { forwardRef, ...props } = this.props;
 
-            const additionalProps = grabStoresFn(this.context.store || {}, props, target.injectorName || target.name, this) || {};
+            const additionalProps = grabStoresFn(this.context.store || {}, props, componentClass.injectorName || componentClass.name, this) || {};
             for (let key in additionalProps) {
                 props[key] = additionalProps[key];
             }
 
-            if (!isStateless(target)) {
+            if (!_isStateless) {
                 props.ref = forwardRef;
+                return createElement(componentClass, props);
             }
-
-            return createElement(target, props);
+            return componentClass(props);
         }
     }
 
@@ -41,7 +46,7 @@ function createStoreInjector(grabStoresFn, target, makeReactive) {
     const InjectHocRef = React.forwardRef((props, ref) =>
         React.createElement(Injector, { ...props, forwardRef: ref })
     );
-    InjectHocRef.wrappedComponent = target;
+    InjectHocRef.wrappedComponent = componentClass;
 
     return InjectHocRef;
 }

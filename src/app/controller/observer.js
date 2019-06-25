@@ -6,6 +6,7 @@ const ReactionProperty = Symbol('ReactionProperty');
 export function observer(componentClass) {
     if (!componentClass.prototype || !componentClass.prototype.render) {
         return observer(class extends Component {
+            static injectorName = componentClass.injectorName || componentClass.name;
             render() {
                 return componentClass.call(this, this.props, this.context);
             }

@@ -9,7 +9,7 @@ function replaceImport(source, _package, replaceWith) {
 
     const getImportExp = function (varName, packageName) {
         if (!varName) return '';
-        return "var " + varName + "=" + getPackageName(packageName) + ";";
+        return "var " + varName.replace(/([$\w]+)\s+as\s+([$\w]+)/g, "$1:$2") + "=" + getPackageName(packageName) + ";";
     };
 
     _package = '(' + _package + ')';
