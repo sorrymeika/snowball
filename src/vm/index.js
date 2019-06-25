@@ -10,7 +10,7 @@ export { Dictionary, DictionaryList } from './Dictionary';
 export { Model } from './Model';
 export { default as State } from './State';
 export { default as Emitter } from './Emitter';
-export { Reaction } from './Reaction';
+export { Reaction, autorun } from './Reaction';
 export { attributes };
 export { default as observable } from './observable';
 export { findChildModel } from './methods/findChildModel';

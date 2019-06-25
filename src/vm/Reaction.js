@@ -87,3 +87,11 @@ export class Reaction {
         }
     }
 }
+
+export function autorun(fn) {
+    const reaction = new Reaction(() => {
+        reaction.track(fn);
+    });
+    reaction.track(fn);
+    return () => reaction.destroy();
+}
