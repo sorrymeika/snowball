@@ -1115,50 +1115,6 @@ var User = function (props) {
 }
 ```
 
-
-### `withProps` 方法
-
-* 扩展组件的`props`
-
-```js
-const enhance = withProps((props, useEffect)=>{
-    const count = observable(1);
-
-    useEffect((props) => {
-        const domClick = ()=>alert(1);
-        document.addEventListener('click',domClick);
-        return () => {
-            document.removeEventListener('click',domClick);
-        }
-    });
-
-    useEffect((props) => {
-        document.title = props.name;
-    }, (props)=>[props.name]);
-
-    useEffect((props) => {
-        document.getElementById('root').innerHTML = props.id;
-    }, ['id']);
-
-    return {
-        count,
-        onChange() {
-            count.set(count+1);
-        }
-    }
-});
-
-@enhance
-class Component {
-    render() {
-        const { count, onChange } = this.props;
-        return <div onClick={onChange}>{count}</div>;
-    }
-}
-
-export default Component;
-```
-
 ### `provide` 方法
 
 * 创建数据提供者
