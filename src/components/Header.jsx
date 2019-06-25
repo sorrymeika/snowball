@@ -1,7 +1,7 @@
 import React from 'react';
 import { $ } from '../utils';
 import * as appsdk from '../native-sdk';
-import { internal_getApplication } from '../app/lib/createApplication';
+import { internal_getApplication } from '../app/core/createApplication';
 
 let closeWebViewTimer;
 function goBack() {

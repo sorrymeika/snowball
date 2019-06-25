@@ -145,6 +145,7 @@ module.exports = function (webpackEnv) {
       isEnvDevelopment &&
       require.resolve('react-dev-utils/webpackHotDevClient'),
       // Finally, this is your app's code:
+      require.resolve('snowball'),
       paths.appIndexJs,
       // We include the app code last so that if there is a runtime error during
       // initialization, it doesn't blow up the WebpackDevServer client, and
@@ -320,6 +321,11 @@ module.exports = function (webpackEnv) {
           include: paths.appSrc,
         },
         {
+          test: /\.(js|mjs|jsx|ts|tsx)$/,
+          include: paths.appSrc,
+          loader: require.resolve('snowball/webpack-extentions/snowball-loader')
+        },
+        {
           // "oneOf" will traverse all following loaders until one will
           // match the requirements. When no loader matches it will fall
           // back to the "file" loader at the end of the loader list.
@@ -335,6 +341,7 @@ module.exports = function (webpackEnv) {
                 name: 'static/media/[name].[hash:8].[ext]',
               },
             },
+
             // Process application JS with Babel.
             // The preset includes JSX, Flow, TypeScript, and some ESnext features.
             {
@@ -366,6 +373,7 @@ module.exports = function (webpackEnv) {
                 compact: isEnvProduction,
               },
             },
+
             {
               test: /\.(js|mjs|jsx|ts|tsx)$/,
               include: require('path').resolve(paths.appPath, '../snowball'),

@@ -5,8 +5,10 @@ import * as _components from './components';
 import * as _graphics from './graphics';
 import * as _widget from './widget';
 import * as _nativeSdk from './native-sdk';
+import * as util from './utils';
 
 export {
+    util,
     _React,
     _ReactDOM,
     _app,
