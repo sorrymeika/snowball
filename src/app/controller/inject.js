@@ -18,7 +18,9 @@ function isStateless(component) {
 function createStoreInjector(grabStoresFn, componentClass, makeReactive) {
 
     const _isStateless = isStateless(componentClass);
-    if (_isStateless && !makeReactive) {
+    if (_isStateless) {
+        makeReactive = true;
+    } else {
         componentClass = observer(componentClass);
     }
 
