@@ -13,7 +13,8 @@ export default class ReactViewHandler {
         this.page = page;
         this.activity = activity;
         this.model = new Model({
-            global: stores,
+            $context: page,
+            globalStores: stores,
             location
         });
         this.isReady = false;

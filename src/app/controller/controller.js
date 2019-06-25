@@ -42,12 +42,11 @@ export function controller(route, componentClass, options) {
     }
 
     return function (Target) {
-        if (Target.prototype.getContext && !Target.prototype[IS_CONTROLLER]) {
-            throw new Error('不可重写controller的getContext方法');
-        }
-        Target.prototype.getContext = function () {
-            return this.__context;
-        };
+        Object.defineProperty(Target.prototype, 'context', {
+            get() {
+                return this.__context;
+            }
+        });
         Target.prototype[IS_CONTROLLER] = true;
 
         const createActivity = (location, application) => new Activity(componentClass, location, application, (props, page) => {
@@ -68,7 +67,7 @@ export function controller(route, componentClass, options) {
             target.onResume && (lifecycle.onResume = target.onResume.bind(target));
             target.onPause && (lifecycle.onPause = target.onPause.bind(target));
             target.onDestroy && (lifecycle.onDestroy = target.onDestroy.bind(target));
-            target.snShouldRender && (lifecycle.shouldRender = target.snShouldRender.bind(target));
+            target.shouldRender && (lifecycle.shouldRender = target.shouldRender.bind(target));
 
             page.setLifecycleDelegate(lifecycle);
 

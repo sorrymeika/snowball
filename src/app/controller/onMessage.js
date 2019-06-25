@@ -1,5 +1,5 @@
 import { isString, isFunction } from "../../utils";
-import { IS_CONTROLLER, IS_HANDLER, MESSAGE_SUBSCRIBERS } from "./symbols";
+import { MESSAGE_SUBSCRIBERS } from "./symbols";
 
 export function internal_subscribeAllMessagesOnInit(instance) {
     const eventSubscribers = instance[MESSAGE_SUBSCRIBERS];
@@ -23,11 +23,11 @@ export function onMessage(eventType) {
             if (!descriptor.value || !isFunction(descriptor.value)) {
                 throw new Error('@onMessage只能装饰function，且不支持箭头函数!');
             }
-            setTimeout(() => {
-                if (!(target[IS_CONTROLLER] || target[IS_HANDLER])) {
-                    throw new Error('只能在controller、handle中使用@onMessage!');
+            Promise.resolve().then(() => {
+                if (!target.context) {
+                    throw new Error(`@onMessage error：${target}没有上下文!`);
                 }
-            }, 0);
+            });
         }
 
         const eventSubscribers = Object.prototype.hasOwnProperty.call(target, MESSAGE_SUBSCRIBERS)

@@ -3,6 +3,14 @@ import { isString, isArray, isFunction } from '../../utils';
 import { PageProviderContext } from '../core/ReactViewHandler';
 import { observer } from './observer';
 
+let pageContext;
+
+export const currentContext = {
+    get() {
+        return pageContext;
+    }
+};
+
 function isStateless(component) {
     // `function() {}` has prototype, but `() => {}` doesn't
     // `() => {}` via Babel has prototype too.
@@ -111,7 +119,9 @@ function injectFactoryInstance(baseStores, nextProps, factoryName, injector, map
         return true;
     }
     if (isFunction(factory)) {
+        pageContext = baseStores.$context;
         injector[factoryName] = nextProps[mapName] = factory(nextProps);
+        pageContext = null;
         return true;
     }
     return false;

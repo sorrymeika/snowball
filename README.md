@@ -1188,9 +1188,9 @@ class SomeComponent extends Component {
 }
 
 // `nextProps` 的优先级更高
-inject(({ global, data }, nextProps)=>{
+inject(({ globalStores, data }, nextProps)=>{
     return {
-        user: global.user,
+        user: globalStores.user,
         data
     }
 })(Component)
