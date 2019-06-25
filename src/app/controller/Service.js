@@ -11,7 +11,7 @@ export class Service {
                 internal_subscribeAllMessagesOnInit(this);
             });
         } else {
-            this.__context = currentContext.get();
+            this.__context = currentContext();
             internal_subscribeAllMessagesOnInit(this);
         }
     }

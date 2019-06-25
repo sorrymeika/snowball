@@ -5,10 +5,8 @@ import { observer } from './observer';
 
 let pageContext;
 
-export const currentContext = {
-    get() {
-        return pageContext;
-    }
+export const currentContext = () => {
+    return pageContext;
 };
 
 function isStateless(component) {
