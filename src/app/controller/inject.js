@@ -104,7 +104,7 @@ function mapStoreToProps(baseStores, nextProps, injectorName, injector, storeNam
     nextProps[mapName] = baseStores[storeName];
 }
 
-function injectFactoryInstance(baseStores, nextProps, injector, factoryName, mapName) {
+function injectFactoryInstance(baseStores, nextProps, factoryName, injector, mapName) {
     const factory = baseStores[factoryName];
     if (injector[factoryName]) {
         nextProps[mapName] = injector[factoryName];

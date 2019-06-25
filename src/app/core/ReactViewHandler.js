@@ -30,7 +30,7 @@ export default class ReactViewHandler {
                         __postMessage: postMessage,
                         store: this.model.attributes
                     }}
-                >{createElement(viewFactory)}</PageProviderContext.Provider>
+                >{createElement(viewFactory, this.model.attributes)}</PageProviderContext.Provider>
             );
         };
     }
