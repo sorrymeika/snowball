@@ -3,7 +3,7 @@ import { Reaction } from "../../vm";
 
 const ReactionProperty = Symbol('ReactionProperty');
 
-export default function observer(componentClass) {
+export function observer(componentClass) {
     if (!componentClass.prototype || !componentClass.prototype.render) {
         return observer(class extends Component {
             render() {

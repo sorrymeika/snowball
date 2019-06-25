@@ -53,7 +53,7 @@ export interface IPage {
     /**
      * 是否已销毁
      */
-    isDestroy: () => boolean,
+    isDestroyed: () => boolean,
     /**
      * 页面进入动画结束并切渲染完成
      */
@@ -66,26 +66,18 @@ export interface IPage {
     /**
      * 设置当前页document.title
      */
-    setTitle: (title: string) => IPage;
-    /**
-     * 设置当前页分享信息
-     */
-    setShareData: (shareData: any) => IPage;
+    title: string;
     /**
      * 设置页面事件代理
      */
     setLifecycleDelegate: (delegate: PageLifecycleDelegate) => any;
-    addOnResumeListener: (cb: () => never) => any;
-    addOnPauseListener: (cb: () => never) => any;
-    addOnDestroyListener: (cb: () => never) => any;
     location: Location;
     findNode: (selector: string) => HTMLElement;
     getMainScrollView: () => any;
-    getMainElement: () => HTMLElement;
     /**
      * 获取上一页
      */
-    getPreviousPage: () => IPage;
+    previousPage: IPage | null;
 }
 
 export interface IActivity {

@@ -162,7 +162,7 @@ export class Activity {
     /**
      * 页面进入前台时调用，若是第一次进入，则触发create，否则触发resume
      */
-    resume() {
+    active() {
         if (this.status == ACTIVITY_STATUS_INIT) {
             this.status = ACTIVITY_STATUS_CREATE;
             if (typeof this.lifecycle.onCreate === 'function') {
@@ -199,8 +199,8 @@ export class Activity {
      * 销毁当前页面，调用navigation.back()时会销毁当前页面
      */
     destroy() {
-        if (!this.isDestroy) {
-            this.isDestroy = true;
+        if (!this.isDestroyed) {
+            this.isDestroyed = true;
             this.isActive = false;
             this.status = ACTIVITY_STATUS_DESTROY;
 

@@ -1,6 +1,6 @@
-import injectable from "./injectable";
+import { injectable } from "./injectable";
 
-function ref(target, name, descriptor) {
+export function ref(target, name, descriptor) {
     injectable(target, name, descriptor);
 
     return {
@@ -17,5 +17,3 @@ function ref(target, name, descriptor) {
         }
     };
 }
-
-export default ref;

@@ -1,6 +1,6 @@
-import { registerRoutes } from "../lib/registerRoutes";
-import Activity from "../lib/Activity";
-import { CONTROLLER, IS_CONTROLLER, INJECTABLE_PROPS } from "./symbols";
+import { registerRoutes } from "../core/registerRoutes";
+import Activity from "../core/Activity";
+import { ACTIVITY_CREATOR, IS_CONTROLLER, INJECTABLE_PROPS } from "./symbols";
 import { internal_subscribeAllMessagesOnInit } from "./onMessage";
 import { getDisposableProps } from "./disposable";
 
@@ -26,16 +26,16 @@ function bindMethod(method, instance) {
 /**
  * 控制层修饰符
  * Controller类生命周期
- *     pgOnInit: 页面第一次打开，且动画开始前触发
- *     pgOnShow: 页面显示，动画结束时触发
- *     pgOnCreate: 页面第一次打开，且动画结束后触发
- *     pgOnResume: 页面从后台进入前台，且动画结束时触发
- *     pgOnPause: 页面从前台进入后台，且动画结束时触发
- *     pgOnDestroy: 页面被销毁后触发
+ *     onInit: 页面第一次打开，且动画开始前触发
+ *     onShow: 页面显示，动画结束时触发
+ *     onCreate: 页面第一次打开，且动画结束后触发
+ *     onResume: 页面从后台进入前台，且动画结束时触发
+ *     onPause: 页面从前台进入后台，且动画结束时触发
+ *     onDestroy: 页面被销毁后触发
  * @param {*} [route] 路由，非必填，尽量将路由收敛到 routes.js中
  * @param {*} componentClass 页面组件
  */
-export default function controller(route, componentClass, options) {
+export function controller(route, componentClass, options) {
     if (!componentClass) {
         componentClass = route;
         route = undefined;
@@ -61,14 +61,14 @@ export default function controller(route, componentClass, options) {
             const lifecycle = {};
 
             target.__context = page;
-            target.pgOnInit && (lifecycle.onInit = target.pgOnInit.bind(target));
-            target.pgOnQsChange && (lifecycle.onQsChange = target.pgOnQsChange.bind(target));
-            target.pgOnShow && (lifecycle.onShow = target.pgOnShow.bind(target));
-            target.pgOnCreate && (lifecycle.onCreate = target.pgOnCreate.bind(target));
-            target.pgOnResume && (lifecycle.onResume = target.pgOnResume.bind(target));
-            target.pgOnPause && (lifecycle.onPause = target.pgOnPause.bind(target));
-            target.pgOnDestroy && (lifecycle.onDestroy = target.pgOnDestroy.bind(target));
-            target.pgShouldRender && (lifecycle.shouldRender = target.pgShouldRender.bind(target));
+            target.onInit && (lifecycle.onInit = target.onInit.bind(target));
+            target.onQsChange && (lifecycle.onQsChange = target.onQsChange.bind(target));
+            target.onShow && (lifecycle.onShow = target.onShow.bind(target));
+            target.onCreate && (lifecycle.onCreate = target.onCreate.bind(target));
+            target.onResume && (lifecycle.onResume = target.onResume.bind(target));
+            target.onPause && (lifecycle.onPause = target.onPause.bind(target));
+            target.onDestroy && (lifecycle.onDestroy = target.onDestroy.bind(target));
+            target.snShouldRender && (lifecycle.shouldRender = target.snShouldRender.bind(target));
 
             page.setLifecycleDelegate(lifecycle);
 
@@ -86,7 +86,9 @@ export default function controller(route, componentClass, options) {
 
             return (setState) => {
                 const injectableProps = target[INJECTABLE_PROPS];
-                const store = {};
+                const store = {
+                    $SnowballController: target
+                };
 
                 injectableProps && Object.keys(injectableProps)
                     .forEach((injectorName) => {
@@ -112,9 +114,9 @@ export default function controller(route, componentClass, options) {
                             configurable: descriptor.configurable,
                         };
 
-                        if (descriptor.get === undefined && descriptor.set === undefined) {
-                            store[injectorName] = bindMethod(target[propertyName], target);
+                        store[injectorName] = bindMethod(target[propertyName], target);
 
+                        if (descriptor.get === undefined && descriptor.set === undefined) {
                             newDescriptor.get = function () {
                                 return store[injectorName];
                             };
@@ -142,7 +144,7 @@ export default function controller(route, componentClass, options) {
         });
         createActivity.__is_activity_factory__ = true;
 
-        Target[CONTROLLER] = createActivity;
+        Target[ACTIVITY_CREATOR] = createActivity;
 
         if (route) {
             registerRoutes({

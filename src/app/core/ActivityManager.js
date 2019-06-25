@@ -2,7 +2,7 @@ import { castStyle, Animation } from '../../graphics/animation';
 import { Toucher, loader } from '../../widget';
 import { $, isThenable } from '../../utils';
 
-import { CONTROLLER } from '../decorators/symbols';
+import { ACTIVITY_CREATOR } from '../controller/symbols';
 import { IApplication, IActivityManager, ToggleOptions } from '../types';
 
 import Activity from './Activity';
@@ -135,8 +135,8 @@ async function createActivity(route, location, application) {
     }
 
     viewFactory = viewFactory.default || viewFactory;
-    viewFactory = viewFactory[CONTROLLER]
-        ? viewFactory[CONTROLLER]
+    viewFactory = viewFactory[ACTIVITY_CREATOR]
+        ? viewFactory[ACTIVITY_CREATOR]
         : viewFactory;
 
     return viewFactory.__is_activity_factory__

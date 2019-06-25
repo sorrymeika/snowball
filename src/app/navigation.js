@@ -1,4 +1,4 @@
-import { internal_getApplication } from "./lib/createApplication";
+import { internal_getApplication } from "./core/createApplication";
 
 const getNavigation = () => {
     const application = internal_getApplication();

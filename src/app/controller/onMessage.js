@@ -4,17 +4,17 @@ import { IS_CONTROLLER, IS_HANDLER, MESSAGE_SUBSCRIBERS } from "./symbols";
 export function internal_subscribeAllMessagesOnInit(instance) {
     const eventSubscribers = instance[MESSAGE_SUBSCRIBERS];
     if (eventSubscribers) {
-        const context = instance.getContext();
+        const { context } = instance;
         for (var i = 0; i < eventSubscribers.length; i++) {
             const [type, name] = eventSubscribers[i];
-            context.messageChannel.on(type, (e, state) => {
+            context._messageChannel.on(type, (e, state) => {
                 instance[name](state);
             });
         }
     }
 }
 
-export default function onMessage(eventType) {
+export function onMessage(eventType) {
     return (target, name, descriptor, args) => {
         if (process.env.NODE_ENV === 'development') {
             if (!isString(name)) {

@@ -1,6 +1,6 @@
 import React from 'react';
 import ScrollView from './ScrollView';
-import inject from '../app/decorators/inject';
+import { inject } from '../app';
 
 import VScrollView from './VScrollView';
 import LoadMore from './LoadMore';

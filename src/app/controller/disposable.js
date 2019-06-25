@@ -19,7 +19,7 @@ export function getDisposableProps(target) {
  *   }
  * })
  */
-export default function disposable(target, name, descriptor, args) {
+export function disposable(target, name, descriptor, args) {
     if (!name) {
         if (internal_isControllerCreating()) {
             let observer = observable(target);

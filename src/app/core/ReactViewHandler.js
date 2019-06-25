@@ -5,7 +5,7 @@ import { Model } from '../../vm';
 
 const defer = Promise.prototype.then.bind(Promise.resolve());
 
-export const PageContext = React.createContext();
+export const PageProviderContext = React.createContext();
 
 export default class ReactViewHandler {
     constructor({ el, page, activity, stores, location, viewFactory, mapStoreToProps }) {
@@ -25,12 +25,12 @@ export default class ReactViewHandler {
         };
         this.renderPage = () => {
             return (
-                <PageContext.Provider
+                <PageProviderContext.Provider
                     value={{
                         __postMessage: postMessage,
                         store: this.model.attributes
                     }}
-                >{createElement(viewFactory)}</PageContext.Provider>
+                >{createElement(viewFactory)}</PageProviderContext.Provider>
             );
         };
     }

@@ -10,9 +10,17 @@ import * as navigation from './navigation';
  */
 export { navigation };
 
-export { createApplication } from './lib/createApplication';
-export { registerRoutes } from './lib/registerRoutes';
-export * from './lib/backEventHandlers';
-export { default as AnyPropType } from './AnyPropType';
+export { createApplication } from './core/createApplication';
+export { registerRoutes } from './core/registerRoutes';
+export * from './core/backEventHandlers';
 
-export * from './decorators';
+export { controller } from './controller/controller';
+export { Service } from './controller/Service';
+export { injectable } from './controller/injectable';
+export { inject } from './controller/inject';
+export { observer } from './controller/observer';
+export { disposable } from './controller/disposable';
+export { onMessage } from './controller/onMessage';
+export { withDispatch } from './controller/withDispatch';
+export { ref } from './controller/ref';
+export { provide } from './controller/provide';

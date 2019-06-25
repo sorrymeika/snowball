@@ -1,13 +1,13 @@
 import React from 'react';
 import { Model } from '../../vm';
-import { PageContext } from '../lib/ReactViewHandler';
+import { PageProviderContext } from '../core/ReactViewHandler';
 
-export default function provide(mapPropsToStore) {
+export function provide(mapPropsToStore) {
     return (componentClass) => {
         const factory = React.createFactory(componentClass);
 
         class Provider extends React.Component {
-            static contextType = PageContext
+            static contextType = PageProviderContext
 
             constructor(props, context) {
                 super(props, context);
@@ -38,12 +38,12 @@ export default function provide(mapPropsToStore) {
                     this.store = Object.assign(Object.create(context.store || null), this.model.attributes);
                 }
                 return (
-                    <PageContext.Provider
+                    <PageProviderContext.Provider
                         value={{
                             ...this.context,
                             store: this.store
                         }}
-                    >{factory({ ...this.state.attributes, ...this.props })}</PageContext.Provider>
+                    >{factory({ ...this.state.attributes, ...this.props })}</PageProviderContext.Provider>
                 );
             }
         }

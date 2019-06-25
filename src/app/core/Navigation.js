@@ -3,7 +3,6 @@
  * 作者: sunlu
  */
 
-import * as appsdk from '../../native-sdk';
 import * as env from '../../env';
 import { IApplication, INavigation } from '../types';
 import { $, appendQueryString, session } from '../../utils';
@@ -114,7 +113,7 @@ export default class Navigation implements INavigation {
             if (closeWebViewTimer) clearTimeout(closeWebViewTimer);
             closeWebViewTimer = setTimeout(() => {
                 this.application.currentActivity && this.application.currentActivity.destroy();
-                appsdk.exitWebView();
+                $(window).trigger('exitApp');
             }, 600);
 
             $(window).on('hashchange popstate unload', () => {
@@ -127,13 +126,6 @@ export default class Navigation implements INavigation {
             history.back();
         }
         return this;
-    }
-
-    /**
-     * 直接返回到native首页
-     */
-    home() {
-        appsdk.exitWebView();
     }
 
     replace(url) {

@@ -1,7 +1,7 @@
 import React, { Component, createElement } from 'react';
 import { isString, isArray, isFunction } from '../../utils';
-import observer from './observer';
-import { PageContext } from '../lib/ReactViewHandler';
+import { PageProviderContext } from '../core/ReactViewHandler';
+import { observer } from './observer';
 
 function isStateless(component) {
     // `function() {}` has prototype, but `() => {}` doesn't
@@ -9,10 +9,10 @@ function isStateless(component) {
     return !(component.prototype && component.prototype.render);
 }
 
-function createStoreInjector(grabStoresFn, target) {
+function createStoreInjector(grabStoresFn, target, makeReactive) {
 
     class Injector extends Component {
-        static contextType = PageContext;
+        static contextType = PageProviderContext;
 
         render() {
             const { forwardRef, ...props } = this.props;
@@ -30,7 +30,7 @@ function createStoreInjector(grabStoresFn, target) {
         }
     }
 
-    Injector = observer(Injector);
+    if (makeReactive) Injector = observer(Injector);
 
     const InjectHocRef = React.forwardRef((props, ref) =>
         React.createElement(Injector, { ...props, forwardRef: ref })
@@ -128,10 +128,12 @@ function injectFactoryInstance(baseStores, nextProps, injector, factoryName, map
  *   storeName1: stores.storeName1
  * }))(componentClass)
  */
-export default function inject(injection) {
+export function inject(injection) {
     let grabStoresFn;
+    let makeReactive = false;
 
     if (typeof injection === "function") {
+        makeReactive = true;
         grabStoresFn = compose([].slice.call(arguments));
     } else if (isString(injection)) {
         grabStoresFn = grabStoresByName([].slice.call(arguments));
@@ -142,6 +144,6 @@ export default function inject(injection) {
     }
 
     return function (componentClass) {
-        return createStoreInjector(grabStoresFn, componentClass);
+        return createStoreInjector(grabStoresFn, componentClass, makeReactive);
     };
 }

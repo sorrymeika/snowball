@@ -991,7 +991,7 @@ export default class HomeController {
         // 页面是否是激活状态
         // console.log(page.isActive());
         // 页面是否是销毁
-        // console.log(page.isDestroy());
+        // console.log(page.isDestroyed());
         this.page = page;
 
         this.userService = new UserService();

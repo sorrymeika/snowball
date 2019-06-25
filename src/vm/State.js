@@ -14,7 +14,7 @@ export default class State extends Observer {
      */
     set(data) {
         if (this.state.next) {
-            return this.state.next.then(() => this.set(data));
+            return this.state.next = this.state.next.then(() => this.set(data));
         }
 
         super.set.call(this, data);

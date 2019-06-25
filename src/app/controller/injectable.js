@@ -20,7 +20,7 @@ function _injectable(proto, exposureName, name, descriptor, args) {
     return descriptor;
 }
 
-export default function injectable(target, name, descriptor, args) {
+export function injectable(target, name, descriptor, args) {
     if (isString(target)) {
         const exposureName = target;
         return (target, name, descriptor, args) => {

@@ -167,7 +167,7 @@ export default class Application implements IApplication {
             withAnimation: withAnimation !== false
         }, props);
 
-        newActivity.resume();
+        newActivity.active();
 
         return true;
     }
