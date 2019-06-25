@@ -7,7 +7,7 @@ class HomeController {
         console.log(location);
     }
 
-    pgOnInit() {
+    onInit() {
         // fetch remote data here!
     }
 

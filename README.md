@@ -237,7 +237,7 @@ class AppController {
         this.buttonStatus = observable(1);
     }
 
-    pgOnInit() {
+    onInit() {
         this.userService.loadUser();
     }
 
@@ -960,7 +960,7 @@ import Home from "../containers/Home";
 
 /**
  * Controller类生命周期
- *     pgOnInit: 页面第一次打开，且动画开始前触发
+ *     onInit: 页面第一次打开，且动画开始前触发
  *     pgOnShow: 页面显示，动画结束时触发
  *     pgOnCreate: 页面第一次打开，且动画结束后触发
  *     pgOnResume: 页面从后台进入前台，且动画结束时触发
@@ -997,8 +997,8 @@ export default class HomeController {
         this.userService = new UserService();
     }
 
-    // 页面初始化事件，数据请求不要放到 `constructor` 里，而是放在 `pgOnInit` 里
-    async pgOnInit(page) {
+    // 页面初始化事件，数据请求不要放到 `constructor` 里，而是放在 `onInit` 里
+    async onInit(page) {
         await this.userService.fetch();
 
         // 缓存页面数据到localStorage
@@ -1007,13 +1007,13 @@ export default class HomeController {
         });
     }
 
-    pgOnPause(page) {
+    onPause(page) {
     }
 
-    pgOnResume(page) {
+    onResume(page) {
     }
 
-    pgOnDestroy(page) {
+    onDestroy(page) {
     }
 
     // `user` 把注入给 `Home` 组件
@@ -1053,8 +1053,8 @@ export default class ControllerBase implements IControllerBase {
         this.service = service;
     }
 
-    // 页面初始化事件，数据请求不要放到 `constructor` 里，而是放在 `pgOnInit` 里
-    pgOnInit(page) {
+    // 页面初始化事件，数据请求不要放到 `constructor` 里，而是放在 `onInit` 里
+    onInit(page) {
         this.service.fetch();
     }
 }
@@ -1071,8 +1071,8 @@ export default function globalAddressMixin(ControllerBase: IControllerBase) {
             this.globalAddressService = GlobalAddressService.getInstance();
         }
 
-        pgOnInit() {
-            super.pgOnInit();
+        onInit() {
+            super.onInit();
 
             this.globalAddressService.fetch();
         }
