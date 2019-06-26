@@ -1,19 +1,39 @@
+import { isModel } from "./predicates";
+
 let currentReaction;
 
-export function reactTo(model, path) {
+export function reactTo(model, name) {
     if (currentReaction) {
-        put.call(currentReaction, model, path);
+        put.call(currentReaction, model, name);
     }
 }
 
-function put(model, path) {
-    const id = model.state.id + ':' + path;
-    if (!this._disposers[id]) {
-        this._disposers[id] = () => model.unobserve(path, this.emit);
+function put(model, name) {
+    const id = model.state.id + ':' + name;
+    const value = model.state.observableProps[name];
+    const onlyOnChange = !value || isModel(value);
+
+    let dispose = this._disposers[id];
+    if (!dispose) {
+        observe.call(this, model, name, id, onlyOnChange);
         this._disposerKeys.push(id);
-        model.observe(path, this.emit);
+    } else if (dispose.onlyOnChange != onlyOnChange) {
+        dispose();
+        observe.call(this, model, name, id, onlyOnChange);
     }
+
+    this._disposers[id].onlyOnChange = onlyOnChange;
     this._marks[id] = true;
+}
+
+function observe(model, name, id, onlyOnChange) {
+    if (!onlyOnChange) {
+        this._disposers[id] = () => model.unobserve(name, this.emit);
+        model.observe(name, this.emit);
+    } else {
+        this._disposers[id] = () => model.off('change:' + name, this.emit);
+        model.on('change:' + name, this.emit);
+    }
 }
 
 const resolvedPromise = Promise.resolve();

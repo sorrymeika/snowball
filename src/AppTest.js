@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import ReactDOM from 'react-dom';
-import { ViewModel, component, Model } from './vm';
+import { ViewModel, component, Model, attributes, autorun } from './vm';
 
 @component({
     tagName: 'Test',
@@ -60,5 +60,32 @@ class App extends Component {
         );
     }
 }
+class B {
+    @attributes.number
+    id;
+}
+
+class A {
+    @attributes.number
+    id;
+
+    @attributes.any
+    b;
+}
+
+const a = new A();
+
+a.b = new B();
+
+autorun(() => {
+    console.log('autorun', a.b.id, a);
+});
+
+console.log('set b');
+a.b.id = 2;
+
+setTimeout(() => {
+    a.id = 3;
+});
 
 export default App;

@@ -132,6 +132,7 @@ export class Dictionary extends Observer {
     }
 }
 
+Dictionary.prototype.on = Model.prototype.on;
 Dictionary.prototype.get = Model.prototype.get;
 Dictionary.prototype.observe = Model.prototype.observe;
 Dictionary.prototype.unobserve = Model.prototype.unobserve;

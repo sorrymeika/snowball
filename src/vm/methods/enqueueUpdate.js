@@ -68,7 +68,7 @@ export function enqueueInit(observer) {
             const item = initializers[initializerIds[i]];
             if (item) {
                 enqueueRender(item);
-                bubbleInit(item);
+                // bubbleInit(item);
             }
         }
         initializers = {};
@@ -77,25 +77,25 @@ export function enqueueInit(observer) {
     });
 }
 
-function bubbleInit(target, paths) {
-    const parents = target.state.parents;
-    if (parents) {
-        const length = parents.length;
-        var i = -1;
-        var parent;
-        while (++i < length) {
-            parent = parents[i];
-            var name = getMemberName(parent, target);
-            var nextPaths = paths ? name + '/' + paths : name;
-            if (!initializers[parent.state.id]) {
-                parent.trigger('datachanged:' + nextPaths, {
-                    paths: nextPaths
-                });
-            }
-            bubbleInit(parent, nextPaths);
-        }
-    }
-}
+// function bubbleInit(target, paths) {
+//     const parents = target.state.parents;
+//     if (parents) {
+//         const length = parents.length;
+//         var i = -1;
+//         var parent;
+//         while (++i < length) {
+//             parent = parents[i];
+//             var name = getMemberName(parent, target);
+//             var nextPaths = paths ? name + '/' + paths : name;
+//             if (!initializers[parent.state.id]) {
+//                 parent.trigger('datachanged:' + nextPaths, {
+//                     paths: nextPaths
+//                 });
+//             }
+//             bubbleInit(parent, nextPaths);
+//         }
+//     }
+// }
 
 export function enqueueUpdate(dirt) {
     const { state } = dirt;

@@ -212,12 +212,14 @@ export class Model extends Observer {
 
             if (origin !== value) {
                 if (value == null) {
+                    changes.push(attr, value, attributes[attr]);
                     attributes[attr] = observableProps[attr] = value;
                     if (isObservable(origin)) {
                         disconnect(this, origin);
                     }
                     isChange = true;
                 } else if (isObservable(value)) {
+                    changes.push(attr, value.state.data, attributes[attr]);
                     observableProps[attr] = value;
                     attributes[attr] = value.state.data;
 
@@ -228,6 +230,9 @@ export class Model extends Observer {
 
                     isChange = true;
                 } else if (isModel(origin)) {
+                    if (origin.state.facade && !isPlainObject(value)) {
+                        throw new Error('不可改变' + attr + '的数据类型');
+                    }
                     origin.set(renew || renewChild, value);
                     attributes[attr] = origin.state.data;
 
@@ -257,6 +262,7 @@ export class Model extends Observer {
                 } else {
                     value = createAttribute(this, attr, value);
                     if (isObservable(value)) {
+                        changes.push(attr, value.state.data, attributes[attr]);
                         observableProps[attr] = value;
                         attributes[attr] = value.state.data;
                     } else {
@@ -320,13 +326,19 @@ export class Model extends Observer {
         return observer;
     }
 
+    on(type, fn) {
+        if (/(^|\s)change:/.test(type)) {
+            this.state.hasOnChangeListener = true;
+        }
+        return super.on(type, fn);
+    }
+
     /**
      * 监听当前 Model 的属性值变化
      */
     observe(attribute, fn) {
         if (isString(attribute)) {
             if (fn) {
-                this.state.hasOnChangeListener = true;
                 const cb = (e, oldValue, newValue) => {
                     if (e.target === this) {
                         return fn.call(this, newValue, oldValue);

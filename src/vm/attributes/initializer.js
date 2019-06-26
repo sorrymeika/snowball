@@ -1,7 +1,6 @@
 import { Model } from "../Model";
 import { source } from "./symbols";
 import { isObservable } from "../predicates";
-import { isString } from "../../utils";
 
 const reactiveProps = Symbol('reactiveProps');
 const initedClasses = new WeakMap();
@@ -32,110 +31,16 @@ function init(obj, data) {
     _init.call(this, obj, data);
 }
 
-function from(data) {
+function _of(data) {
     const Klass = this;
     const instance = new Klass();
     _init.call(this, instance, data);
     return instance;
 }
 
-function observe(obj, arg1, arg2) {
-    getSource(obj, this).observe(arg1, arg2);
-    return () => unobserve(obj, arg1, arg2);
-}
-
-function unobserve(obj, arg1, arg2) {
-    getSource(obj, this).unobserve(arg1, arg2);
-}
-
-function compute(obj, arg1, arg2) {
-    return getSource(obj, this).compute(arg1, arg2);
-}
-
-function get(obj, key) {
-    return getSource(obj, this).get(key);
-}
-
-function set(obj, arg1, arg2) {
-    let source = getSource(obj, this);
-    let fn;
-    if (isString(arg1)) {
-        source = source._(arg1);
-        fn = arg2;
-    } else {
-        fn = arg1;
-    }
-    if (typeof fn === 'function') {
-        fn(source);
-    } else {
-        source.set(fn);
-    }
-}
-
-const connectionStore = new WeakMap();
-
-function getInstanceStore(receiver, uniqueId) {
-    let connection;
-    if (connectionStore.has(receiver)) {
-        connection = connectionStore.get(receiver);
-    } else {
-        connection = new Map();
-        connectionStore.set(receiver, connection);
-    }
-
-    let store;
-    if (connection.has(this)) {
-        store = connection.get(this);
-    } else {
-        store = {};
-        connection.set(this, store);
-    }
-
-    return store;
-}
-
-function getCache(receiver, uniqueId, onCreate) {
-    let store = getInstanceStore.call(this, receiver, uniqueId);
-    let instance;
-    if (!(instance = store[uniqueId])) {
-        const Klass = this;
-        instance = store[uniqueId] = new Klass();
-        onCreate && onCreate(instance);
-    }
-    return instance;
-}
-
-function hasCache(receiver, uniqueId) {
-    let store = getInstanceStore.call(this, receiver, uniqueId);
-    return !!store[uniqueId];
-}
-
-function setCache(receiver, uniqueId, model) {
-    let store = getInstanceStore.call(this, receiver, uniqueId);
-    return store[uniqueId] = model;
-}
-
-function removeCache(receiver, uniqueId) {
-    let store = getInstanceStore.call(this, receiver, uniqueId);
-    let data = store[uniqueId];
-    if (data !== undefined) {
-        delete store[uniqueId];
-    }
-    return data;
-}
-
 export function hoistStaticMethods(obj) {
     obj.init = init;
-    obj.from = from;
-    obj.observe = observe;
-    obj.unobserve = unobserve;
-    obj.compute = compute;
-    obj.get = get;
-    obj.set = set;
-    obj.getCache = getCache;
-    obj.hasCache = hasCache;
-    obj.setCache = setCache;
-    obj.removeCache = removeCache;
+    obj.of = _of;
 }
 
 export default function initializer(obj, name, descriptor) {

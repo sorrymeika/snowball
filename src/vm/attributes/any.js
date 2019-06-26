@@ -9,7 +9,8 @@ export function any(target, name, descriptor) {
         enumerable: true,
         get() {
             reactTo(this[source], name);
-            return this[source].get(name);
+            const prop = this[source].state.observableProps[name];
+            return (prop && prop.state.facade) || this[source].get(name);
         },
         set(val) {
             this[source].set(name, val);
