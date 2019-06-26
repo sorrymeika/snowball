@@ -261,7 +261,7 @@ function flushViews() {
 
         viewIds[id] = false;
 
-        if (target.state.renderedVersion !== target.state.version) {
+        if (target.state.renderedVersion !== target.state.version && !target.state.isDestroyed) {
             target.render(fiber);
             if (fiber.current) {
                 scheduleFlushViews();

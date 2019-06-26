@@ -28,7 +28,6 @@ export class Observer implements IObservable {
 
     constructor(data, key?, parent?) {
         this.state = {
-            rendered: false,
             initialized: false,
             id: identify(),
             version: 0,
