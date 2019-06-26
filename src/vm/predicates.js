@@ -1,21 +1,21 @@
-export const OBSERVER_TYPE_KEY = '%_ObserverObjectType_%';
+export const TYPEOF = '[[ObservableObjectType]]';
 
 export function isObserver(observer) {
-    return observer && observer[OBSERVER_TYPE_KEY] === 'Observer';
+    return observer && observer[TYPEOF] === 'Observer';
 }
 
 export function isObservable(observer) {
-    return !!(observer && observer[OBSERVER_TYPE_KEY]);
+    return !!(observer && observer[TYPEOF]);
 }
 
 export function isModel(model) {
-    return model && model[OBSERVER_TYPE_KEY] === 'Model';
+    return model && model[TYPEOF] === 'Model';
 }
 
 export function isCollection(collection) {
-    return collection && collection[OBSERVER_TYPE_KEY] === 'Collection';
+    return collection && collection[TYPEOF] === 'Collection';
 }
 
 export function isList(list) {
-    return list && list[OBSERVER_TYPE_KEY] === 'List';
+    return list && list[TYPEOF] === 'List';
 }

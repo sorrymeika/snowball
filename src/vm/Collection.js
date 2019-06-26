@@ -7,7 +7,7 @@ import { Model } from './Model';
 import { enqueueUpdate } from './methods/enqueueUpdate';
 import { updateRefs } from './methods/updateRefs';
 import { connect, setMapper, disconnect } from './methods/connect';
-import { isModel, isObservable, isCollection, OBSERVER_TYPE_KEY } from './predicates';
+import { isModel, isObservable, isCollection, TYPEOF } from './predicates';
 import { contains } from '../utils/object';
 import { observeProp, unobserveProp } from './methods/observeProp';
 import compute from './operators/compute';
@@ -851,7 +851,7 @@ export class Collection extends Observer {
 
 Collection.prototype.toArray = Collection.prototype.toJSON;
 
-Collection.prototype[OBSERVER_TYPE_KEY] = 'Collection';
+Collection.prototype[TYPEOF] = 'Collection';
 
 
 // setTimeout(() => {

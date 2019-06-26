@@ -20,3 +20,5 @@ export class Service {
         return this.__context;
     }
 }
+
+Service.prototype['[[ConnectModel]]'] = false;

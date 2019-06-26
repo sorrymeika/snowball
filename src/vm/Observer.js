@@ -7,7 +7,7 @@ import { updateRefs } from './methods/updateRefs';
 import { connect, disconnect } from './methods/connect';
 
 import compute from './operators/compute';
-import { OBSERVER_TYPE_KEY } from './predicates';
+import { TYPEOF } from './predicates';
 
 
 export interface IObservable {
@@ -123,7 +123,7 @@ export class Observer implements IObservable {
     }
 }
 
-Observer.prototype[OBSERVER_TYPE_KEY] = 'Observer';
+Observer.prototype[TYPEOF] = 'Observer';
 
 eventMixin(Observer);
 
@@ -185,4 +185,4 @@ export class ChangeObserver implements IObservable {
 
 ChangeObserver.prototype.compute = Observer.prototype.compute;
 
-ChangeObserver.prototype[OBSERVER_TYPE_KEY] = 'ChangeObserver';
+ChangeObserver.prototype[TYPEOF] = 'ChangeObserver';
