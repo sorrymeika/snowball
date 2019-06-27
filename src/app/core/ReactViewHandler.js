@@ -3,8 +3,6 @@ import React, { createElement } from 'react';
 import ReactDOM from 'react-dom';
 import { Model } from '../../vm';
 
-const defer = Promise.prototype.then.bind(Promise.resolve());
-
 export const PageProviderContext = React.createContext();
 
 export default class ReactViewHandler {
@@ -66,6 +64,7 @@ export default class ReactViewHandler {
 
             let initalData = model.state.data;
             let renderId = 0;
+            let waiting = false;
 
             this.render(() => {
                 this.isReady = true;
@@ -86,35 +85,20 @@ export default class ReactViewHandler {
                 renderId++;
                 let currentId = renderId;
 
-                if (!this.renderTask) {
-                    this.renderTask = new Promise((resolve) => {
-                        this.resolveRender = resolve;
-                    });
-                }
-
                 // 等待动画结束再render，避免动画卡顿
                 this.activity.waitAnimation(() => {
-                    defer(() => {
+                    if (waiting) return;
+                    waiting = true;
+                    setTimeout(() => {
+                        waiting = false;
                         // 避免同一个事件循环里多次渲染
                         if (renderId === currentId) {
-                            this.render(() => {
-                                this.renderTask = null;
-                                this.resolveRender();
-                                this.resolveRender = null;
-                            });
+                            this.render();
                         }
                     });
                 });
             });
         }
-    }
-
-    rendered(fn) {
-        this.ready(() => {
-            this.model.nextTick(() => {
-                this.renderTask ? this.renderTask.then(fn) : fn();
-            });
-        });
     }
 
     update(attributes, cb) {

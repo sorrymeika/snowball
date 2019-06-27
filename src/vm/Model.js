@@ -159,7 +159,7 @@ export class Model extends Observer {
         if (keyIsVal && (!keyIsObject || !isPlainObject(key))) {
             if (state.changed = (state.data !== key)) {
                 state.observableProps = {};
-                state.data = keyIsObject ? Object.create(key) : key;
+                state.data = key;
                 enqueueUpdate(this);
                 updateRefs(this);
             }
@@ -210,7 +210,7 @@ export class Model extends Observer {
                 value = value[source];
             }
 
-            if (origin !== value) {
+            if (origin !== value || (value === undefined && !(attr in attributes))) {
                 if (value == null) {
                     changes.push(attr, value, attributes[attr]);
                     attributes[attr] = observableProps[attr] = value;

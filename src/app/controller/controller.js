@@ -5,6 +5,7 @@ import { ACTIVITY_CREATOR } from "../core/ActivityManager";
 import { IS_CONTROLLER, INJECTABLE_PROPS } from "./symbols";
 import { internal_subscribeAllMessagesOnInit } from "./onMessage";
 import { getDisposableProps } from "./disposable";
+import { Reaction } from "../../vm";
 
 let isCreating = false;
 export function internal_isControllerCreating() {
@@ -20,9 +21,12 @@ export function internal_onControllerCreated(fn) {
 }
 
 function bindMethod(method, instance) {
-    return typeof method === 'function' && method.prototype
-        ? () => method.apply(instance, arguments)
-        : method;
+    if (typeof method === 'function' && method.prototype) {
+        const fn = () => method.apply(instance, arguments);
+        fn._cb = method;
+        return fn;
+    }
+    return method;
 }
 
 /**
@@ -52,6 +56,7 @@ export function controller(route, componentClass, options) {
             }
         });
         Target.prototype[IS_CONTROLLER] = true;
+        Target.prototype['[[ConnectModel]]'] = false;
 
         const createActivity = (location, application) => new Activity(componentClass, location, application, (props, page) => {
             if (isCreating) {
@@ -93,55 +98,83 @@ export function controller(route, componentClass, options) {
                     $SnowballController: target
                 };
 
-                injectableProps && Object.keys(injectableProps)
-                    .forEach((injectorName) => {
-                        const propertyName = injectableProps[injectorName];
-                        let proto = target;
-                        let descriptor;
+                if (injectableProps) {
+                    const reaction = new Reaction(() => {
+                        reaction.track(() => {
+                            const newState = {};
+                            Object.keys(injectableProps)
+                                .forEach((injectorName) => {
+                                    const old = store[injectorName];
+                                    let newProp = target[injectableProps[injectorName]];
+                                    if (old !== newProp) {
+                                        if (typeof newProp === 'function' && newProp.prototype) {
+                                            if (old && old._cb === newProp) {
+                                                return;
+                                            } else {
+                                                newProp = bindMethod(newProp, target);
+                                            }
+                                        }
+                                        newState[injectorName] = store[injectorName] = newProp;
+                                    }
+                                });
+                            setState(newState);
+                        });
+                    })
+                        .track(() => {
+                            Object.keys(injectableProps)
+                                .forEach((injectorName) => {
+                                    store[injectorName] = bindMethod(target[injectableProps[injectorName]], target);
+                                });
+                        });
+                    page.on('destroy', () => reaction.destroy());
 
-                        while (1) {
-                            descriptor = Object.getOwnPropertyDescriptor(proto, propertyName);
-                            if (descriptor) {
-                                break;
+                    Object.keys(injectableProps)
+                        .forEach((injectorName) => {
+                            const propertyName = injectableProps[injectorName];
+                            let proto = target;
+                            let descriptor;
+
+                            while (1) {
+                                descriptor = Object.getOwnPropertyDescriptor(proto, propertyName);
+                                if (descriptor) {
+                                    break;
+                                }
+
+                                const parent = Object.getPrototypeOf(proto);
+                                if (parent === proto || parent === Object.prototype) {
+                                    break;
+                                } else {
+                                    proto = parent;
+                                }
                             }
-
-                            const parent = Object.getPrototypeOf(proto);
-                            if (parent === proto || parent === Object.prototype) {
-                                break;
-                            } else {
-                                proto = parent;
-                            }
-                        }
-                        const newDescriptor = {
-                            enumerable: descriptor.enumerable,
-                            configurable: descriptor.configurable,
-                        };
-
-                        store[injectorName] = bindMethod(target[propertyName], target);
-
-                        if (descriptor.get === undefined && descriptor.set === undefined) {
-                            newDescriptor.get = function () {
-                                return store[injectorName];
+                            const newDescriptor = {
+                                enumerable: descriptor.enumerable,
+                                configurable: descriptor.configurable,
                             };
-                            if (descriptor.writable) {
-                                newDescriptor.set = function (val) {
-                                    store[injectorName] = bindMethod(val, this);
-                                    setState(store);
-                                };
-                            }
-                        } else {
-                            newDescriptor.get = descriptor.get;
-                            if (descriptor.set) {
-                                newDescriptor.set = function (val) {
-                                    descriptor.set.call(this, val);
-                                    store[injectorName] = bindMethod(descriptor.get.call(this), this);
-                                    setState(store);
-                                };
-                            }
-                        }
-                        Object.defineProperty(target, propertyName, newDescriptor);
-                    });
 
+                            if (descriptor.get === undefined && descriptor.set === undefined) {
+                                newDescriptor.get = function () {
+                                    return store[injectorName];
+                                };
+                                if (descriptor.writable) {
+                                    newDescriptor.set = function (val) {
+                                        store[injectorName] = bindMethod(val, this);
+                                        setState(store);
+                                    };
+                                }
+                            } else {
+                                newDescriptor.get = descriptor.get;
+                                if (descriptor.set) {
+                                    newDescriptor.set = function (val) {
+                                        descriptor.set.call(this, val);
+                                        store[injectorName] = bindMethod(descriptor.get.call(this), this);
+                                        setState(store);
+                                    };
+                                }
+                            }
+                            Object.defineProperty(target, propertyName, newDescriptor);
+                        });
+                }
                 setState(store);
             };
         }, options);

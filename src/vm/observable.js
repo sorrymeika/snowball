@@ -98,13 +98,11 @@ const observable = (initalValue, execute, descriptor) => {
             enumerable: true,
             get() {
                 const model = this[propertyKey];
-                const result = model.state.observableProps[execute] || model.state.data[execute];
 
                 reactTo(model, execute);
 
-                return isObservable(result)
-                    ? result.state.facade || result.state.data
-                    : result;
+                const prop = model.state.observableProps[execute];
+                return (prop && prop.state.facade) || model.state.data[execute];
             },
             set(val) {
                 this[propertyKey].set(execute, val);

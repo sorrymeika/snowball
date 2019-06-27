@@ -2,32 +2,32 @@ import { isModel } from "./predicates";
 
 let currentReaction;
 
-export function reactTo(model, name) {
+export function reactTo(model, name, deepChange?) {
     if (currentReaction) {
-        put.call(currentReaction, model, name);
+        put.call(currentReaction, model, name, deepChange);
     }
 }
 
-function put(model, name) {
+function put(model, name, deepChange) {
     const id = model.state.id + ':' + name;
     const value = model.state.observableProps[name];
-    const onlyOnChange = !value || isModel(value);
+    deepChange = deepChange || (value && !isModel(value));
 
     let dispose = this._disposers[id];
     if (!dispose) {
-        observe.call(this, model, name, id, onlyOnChange);
+        observe.call(this, model, name, id, deepChange);
         this._disposerKeys.push(id);
-    } else if (dispose.onlyOnChange != onlyOnChange) {
+    } else if (dispose.deepChange != deepChange) {
         dispose();
-        observe.call(this, model, name, id, onlyOnChange);
+        observe.call(this, model, name, id, deepChange);
     }
 
-    this._disposers[id].onlyOnChange = onlyOnChange;
+    this._disposers[id].deepChange = deepChange;
     this._marks[id] = true;
 }
 
-function observe(model, name, id, onlyOnChange) {
-    if (!onlyOnChange) {
+function observe(model, name, id, deepChange) {
+    if (deepChange) {
         this._disposers[id] = () => model.unobserve(name, this.emit);
         model.observe(name, this.emit);
     } else {
@@ -72,9 +72,10 @@ export class Reaction {
     track(func) {
         this._marks = {};
 
+        const lastReaction = currentReaction;
         currentReaction = this;
         func();
-        currentReaction = null;
+        currentReaction = lastReaction;
 
         const disposers = this._disposers;
         const marks = this._marks;
@@ -89,10 +90,12 @@ export class Reaction {
             }
         }
         this._disposerKeys = newKeys;
+        return this;
     }
 
     observe(fn) {
         this._funcs.push(fn);
+        return this;
     }
 
     destroy() {

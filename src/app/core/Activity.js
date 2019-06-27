@@ -33,10 +33,6 @@ class SnowballViewHandler {
         }
     }
 
-    rendered(fn) {
-        this.model.nextTick(fn);
-    }
-
     update(attributes, cb) {
         this.model.set(attributes);
 
@@ -110,15 +106,6 @@ export class Activity {
         });
     }
 
-    // 等待页面渲染结束，如果在渲染中会等到render完
-    ready(fn) {
-        this.application.navigationTask.then(() => {
-            this.view
-                ? this.view.rendered(fn)
-                : fn();
-        });
-    }
-
     setAnimationTask(animationTask) {
         this.animationTask = animationTask;
         return this;
@@ -127,7 +114,7 @@ export class Activity {
     waitAnimation(fn) {
         if (!this.animationTask) {
             console.error('call `setAnimationTask` first!');
-            Promise.resolve().then(fn);
+            fn();
             return;
         }
         this.animationTask.then(fn);

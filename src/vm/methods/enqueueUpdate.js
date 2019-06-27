@@ -284,7 +284,7 @@ function flushViews() {
     fiber = newFiber();
 
     if (getCurrentTime() - renderStartTime > 50) {
-        console.log('vm renderred', getCurrentTime() - renderStartTime);
+        console.log('vm rendered', getCurrentTime() - renderStartTime);
     }
 
     if (!dirts && !initializerIds.length) {

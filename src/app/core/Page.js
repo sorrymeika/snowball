@@ -91,10 +91,6 @@ export class Page extends EventEmitter implements IPage {
         this._messageChannel.trigger(state.type, state);
     }
 
-    ready(fn) {
-        this._activity.ready(fn);
-    }
-
     setLifecycleDelegate(delegate: PageLifecycleDelegate) {
         this._activity.lifecycle = delegate || {};
     }
