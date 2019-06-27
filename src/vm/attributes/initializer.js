@@ -1,5 +1,5 @@
 import { Model } from "../Model";
-import { source } from "./symbols";
+import { SymbolObserver } from "./symbols";
 import { isObservable } from "../predicates";
 
 const reactiveProps = Symbol('reactiveProps');
@@ -11,11 +11,11 @@ function getSource(obj, constructor) {
         if (!obj instanceof constructor) {
             throw new Error('obj must instanceof' + constructor);
         }
-        if (!isObservable(obj[source])) {
+        if (!isObservable(obj[SymbolObserver])) {
             throw new Error('unavailable object!');
         }
     }
-    return obj[source];
+    return obj[SymbolObserver];
 }
 
 function _init(obj, data) {

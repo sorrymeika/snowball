@@ -95,7 +95,7 @@ export function controller(route, componentClass, options) {
             return (setState) => {
                 const injectableProps = target[INJECTABLE_PROPS];
                 const store = {
-                    $SnowballController: target
+                    '[[Controller]]': target
                 };
 
                 if (injectableProps) {

@@ -1,5 +1,5 @@
 import initializer from "./initializer";
-import { source } from "./symbols";
+import { SymbolObserver } from "./symbols";
 import { reactTo } from "../Reaction";
 
 export function func(target, name, descriptor) {
@@ -8,7 +8,7 @@ export function func(target, name, descriptor) {
     return {
         enumerable: true,
         get() {
-            const observer = target[source];
+            const observer = target[SymbolObserver];
             reactTo(observer, name);
             return observer.get(name);
         },
@@ -16,7 +16,7 @@ export function func(target, name, descriptor) {
             if (typeof val !== 'function') {
                 throw new Error('property value must be function!');
             }
-            const observer = target[source];
+            const observer = target[SymbolObserver];
             observer.set(name, val.prototype
                 ? val.bind(this)
                 : val);

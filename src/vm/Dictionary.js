@@ -5,7 +5,7 @@ import { updateRefs } from "./methods/updateRefs";
 import { enqueueUpdate } from "./methods/enqueueUpdate";
 import { isObservable } from "./predicates";
 import { disconnect, connect } from "./methods/connect";
-import { source } from "./attributes/symbols";
+import { SymbolObserver } from "./attributes/symbols";
 
 const hasOwnProperty = Object.prototype.hasOwnProperty;
 const MARK_SWEEP = Symbol('mark and sweep');
@@ -27,7 +27,7 @@ function addChange(attributes, key, value, originValue, changes) {
     changes.push(key, value, originValue);
 
     if (value) {
-        const observable = value[source] || value;
+        const observable = value[SymbolObserver] || value;
         if (isObservable(observable)) {
             if (isObservable(originValue)) {
                 disconnect(this, originValue);
@@ -121,7 +121,7 @@ export class Dictionary extends Observer {
             for (let key in data) {
                 const value = data[key];
                 if (value) {
-                    const observable = value[source] || value;
+                    const observable = value[SymbolObserver] || value;
                     if (isObservable(observable)) {
                         disconnect(this, observable);
                     }

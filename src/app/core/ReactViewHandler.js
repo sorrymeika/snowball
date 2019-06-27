@@ -15,6 +15,11 @@ export default class ReactViewHandler {
             globalStores: stores,
             location
         });
+        this.state = {
+            $context: page,
+        };
+        this._definedProps = {};
+        this._reactToProps(['globalStores', 'location']);
         this.isReady = false;
         this.readyActions = [];
         this.mapStoreToProps = mapStoreToProps;
@@ -22,16 +27,37 @@ export default class ReactViewHandler {
         const postMessage = (state) => {
             page.postMessage(state);
         };
+
         this.renderPage = () => {
+            this._reactiveProps = {};
             return (
                 <PageProviderContext.Provider
                     value={{
                         __postMessage: postMessage,
-                        store: this.model.attributes
+                        store: this.state
                     }}
                 >{createElement(viewFactory, this.model.attributes)}</PageProviderContext.Provider>
             );
         };
+    }
+
+    async _reactToProps(names) {
+        const { model } = this;
+        names.forEach((name) => {
+            if (!this._definedProps[name]) {
+                this._definedProps[name] = true;
+                Object.defineProperty(this.state, name, {
+                    get() {
+                        return model.state.data[name];
+                    }
+                });
+            }
+        });
+    }
+
+    setState(data) {
+        this._reactToProps(Object.keys(data));
+        this.model.set(data);
     }
 
     get location() {
@@ -49,15 +75,17 @@ export default class ReactViewHandler {
     setup(attributes, cb) {
         if (!this.isSetup) {
             this.isSetup = true;
-            const model = this.model.set(attributes);
+            this.setState(attributes);
+
+            const { model } = this;
             if (this.mapStoreToProps) {
                 const data = this.mapStoreToProps(model.attributes, this.page);
                 if (typeof data === 'function') {
                     data((newData) => {
-                        model.set(newData);
+                        this.setState(newData);
                     });
                 } else {
-                    model.set(data);
+                    this.setState(data);
                 }
                 this.mapStoreToProps = null;
             }

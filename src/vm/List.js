@@ -1,7 +1,7 @@
 import { Observer } from "./Observer";
 import { isArray } from '../utils/is';
 import { connect, disconnect } from './methods/connect';
-import { source } from './attributes/symbols';
+import { SymbolObserver } from './attributes/symbols';
 import { Collection, withMutations, initCollection } from './Collection';
 
 export class ObserverList extends Collection {
@@ -32,7 +32,7 @@ export default class List extends Observer {
         return withMutations(() => {
             let arrayLenth = array.length;
             for (let i = arrayLenth - 1; i < length; i++) {
-                disconnect(this, this[i][source]);
+                disconnect(this, this[i][SymbolObserver]);
                 delete this[i];
                 this.state.changed = true;
                 this.state.data.pop();
@@ -43,14 +43,14 @@ export default class List extends Observer {
 
             for (let i = 0; i < arrayLenth; i++) {
                 let item = array[i];
-                let sourceModel = item[source];
+                let sourceModel = item[SymbolObserver];
 
                 if (item !== this[i]) {
                     connected[sourceModel.state.id] = true;
                     connect(this, sourceModel, i);
 
                     if (this[i]) {
-                        disposers.push(this[i][source]);
+                        disposers.push(this[i][SymbolObserver]);
                         this.state.data[i] = sourceModel.state.data;
                     } else {
                         this.state.data.push(sourceModel.state.data);
@@ -83,10 +83,10 @@ export default class List extends Observer {
                 let item = array[i];
                 let index = this.length;
 
-                connect(this, item[source], index);
+                connect(this, item[SymbolObserver], index);
 
                 this[index] = item;
-                this.state.data[index] = item[source].state.data;
+                this.state.data[index] = item[SymbolObserver].state.data;
                 this.length++;
 
                 results.push(item);

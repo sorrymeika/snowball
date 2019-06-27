@@ -6,12 +6,12 @@ import { Observer } from './Observer';
 import { Model } from './Model';
 import { enqueueUpdate } from './methods/enqueueUpdate';
 import { updateRefs } from './methods/updateRefs';
-import { connect, setMapper, disconnect } from './methods/connect';
+import { connect, setMapper, disconnect, connectTogether } from './methods/connect';
 import { isModel, isObservable, isCollection, TYPEOF } from './predicates';
 import { contains } from '../utils/object';
 import { observeProp, unobserveProp } from './methods/observeProp';
 import compute from './operators/compute';
-import { source } from './attributes/symbols';
+import { SymbolObserver } from './attributes/symbols';
 
 const RE_COLL_QUERY = /\[((?:'(?:\\'|[^'])*'|"(?:\\"|[^"])*"|[^\]])+)\](?:\[([+-]?)(\d+)?\])?(?:\.(.*))?/;
 
@@ -28,7 +28,7 @@ function createItem(collection, index, data) {
 }
 
 function connectItem(collection, item, index) {
-    if (item && ((item[source] && (item = item[source])) || isObservable(item))) {
+    if (item && ((item[SymbolObserver] && (item = item[SymbolObserver])) || isObservable(item))) {
         connect(collection, item, index);
         return item;
     } else {
@@ -55,7 +55,13 @@ function collectionDidUpdate(collection) {
             enqueueUpdate(collection);
             updateRefs(collection);
 
-            state.data.withMutations = state.withMutations;
+            Object.defineProperty(state.data, 'withMutations', {
+                enumerable: false,
+                configurable: false,
+                writable: false,
+                value: state.withMutations
+            });
+            connectTogether(state.data, collection);
 
             if (process.env.NODE_ENV === 'development') {
                 Object.freeze(state.data);
@@ -158,12 +164,14 @@ export function withMutations(observer, fn) {
 }
 
 export function initCollection(array, attributeName, parent) {
-    this.state.initialized = false;
-    this.state.data = [];
-    this.state.data.withMutations = this.state.withMutations = (fn) => {
+    const { state } = this;
+    state.initialized = false;
+    state.data = [];
+    state.data.withMutations = state.withMutations = (fn) => {
         fn(this);
         return this.state.data;
     };
+    connectTogether(state.data, this);
 
     if (parent) {
         connect(parent, this, attributeName);
@@ -380,7 +388,7 @@ export class Collection extends Observer {
             this.each(function (model) {
                 var item = array[i];
 
-                if (item && ((item[source] && (item = item[source])) || isObservable(item))) {
+                if (item && ((item[SymbolObserver] && (item = item[SymbolObserver])) || isObservable(item))) {
                     if (item != model) {
                         isChange = true;
                         disconnect(this, model);

@@ -1,3 +1,4 @@
+/* eslint-disable max-statements */
 import { isBoolean, isArray, isPlainObject, isThenable, isString } from '../utils/is';
 import { extend, deepClone } from '../utils/clone';
 import { get } from '../utils/object';
@@ -10,11 +11,11 @@ import { isModel, isCollection, isObservable, TYPEOF } from './predicates';
 import { enqueueUpdate } from './methods/enqueueUpdate';
 import { blindSet } from './methods/blindSet';
 import { updateRefs } from './methods/updateRefs';
-import { connect, disconnect } from './methods/connect';
+import { connect, disconnect, connectTogether } from './methods/connect';
 import observable from './observable';
 import { observeProp, unobserveProp } from './methods/observeProp';
 import compute from './operators/compute';
-import { source } from './attributes/symbols';
+import { SymbolObserver } from './attributes/symbols';
 
 const toString = Object.prototype.toString;
 const RE_QUERY = /(?:^|\.)([_a-zA-Z0-9]+)(\[(?:'(?:\\'|[^'])*'|"(?:\\"|[^"])*"|[^\]])+\](?:\[[+-]?\d*\])?)?/g;
@@ -32,7 +33,7 @@ export class Model extends Observer {
 
     constructor(attributes, key?, parent?) {
         if (process.env.NODE_ENV !== 'production') {
-            if (attributes && (attributes[source] || attributes instanceof Observer)) {
+            if (attributes && (attributes[SymbolObserver] || attributes instanceof Observer)) {
                 throw new Error('attributes can not be Observer!');
             }
         }
@@ -136,7 +137,7 @@ export class Model extends Observer {
      * @param {any} [val] 属性值
      */
     set(renew, key, val) {
-        var model,
+        let model,
             attrs,
             keys,
             renewChild = false,
@@ -206,11 +207,11 @@ export class Model extends Observer {
         for (let attr in attrs) {
             const origin = observableProps[attr] || attributes[attr];
             let value = attrs[attr];
-            if (value && value[source] && value['[[ConnectModel]]'] !== false) {
-                value = value[source];
+            if (value && value[SymbolObserver] && value['[[ConnectModel]]'] !== false) {
+                value = value[SymbolObserver];
             }
 
-            if (origin !== value || (value === undefined && !(attr in attributes))) {
+            if (origin !== value) {
                 if (value == null) {
                     changes.push(attr, value, attributes[attr]);
                     attributes[attr] = observableProps[attr] = value;
@@ -275,6 +276,7 @@ export class Model extends Observer {
         }
 
         if (isChange) {
+            connectTogether(attributes, this);
             enqueueUpdate(this);
             updateRefs(this);
             if (state.hasOnChangeListener) {

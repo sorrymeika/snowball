@@ -1,1 +1,1 @@
-export const source = Symbol('Observer');
+export const SymbolObserver = Symbol('Observer');
