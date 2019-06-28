@@ -1,5 +1,5 @@
 import initializer from "./initializer";
-import { SymbolObserver } from "./symbols";
+import { SymbolObserver } from "../symbols";
 import { isNumber } from "../../utils";
 import { reactTo } from "../Reaction";
 

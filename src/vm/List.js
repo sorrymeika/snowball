@@ -1,7 +1,7 @@
 import { Observer } from "./Observer";
 import { isArray } from '../utils/is';
 import { connect, disconnect } from './methods/connect';
-import { SymbolObserver } from './attributes/symbols';
+import { SymbolObserver } from './symbols';
 import { Collection, withMutations, initCollection } from './Collection';
 
 export class ObserverList extends Collection {

@@ -1,6 +1,6 @@
 import initializer from "./initializer";
 import { isObject } from "../../utils";
-import { SymbolObserver } from "./symbols";
+import { SymbolObserver } from "../symbols";
 import { reactTo } from "../Reaction";
 
 export function object(target, name, descriptor) {

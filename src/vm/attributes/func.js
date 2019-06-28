@@ -1,5 +1,5 @@
 import initializer from "./initializer";
-import { SymbolObserver } from "./symbols";
+import { SymbolObserver } from "../symbols";
 import { reactTo } from "../Reaction";
 
 export function func(target, name, descriptor) {
