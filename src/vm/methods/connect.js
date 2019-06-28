@@ -1,4 +1,4 @@
-import { SymbolObserver } from "../attributes/symbols";
+import { SymbolObserver } from "../symbols";
 
 export function connect(parent, child, name) {
     if (child.state.mapper[parent.state.id] === undefined) {
@@ -34,7 +34,7 @@ export function getMemberName(parent, child) {
     return child.state.mapper[parent.state.id];
 }
 
-export function connectTogether(data, observer) {
+export function addSymbolObserver(data, observer) {
     Object.defineProperty(data, SymbolObserver, {
         enumerable: false,
         configurable: false,

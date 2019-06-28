@@ -4,8 +4,8 @@ import { Collection } from "./Collection";
 import { updateRefs } from "./methods/updateRefs";
 import { enqueueUpdate } from "./methods/enqueueUpdate";
 import { isObservable } from "./predicates";
-import { disconnect, connect } from "./methods/connect";
-import { SymbolObserver } from "./attributes/symbols";
+import { disconnect, connect, addSymbolObserver } from "./methods/connect";
+import { SymbolObserver } from "./symbols";
 
 const hasOwnProperty = Object.prototype.hasOwnProperty;
 const MARK_SWEEP = Symbol('mark and sweep');
@@ -20,6 +20,7 @@ function emitChanges(changes) {
         }
     }
     this.state.changed = true;
+    addSymbolObserver(this.state.data, this);
     Object.freeze(this.state.data);
 }
 

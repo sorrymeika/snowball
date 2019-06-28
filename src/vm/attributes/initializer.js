@@ -1,5 +1,5 @@
 import { Model } from "../Model";
-import { SymbolObserver } from "./symbols";
+import { SymbolObserver } from "../symbols";
 import { isObservable } from "../predicates";
 
 const reactiveProps = Symbol('reactiveProps');

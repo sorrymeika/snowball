@@ -6,12 +6,12 @@ import { Observer } from './Observer';
 import { Model } from './Model';
 import { enqueueUpdate } from './methods/enqueueUpdate';
 import { updateRefs } from './methods/updateRefs';
-import { connect, setMapper, disconnect, connectTogether } from './methods/connect';
+import { connect, setMapper, disconnect, addSymbolObserver } from './methods/connect';
 import { isModel, isObservable, isCollection, TYPEOF } from './predicates';
 import { contains } from '../utils/object';
 import { observeProp, unobserveProp } from './methods/observeProp';
 import compute from './operators/compute';
-import { SymbolObserver } from './attributes/symbols';
+import { SymbolObserver } from './symbols';
 
 const RE_COLL_QUERY = /\[((?:'(?:\\'|[^'])*'|"(?:\\"|[^"])*"|[^\]])+)\](?:\[([+-]?)(\d+)?\])?(?:\.(.*))?/;
 
@@ -61,7 +61,7 @@ function collectionDidUpdate(collection) {
                 writable: false,
                 value: state.withMutations
             });
-            connectTogether(state.data, collection);
+            addSymbolObserver(state.data, collection);
 
             if (process.env.NODE_ENV === 'development') {
                 Object.freeze(state.data);
@@ -171,7 +171,7 @@ export function initCollection(array, attributeName, parent) {
         fn(this);
         return this.state.data;
     };
-    connectTogether(state.data, this);
+    addSymbolObserver(state.data, this);
 
     if (parent) {
         connect(parent, this, attributeName);

@@ -11,11 +11,11 @@ import { isModel, isCollection, isObservable, TYPEOF } from './predicates';
 import { enqueueUpdate } from './methods/enqueueUpdate';
 import { blindSet } from './methods/blindSet';
 import { updateRefs } from './methods/updateRefs';
-import { connect, disconnect, connectTogether } from './methods/connect';
+import { connect, disconnect, addSymbolObserver } from './methods/connect';
 import observable from './observable';
 import { observeProp, unobserveProp } from './methods/observeProp';
 import compute from './operators/compute';
-import { SymbolObserver } from './attributes/symbols';
+import { SymbolObserver } from './symbols';
 
 const toString = Object.prototype.toString;
 const RE_QUERY = /(?:^|\.)([_a-zA-Z0-9]+)(\[(?:'(?:\\'|[^'])*'|"(?:\\"|[^"])*"|[^\]])+\](?:\[[+-]?\d*\])?)?/g;
@@ -276,7 +276,7 @@ export class Model extends Observer {
         }
 
         if (isChange) {
-            connectTogether(attributes, this);
+            addSymbolObserver(attributes, this);
             enqueueUpdate(this);
             updateRefs(this);
             if (state.hasOnChangeListener) {
