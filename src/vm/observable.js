@@ -34,6 +34,15 @@ const observable = (initalValue, execute, descriptor) => {
                 ? [...initalValue[reactiveProps]]
                 : [];
 
+            Object.defineProperty(initalValue, 'asModel', {
+                writable: false,
+                enumerable: false,
+                configurable: false,
+                value: function () {
+                    return this[propertyKey];
+                }
+            });
+
             Object.defineProperty(initalValue, propertyKey, {
                 configurable: true,
                 get() {
