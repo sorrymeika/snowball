@@ -58,11 +58,11 @@ export default function initializer(obj, name, descriptor) {
             enumerable: false,
             configurable: false,
             value: function () {
-                return this[source];
+                return this[SymbolObserver];
             }
         });
 
-        Object.defineProperty(obj, source, {
+        Object.defineProperty(obj, SymbolObserver, {
             configurable: true,
             get() {
                 const proto = this.constructor.prototype;
@@ -97,7 +97,7 @@ export default function initializer(obj, name, descriptor) {
 
                 instanceStore.add(this);
 
-                Object.defineProperty(this, source, {
+                Object.defineProperty(this, SymbolObserver, {
                     get() {
                         return model;
                     }
