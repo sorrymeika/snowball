@@ -21,7 +21,7 @@ export function internal_onControllerCreated(fn) {
 }
 
 function bindMethod(method, instance) {
-    if (typeof method === 'function' && method.prototype) {
+    if (typeof method === 'function') {
         const fn = () => method.apply(instance, arguments);
         fn._cb = method;
         return fn;
