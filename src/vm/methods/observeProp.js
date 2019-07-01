@@ -7,7 +7,8 @@ export function observeProp(observer, name, fn) {
     } else {
         const cb = (e) => fn.call(observer, get(observer.state.data, e.type.replace(/^datachanged:/, '').replace(/[/]/g, '.')));
         cb._cb = fn;
-        return observer.on(castEvents(name), cb);
+        observer.on(castEvents(name), cb);
+        return () => observer.unobserve(name, fn);
     }
 }
 
