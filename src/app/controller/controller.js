@@ -107,7 +107,7 @@ export function controller(route, componentClass, options) {
                                     const old = store[injectorName];
                                     let newProp = target[injectableProps[injectorName]];
                                     if (old !== newProp) {
-                                        if (typeof newProp === 'function' && newProp.prototype) {
+                                        if (typeof newProp === 'function') {
                                             if (old && old._cb === newProp) {
                                                 return;
                                             } else {
