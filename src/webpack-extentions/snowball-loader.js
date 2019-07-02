@@ -1,4 +1,4 @@
-// var loaderUtils = require('loader-utils');
+var loaderUtils = require('loader-utils');
 
 function replaceImport(source, _package, replaceWith) {
     const getPackageName = typeof replaceWith === 'function'
@@ -37,8 +37,8 @@ function replaceImport(source, _package, replaceWith) {
 module.exports = function (source, inputSourceMap) {
     this.cacheable();
 
-    // var options = loaderUtils.getLoaderConfig(this);
-    // console.log(options);
+    var options = loaderUtils.getLoaderConfig(this);
+    console.log(options);
 
     var content = replaceImport(source, "snowball", "window.Snowball");
     content = replaceImport(content, "snowball/app", "window.Snowball._app");
@@ -50,5 +50,13 @@ module.exports = function (source, inputSourceMap) {
     content = replaceImport(content, "snowball/.+", (packageName) => "{};throw new Error('unavaliable import `" + packageName + "`!!')");
     content = replaceImport(content, "react", "window.Snowball._React");
     content = replaceImport(content, "react-dom", "window.Snowball._ReactDOM");
+
+    if (options && options.modules) {
+        Object.keys(options.modules)
+            .forEach((name) => {
+                content = replaceImport(content, name, options.modules[name]);
+            });
+    }
+
     this.callback(null, content, inputSourceMap);
 };

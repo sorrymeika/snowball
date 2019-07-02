@@ -144,6 +144,7 @@ module.exports = function (webpackEnv) {
       // require.resolve('webpack/hot/dev-server'),
       isEnvDevelopment &&
       require.resolve('react-dev-utils/webpackHotDevClient'),
+      require.resolve('./polyfills'),
       // Finally, this is your app's code:
       require.resolve('snowball'),
       paths.appIndexJs,
