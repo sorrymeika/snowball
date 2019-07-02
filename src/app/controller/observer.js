@@ -2,6 +2,7 @@ import { Component } from "react";
 import { Reaction } from "../../vm";
 
 const ReactionProperty = Symbol('ReactionProperty');
+const IsObserverComponent = Symbol('IsObserverComponent');
 
 export function observer(componentClass) {
     if (!componentClass.prototype || !componentClass.prototype.render) {
@@ -14,12 +15,17 @@ export function observer(componentClass) {
     }
 
     const target = componentClass.prototype;
+    if (target[IsObserverComponent]) {
+        return componentClass;
+    }
+    target[IsObserverComponent] = true;
+
     const baseComponentWillUnmount = target.componentWillUnmount;
     const baseRender = target.render;
 
     target.componentWillUnmount = function () {
         this[ReactionProperty] && this[ReactionProperty].destroy();
-        baseComponentWillUnmount && baseComponentWillUnmount();
+        baseComponentWillUnmount && baseComponentWillUnmount.call(this);
     };
 
     target.render = function () {
