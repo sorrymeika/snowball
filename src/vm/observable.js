@@ -1,12 +1,11 @@
-import { Observer, readonlyObserver } from "./Observer";
+import { Observer, Emitter, readonlyObserver } from "./Observer";
 import { isObservable } from "./predicates";
 import { isPlainObject, isFunction, isString } from "../utils";
 import { Model } from "./Model";
 import { Collection } from "./Collection";
 import State from "./State";
-import Emitter from "./Emitter";
 import { reactTo } from "./Reaction";
-import { SymbolObserver } from "./symbols";
+import { SymbolFrom } from "./symbols";
 
 const propertyKey = Symbol('propertyKey');
 const reactiveProps = Symbol('reactiveProps');
@@ -115,7 +114,7 @@ export const observable = (initalValue, execute, descriptor) => {
                 return (prop && prop.state.facade) || model.state.data[execute];
             },
             set(val) {
-                this[propertyKey].set(execute, val);
+                this[propertyKey].set(true, execute, val);
             }
         };
     }
@@ -131,8 +130,8 @@ export const observable = (initalValue, execute, descriptor) => {
         execute(observer, set);
         return observer;
     }
-    if (initalValue && initalValue[SymbolObserver]) {
-        return initalValue[SymbolObserver].compute((data) => data);
+    if (initalValue && initalValue[SymbolFrom]) {
+        return initalValue[SymbolFrom].compute((data) => data);
     }
     if (isObservable(initalValue)) {
         return initalValue.compute((data) => data);

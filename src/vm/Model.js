@@ -11,7 +11,7 @@ import { isModel, isCollection, isObservable, TYPEOF } from './predicates';
 import { enqueueUpdate } from './methods/enqueueUpdate';
 import { blindSet } from './methods/blindSet';
 import { updateRefs } from './methods/updateRefs';
-import { connect, disconnect, addSymbolObserver } from './methods/connect';
+import { connect, disconnect, addSymbolFrom } from './methods/connect';
 import { observable } from './observable';
 import { observeProp, unobserveProp } from './methods/observeProp';
 import compute from './operators/compute';
@@ -276,7 +276,7 @@ export class Model extends Observer {
         }
 
         if (isChange) {
-            addSymbolObserver(attributes, this);
+            addSymbolFrom(attributes, this);
             enqueueUpdate(this);
             updateRefs(this);
             if (state.hasOnChangeListener) {
@@ -362,12 +362,12 @@ export class Model extends Observer {
         return super.unobserve(attribute);
     }
 
-    compute(attribute, cacl) {
+    compute(attribute, calc) {
         if (isString(attribute)) {
             return compute(this.get(attribute), (cb) => {
                 this.observe(attribute, cb);
                 return () => this.unobserve(attribute, cb);
-            }, cacl);
+            }, calc);
         }
         return super.compute(attribute);
     }

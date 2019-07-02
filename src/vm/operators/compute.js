@@ -1,15 +1,16 @@
-import { Observer, readonlyObserver } from "../Observer";
+import { Observer, readonlyObserver, Emitter } from "../Observer";
 
 export default function compute(initalValue, observers, calc) {
     if (typeof observers === 'function' && typeof calc === 'function') {
-        const [result, setObserver] = readonlyObserver(new Observer(calc(initalValue)));
+        const [computed, setObserver] = readonlyObserver(new Emitter(calc(initalValue)));
         const set = function (val) {
             setObserver(calc(val));
         };
         const dispose = observers(set);
-        result.on('destroy', dispose);
-        return result;
+        computed.on('destroy', dispose);
+        return computed;
     }
+
     if (!Array.isArray(observers)) {
         [observers, calc, initalValue] = [initalValue, observers];
     }

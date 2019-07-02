@@ -129,6 +129,7 @@ function flushDirts() {
         const items = dirts;
         const length = dirts.length;
 
+        const lastChanged = changed;
         changed = {};
 
         var i = -1;
@@ -143,7 +144,7 @@ function flushDirts() {
             emitChange(target);
         }
 
-        changed = null;
+        changed = lastChanged;
     }
     flushing = false;
 }
@@ -185,9 +186,10 @@ export function emitUpdate(target) {
             delete initializers[id];
         }
     }
+    const lastChanged = changed;
     changed = {};
     emitChange(target);
-    changed = null;
+    changed = lastChanged;
 }
 
 function newFiber() {

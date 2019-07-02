@@ -2,6 +2,7 @@
 import React, { createElement } from 'react';
 import ReactDOM from 'react-dom';
 import { Model } from '../../vm';
+import { SymbolFrom } from '../../vm/symbols';
 
 export const PageProviderContext = React.createContext();
 
@@ -56,8 +57,13 @@ export default class ReactViewHandler {
     }
 
     setState(data) {
-        this._reactToProps(Object.keys(data));
-        this.model.set(data);
+        const keys = Object.keys(data);
+        this._reactToProps(keys);
+        this.model.set(keys.reduce((newData, key) => {
+            const item = data[key];
+            newData[key] = (item && item[SymbolFrom]) || item;
+            return newData;
+        }, {}));
     }
 
     get location() {

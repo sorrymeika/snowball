@@ -6,7 +6,7 @@ import { Observer } from './Observer';
 import { Model } from './Model';
 import { enqueueUpdate } from './methods/enqueueUpdate';
 import { updateRefs } from './methods/updateRefs';
-import { connect, setMapper, disconnect, addSymbolObserver } from './methods/connect';
+import { connect, setMapper, disconnect, addSymbolFrom } from './methods/connect';
 import { isModel, isObservable, isCollection, TYPEOF } from './predicates';
 import { contains } from '../utils/object';
 import { observeProp, unobserveProp } from './methods/observeProp';
@@ -61,7 +61,7 @@ function collectionDidUpdate(collection) {
                 writable: false,
                 value: state.withMutations
             });
-            addSymbolObserver(state.data, collection);
+            addSymbolFrom(state.data, collection);
 
             if (process.env.NODE_ENV === 'development') {
                 Object.freeze(state.data);
@@ -171,7 +171,7 @@ export function initCollection(array, attributeName, parent) {
         fn(this);
         return this.state.data;
     };
-    addSymbolObserver(state.data, this);
+    addSymbolFrom(state.data, this);
 
     if (parent) {
         connect(parent, this, attributeName);
@@ -321,12 +321,12 @@ export class Collection extends Observer {
         return super.unobserve(attribute, fn);
     }
 
-    compute(attribute, cacl) {
+    compute(attribute, calc) {
         if (isString(attribute) || isNumber(attribute)) {
             return compute(this.get(attribute), (cb) => {
                 this.observe(attribute, cb);
                 return () => this.unobserve(attribute, cb);
-            }, cacl);
+            }, calc);
         }
         return super.compute(attribute);
     }

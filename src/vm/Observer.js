@@ -2,10 +2,9 @@ import { eventMixin } from '../core/event';
 import { get } from '../utils/object';
 import { identify } from '../utils/guid';
 
-import { enqueueUpdate, nextTick, enqueueInit } from './methods/enqueueUpdate';
+import { enqueueUpdate, nextTick, enqueueInit, emitUpdate } from './methods/enqueueUpdate';
 import { updateRefs } from './methods/updateRefs';
 import { connect, disconnect } from './methods/connect';
-
 import compute from './operators/compute';
 import { TYPEOF } from './predicates';
 
@@ -189,3 +188,25 @@ export class ChangeObserver implements IObservable {
 ChangeObserver.prototype.compute = Observer.prototype.compute;
 
 ChangeObserver.prototype[TYPEOF] = 'ChangeObserver';
+
+/**
+ * 立即触发型Observer
+ */
+export class Emitter extends Observer {
+    static isEmitter = (emitter) => {
+        return emitter instanceof Emitter;
+    }
+
+    set(data) {
+        if (this.state.changed = (this.state.data !== data)) {
+            this.state.data = data;
+            updateRefs(this);
+        } else {
+            this.state.version++;
+        }
+        if (this.state.initialized) {
+            emitUpdate(this);
+        }
+        return this;
+    }
+}

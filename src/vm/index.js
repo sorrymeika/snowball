@@ -3,13 +3,12 @@ import * as Operators from './operators';
 
 export { isObserver, isObservable, isModel, isCollection, isList } from './predicates';
 
-export { Observer } from './Observer';
+export { Observer, Emitter } from './Observer';
 export { default as List, ObserverList } from './List';
 export { Collection } from './Collection';
 export { Dictionary, DictionaryList } from './Dictionary';
 export { Model } from './Model';
 export { default as State } from './State';
-export { default as Emitter } from './Emitter';
 export { Reaction, autorun } from './Reaction';
 export { attributes };
 export { observable } from './observable';

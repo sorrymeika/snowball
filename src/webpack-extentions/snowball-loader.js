@@ -37,7 +37,7 @@ function replaceImport(source, _package, replaceWith) {
 module.exports = function (source, inputSourceMap) {
     this.cacheable();
 
-    var options = loaderUtils.getLoaderConfig(this);
+    var options = loaderUtils.getOptions(this);
     console.log(options);
 
     var content = replaceImport(source, "snowball", "window.Snowball");
