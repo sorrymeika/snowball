@@ -12,7 +12,7 @@ import { enqueueUpdate } from './methods/enqueueUpdate';
 import { blindSet } from './methods/blindSet';
 import { updateRefs } from './methods/updateRefs';
 import { connect, disconnect, addSymbolObserver } from './methods/connect';
-import observable from './observable';
+import { observable } from './observable';
 import { observeProp, unobserveProp } from './methods/observeProp';
 import compute from './operators/compute';
 import { SymbolObserver } from './symbols';

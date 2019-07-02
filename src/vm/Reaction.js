@@ -37,6 +37,11 @@ function observe(model, name, id, deepChange) {
 }
 
 const resolvedPromise = Promise.resolve();
+const nextTick = (fn) => {
+    resolvedPromise.then(() => {
+        resolvedPromise.then(fn);
+    });
+};
 
 /**
  * @example
@@ -56,7 +61,7 @@ export class Reaction {
         this.emit = () => {
             if (!emitted) {
                 emitted = true;
-                resolvedPromise.then(() => {
+                nextTick(() => {
                     emitted = false;
                     for (let i = 0; i < funcs.length; i++) {
                         funcs[i]();

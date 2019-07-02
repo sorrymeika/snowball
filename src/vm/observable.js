@@ -6,6 +6,7 @@ import { Collection } from "./Collection";
 import State from "./State";
 import Emitter from "./Emitter";
 import { reactTo } from "./Reaction";
+import { SymbolObserver } from "./symbols";
 
 const propertyKey = Symbol('propertyKey');
 const reactiveProps = Symbol('reactiveProps');
@@ -24,7 +25,7 @@ const initedClasses = new WeakMap();
  *   }
  * })
  */
-const observable = (initalValue, execute, descriptor) => {
+export const observable = (initalValue, execute, descriptor) => {
     // 装饰器模式
     if (isString(execute)) {
         if (!initedClasses.has(initalValue)) {
@@ -129,6 +130,9 @@ const observable = (initalValue, execute, descriptor) => {
         const [observer, set] = readonlyObserver(isObservable(initalValue) ? initalValue : observable(initalValue));
         execute(observer, set);
         return observer;
+    }
+    if (initalValue && initalValue[SymbolObserver]) {
+        return initalValue[SymbolObserver].compute((data) => data);
     }
     if (isObservable(initalValue)) {
         return initalValue.compute((data) => data);

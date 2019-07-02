@@ -12,7 +12,7 @@ export { default as State } from './State';
 export { default as Emitter } from './Emitter';
 export { Reaction, autorun } from './Reaction';
 export { attributes };
-export { default as observable } from './observable';
+export { observable } from './observable';
 export { findChildModel } from './methods/findChildModel';
 export { nextTick } from "./methods/enqueueUpdate";
 
