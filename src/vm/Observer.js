@@ -75,10 +75,12 @@ export class Observer implements IObservable {
     }
 
     compute(cacl) {
-        return compute(this.get(), (cb) => {
+        const computed = compute(this.get(), (cb) => {
             this.observe(cb);
             return () => this.unobserve(cb);
         }, cacl);
+        this.on('destroy', () => computed.destroy());
+        return computed;
     }
 
     contains(observer) {
