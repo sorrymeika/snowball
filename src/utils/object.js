@@ -328,3 +328,12 @@ export function pick(obj, iteratee) {
     }
     return result;
 }
+
+export function excludeProps(obj, props) {
+    const iteratee = typeof props === 'function' ? props : (key) => props.includes(key);
+    return Object.keys(obj).filter((key, i) => !iteratee(key, i))
+        .reduce((newProps, key) => {
+            newProps[key] = obj[key];
+            return newProps;
+        }, {});
+}
