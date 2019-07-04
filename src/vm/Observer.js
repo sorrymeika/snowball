@@ -125,9 +125,18 @@ export class Observer implements IObservable {
     }
 }
 
+eventMixin(Observer);
+
+const on = Observer.prototype.on;
+Observer.prototype.on = function (type, fn) {
+    if (/(^|\s)change(\s|$)/.test(type)) {
+        this.state.hasOnChangeListener = true;
+    }
+    return on.call(this, type, fn);
+};
+
 Observer.prototype[TYPEOF] = 'Observer';
 
-eventMixin(Observer);
 
 export function readonlyObserver(observer) {
     const set = observer.set.bind(observer);

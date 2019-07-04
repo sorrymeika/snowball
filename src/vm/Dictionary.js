@@ -14,7 +14,7 @@ function emitChanges(changes) {
     enqueueUpdate(this);
     updateRefs(this);
 
-    if (this.state.hasOnChangeListener && changes.length) {
+    if (this.state.hasOnAttrChangeListener && changes.length) {
         for (var i = 0, length = changes.length; i < length; i += 3) {
             this.trigger("change:" + changes[i], changes[i + 1], changes[i + 2]);
         }

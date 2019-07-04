@@ -279,7 +279,7 @@ export class Model extends Observer {
             addSymbolFrom(attributes, this);
             enqueueUpdate(this);
             updateRefs(this);
-            if (state.hasOnChangeListener) {
+            if (state.hasOnAttrChangeListener) {
                 for (var i = 0, length = changes.length; i < length; i += 3) {
                     this.trigger("change:" + changes[i], changes[i + 1], changes[i + 2]);
                 }
@@ -330,7 +330,7 @@ export class Model extends Observer {
 
     on(type, fn) {
         if (/(^|\s)change:/.test(type)) {
-            this.state.hasOnChangeListener = true;
+            this.state.hasOnAttrChangeListener = true;
         }
         return super.on(type, fn);
     }

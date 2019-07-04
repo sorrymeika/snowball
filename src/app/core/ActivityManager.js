@@ -306,6 +306,7 @@ export default class ActivityManager implements IActivityManager {
             next = () => {
                 initialCount--;
                 if (initialCount === 0) {
+                    activity.setAnimationTask(null);
                     resolve();
                 } else {
                     if (application.isStarting) {

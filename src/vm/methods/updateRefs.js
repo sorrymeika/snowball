@@ -3,6 +3,10 @@ import { getMemberName } from "./connect";
 
 export function updateRefs(model) {
     model.state.version++;
+    if (model.state.hasOnChangeListener)
+        model.trigger('change');
+
+    // console.log(model);
 
     var parents = model.state.parents;
     if (parents) {

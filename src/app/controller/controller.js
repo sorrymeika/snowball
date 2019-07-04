@@ -22,7 +22,7 @@ export function internal_onControllerCreated(fn) {
 
 function bindMethod(method, instance) {
     if (typeof method === 'function') {
-        const fn = () => method.apply(instance, arguments);
+        const fn = (...args) => method.apply(instance, args);
         fn._cb = method;
         return fn;
     }

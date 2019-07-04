@@ -1,5 +1,5 @@
 
-import React, { createElement } from 'react';
+import React, { Component, createElement } from 'react';
 import ReactDOM from 'react-dom';
 import { Model } from '../../vm';
 import { SymbolFrom } from '../../vm/symbols';
@@ -29,34 +29,34 @@ export default class ReactViewHandler {
             page.postMessage(state);
         };
 
-        this.renderPage = () => {
-            this._reactiveProps = {};
-            return (
-                <PageProviderContext.Provider
-                    value={{
-                        __postMessage: postMessage,
-                        store: this.state
-                    }}
-                >{createElement(viewFactory, this.model.attributes)}</PageProviderContext.Provider>
-            );
-        };
-    }
+        const handler = this;
 
-    async _reactToProps(names) {
-        const { model } = this;
-        names.forEach((name) => {
-            if (!this._definedProps[name]) {
-                this._definedProps[name] = true;
-                Object.defineProperty(this.state, name, {
-                    get() {
-                        return model.state.data[name];
-                    }
-                });
+        class PageProvider extends Component {
+            shouldComponentUpdate() {
+                if (handler.activity.animationTask) {
+                    handler.activity.animationTask.then(() => {
+                        this.forceUpdate();
+                    });
+                    return false;
+                }
+                return true;
             }
-        });
+
+            render() {
+                return (
+                    <PageProviderContext.Provider
+                        value={{
+                            __postMessage: postMessage,
+                            store: handler.state
+                        }}
+                    >{createElement(viewFactory, handler.model.attributes)}</PageProviderContext.Provider>
+                );
+            }
+        }
+        this.renderPage = PageProvider;
     }
 
-    setState(data) {
+    setState(data, cb) {
         const keys = Object.keys(data);
         this._reactToProps(keys);
         this.model.set(keys.reduce((newData, key) => {
@@ -64,6 +64,24 @@ export default class ReactViewHandler {
             newData[key] = (item && item[SymbolFrom]) || item;
             return newData;
         }, {}));
+
+        if (this.componentInstance) {
+            this.syncComponentState(cb);
+        } else if (cb) {
+            this.ready(cb);
+        }
+    }
+
+    syncComponentState(cb) {
+        const data = this.model.attributes;
+        if (data !== this.lastData) {
+            this.lastData = data;
+            this.componentInstance.setState({
+                data
+            }, cb);
+        } else {
+            cb && cb();
+        }
     }
 
     get location() {
@@ -96,10 +114,6 @@ export default class ReactViewHandler {
                 this.mapStoreToProps = null;
             }
 
-            let initalData = model.state.data;
-            let renderId = 0;
-            let waiting = false;
-
             this.render(() => {
                 this.isReady = true;
                 this.readyActions.forEach((fn) => {
@@ -109,27 +123,9 @@ export default class ReactViewHandler {
                 cb && cb();
             });
 
-            // 监听model变化，model变化后render页面
-            model.observe(() => {
-                if (initalData === model.state.data) {
-                    initalData = null;
-                    return;
-                }
-
-                renderId++;
-                let currentId = renderId;
-
-                // 等待动画结束再render，避免动画卡顿
-                this.activity.waitAnimation(() => {
-                    if (waiting) return;
-                    waiting = true;
-                    setTimeout(() => {
-                        waiting = false;
-                        // 避免同一个事件循环里多次渲染
-                        if (renderId === currentId) {
-                            this.render();
-                        }
-                    });
+            this.ready(() => {
+                this.model.on('change', () => {
+                    this.syncComponentState();
                 });
             });
         }
@@ -139,8 +135,7 @@ export default class ReactViewHandler {
         if (!this.isSetup) {
             this.setup(attributes, cb);
         } else {
-            this.model.set(attributes);
-            cb && this.model.nextTick(cb);
+            this.setState(attributes, cb);
         }
     }
 
@@ -164,7 +159,9 @@ export default class ReactViewHandler {
             console.time(timer);
         }
 
-        ReactDOM.render(createElement(this.renderPage), this.el, () => {
+        console.log('start render');
+
+        this.componentInstance = ReactDOM.render(createElement(this.renderPage), this.el, () => {
             callback && callback();
             if (process.env.NODE_ENV !== 'test') {
                 console.timeEnd(timer);
@@ -174,10 +171,26 @@ export default class ReactViewHandler {
                 }
             }
         });
+
+        console.log('start render', this.componentInstance);
     }
 
     destroy() {
         ReactDOM.unmountComponentAtNode(this.el);
         this.model.destroy();
+    }
+
+    async _reactToProps(names) {
+        const { model } = this;
+        names.forEach((name) => {
+            if (!this._definedProps[name]) {
+                this._definedProps[name] = true;
+                Object.defineProperty(this.state, name, {
+                    get() {
+                        return model.state.data[name];
+                    }
+                });
+            }
+        });
     }
 }
