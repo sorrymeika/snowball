@@ -17,12 +17,11 @@ function put(model, name) {
     if (!oldDispose) {
         observe.call(this, model, name, id, deepChange, value);
         this._disposerKeys.push(id);
-    } else if (oldDispose.deepChange != deepChange) {
+    } else if (oldDispose.deepChange != deepChange || (deepChange && oldDispose.deepChange && oldDispose.emit.childModel != value)) {
+        oldDispose.disposeValueChange();
         if (deepChange) {
             oldDispose.emit.childModel = value;
             value.on('change', oldDispose.emit);
-        } else {
-            oldDispose.disposeValueChange();
         }
     }
 
@@ -31,6 +30,7 @@ function put(model, name) {
 
 function observe(model, name, id, deepChange, value) {
     const emit = () => {
+        console.log('on change', name, value && value.state.data);
         this.emit();
     };
 

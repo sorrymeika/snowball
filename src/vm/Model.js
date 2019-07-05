@@ -277,6 +277,9 @@ export class Model extends Observer {
 
         if (isChange) {
             addSymbolFrom(attributes, this);
+            if (process.env.NODE_ENV === 'development') {
+                Object.freeze(attributes);
+            }
             enqueueUpdate(this);
             updateRefs(this);
             if (state.hasOnAttrChangeListener) {
@@ -289,10 +292,6 @@ export class Model extends Observer {
         }
         state.setting = false;
         state.changed = isChange;
-
-        if (process.env.NODE_ENV === 'development') {
-            Object.freeze(state.data);
-        }
 
         return this;
     }

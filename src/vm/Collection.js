@@ -52,9 +52,6 @@ function collectionDidUpdate(collection) {
     const { state } = collection;
     if (state.setting && --state.setting == 0) {
         if (state.changed) {
-            enqueueUpdate(collection);
-            updateRefs(collection);
-
             Object.defineProperty(state.data, 'withMutations', {
                 enumerable: false,
                 configurable: false,
@@ -66,6 +63,9 @@ function collectionDidUpdate(collection) {
             if (process.env.NODE_ENV === 'development') {
                 Object.freeze(state.data);
             }
+            enqueueUpdate(collection);
+            updateRefs(collection);
+
         } else if (state.backup) {
             state.data = state.backup;
         }
