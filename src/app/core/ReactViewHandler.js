@@ -171,8 +171,6 @@ export default class ReactViewHandler {
                 }
             }
         });
-
-        console.log('start render', this.componentInstance);
     }
 
     destroy() {

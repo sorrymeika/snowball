@@ -30,7 +30,6 @@ function put(model, name) {
 
 function observe(model, name, id, deepChange, value) {
     const emit = () => {
-        console.log('on change', name, value && value.state.data);
         this.emit();
     };
 
