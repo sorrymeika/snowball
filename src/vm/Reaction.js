@@ -1,47 +1,61 @@
-import { isModel } from "./predicates";
+import { isModel, isObservable } from "./predicates";
 
 let currentReaction;
 
-export function reactTo(model, name, deepChange?) {
+export function reactTo(model, name) {
     if (currentReaction) {
-        put.call(currentReaction, model, name, deepChange);
+        put.call(currentReaction, model, name);
     }
 }
 
-function put(model, name, deepChange) {
+function put(model, name) {
     const id = model.state.id + ':' + name;
     const value = model.state.observableProps[name];
-    deepChange = deepChange || (value && !isModel(value));
+    const oldDispose = this._disposers[id];
+    const deepChange = value && isObservable(value) && !isModel(value);
 
-    let dispose = this._disposers[id];
-    if (!dispose) {
-        observe.call(this, model, name, id, deepChange);
+    if (!oldDispose) {
+        observe.call(this, model, name, id, deepChange, value);
         this._disposerKeys.push(id);
-    } else if (dispose.deepChange != deepChange) {
-        dispose();
-        observe.call(this, model, name, id, deepChange);
+    } else if (oldDispose.deepChange != deepChange) {
+        if (deepChange) {
+            oldDispose.emit.childModel = value;
+            value.on('change', oldDispose.emit);
+        } else {
+            oldDispose.disposeValueChange();
+        }
     }
 
-    this._disposers[id].deepChange = deepChange;
     this._marks[id] = true;
 }
 
-function observe(model, name, id, deepChange) {
+function observe(model, name, id, deepChange, value) {
+    const emit = () => {
+        this.emit();
+    };
+
+    const dispose = () => {
+        model.off('change:' + name, emit);
+        emit.childModel && emit.childModel.off('change', emit);
+    };
+
     if (deepChange) {
-        this._disposers[id] = () => model.unobserve(name, this.emit);
-        model.observe(name, this.emit);
+        emit.childModel = value;
+        value.on('change', emit);
     } else {
-        this._disposers[id] = () => model.off('change:' + name, this.emit);
-        model.on('change:' + name, this.emit);
+        emit.childModel = null;
     }
+    dispose.disposeValueChange = () => {
+        emit.childModel && emit.childModel.off('change', emit);
+    };
+    dispose.emit = emit;
+    dispose.deepChange = deepChange;
+
+    this._disposers[id] = dispose;
+    model.on('change:' + name, emit);
 }
 
-const resolvedPromise = Promise.resolve();
-const nextTick = (fn) => {
-    resolvedPromise.then(() => {
-        resolvedPromise.then(fn);
-    });
-};
+const nextTick = Promise.prototype.then.bind(Promise.resolve());
 
 /**
  * @example
@@ -55,20 +69,28 @@ const nextTick = (fn) => {
  * reaction.destroy();
  */
 export class Reaction {
-    constructor(func) {
+    constructor(func, immediate) {
         const funcs = [func];
-        let emitted = false;
-        this.emit = () => {
-            if (!emitted) {
-                emitted = true;
-                nextTick(() => {
-                    emitted = false;
-                    for (let i = 0; i < funcs.length; i++) {
-                        funcs[i]();
-                    }
-                });
-            }
-        };
+        if (immediate) {
+            this.emit = () => {
+                for (let i = 0; i < funcs.length; i++) {
+                    funcs[i]();
+                }
+            };
+        } else {
+            let emitted = false;
+            this.emit = () => {
+                if (!emitted) {
+                    emitted = true;
+                    nextTick(() => {
+                        emitted = false;
+                        for (let i = 0; i < funcs.length; i++) {
+                            funcs[i]();
+                        }
+                    });
+                }
+            };
+        }
         this._disposers = {};
         this._disposerKeys = [];
         this._funcs = funcs;

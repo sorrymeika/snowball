@@ -36,7 +36,7 @@ export function observer(componentClass) {
                 isRenderingPending = true;
                 Component.prototype.forceUpdate.call(this);
             }
-        });
+        }, true);
 
         function reactiveRender() {
             isRenderingPending = false;
