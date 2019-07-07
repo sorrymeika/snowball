@@ -6,7 +6,7 @@ import { Observer } from './Observer';
 import { Model } from './Model';
 import { enqueueUpdate } from './methods/enqueueUpdate';
 import { updateRefs } from './methods/updateRefs';
-import { connect, setMapper, disconnect, addSymbolFrom } from './methods/connect';
+import { connect, setMapper, disconnect, freezeObject } from './methods/connect';
 import { isModel, isObservable, isCollection, TYPEOF } from './predicates';
 import { contains } from '../utils/object';
 import { observeProp, unobserveProp } from './methods/observeProp';
@@ -52,20 +52,9 @@ function collectionDidUpdate(collection) {
     const { state } = collection;
     if (state.setting && --state.setting == 0) {
         if (state.changed) {
-            Object.defineProperty(state.data, 'withMutations', {
-                enumerable: false,
-                configurable: false,
-                writable: false,
-                value: state.withMutations
-            });
-            addSymbolFrom(state.data, collection);
-
-            if (process.env.NODE_ENV === 'development') {
-                Object.freeze(state.data);
-            }
+            freezeObject(state.data, collection);
             enqueueUpdate(collection);
             updateRefs(collection);
-
         } else if (state.backup) {
             state.data = state.backup;
         }
@@ -167,17 +156,13 @@ export function initCollection(array, attributeName, parent) {
     const { state } = this;
     state.initialized = false;
     state.data = [];
-    state.data.withMutations = state.withMutations = (fn) => {
-        fn(this);
-        return this.state.data;
-    };
-    addSymbolFrom(state.data, this);
 
     if (parent) {
         connect(parent, this, attributeName);
     }
 
     if (array && array.length) this.add(array);
+    else freezeObject(state.data, this);
     this.state.initialized = true;
 }
 
@@ -755,10 +740,7 @@ export class Collection extends Observer {
 
         this.state.inEach = false;
         if (this.state.arrayIsNew) {
-            this.state.data.withMutations = this.state.withMutations;
-            if (process.env.NODE_ENV === 'development') {
-                Object.freeze(this.state.data);
-            }
+            freezeObject(this.state.data, this);
             this.state.arrayIsNew = false;
         }
 

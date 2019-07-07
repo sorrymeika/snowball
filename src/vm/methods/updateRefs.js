@@ -1,5 +1,5 @@
 import { isCollection, isList } from "../predicates";
-import { getMemberName } from "./connect";
+import { getMemberName, freezeObject } from "./connect";
 
 export function updateRefs(model) {
     model.state.version++;
@@ -19,21 +19,31 @@ export function updateRefs(model) {
 }
 
 function bubbleUpdate(parent, model, key, value) {
-    const { state } = parent;
-    if (state[key] !== value) {
-        if (!state.setting) {
+    const { state: parentState } = parent;
+    if (parentState[key] !== value) {
+        if (!parentState.setting) {
             if (isCollection(parent) || isList(parent)) {
-                if (!state.inEach || (!state.arrayIsNew && (state.arrayIsNew = true))) {
-                    state.data = [...state.data];
+                if (!parentState.inEach || (!parentState.arrayIsNew && (parentState.arrayIsNew = true))) {
+                    parentState.data = [...parentState.data];
+                    parentState.data[key] = value;
+                    if (!parentState.inEach) {
+                        freezeObject(parentState.data, parent);
+                    }
                     updateRefs(parent);
+                    return;
                 }
             } else {
-                if (!state.setting) {
-                    state.data = { ...state.data };
+                if (!parentState.setting) {
+                    parentState.data = {
+                        ...parentState.data,
+                        [key]: value
+                    };
+                    freezeObject(parentState.data, parent);
                     updateRefs(parent);
+                    return;
                 }
             }
         }
-        state.data[key] = value;
+        parentState.data[key] = value;
     }
 }

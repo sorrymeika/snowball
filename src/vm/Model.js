@@ -11,7 +11,7 @@ import { isModel, isCollection, isObservable, TYPEOF } from './predicates';
 import { enqueueUpdate } from './methods/enqueueUpdate';
 import { blindSet } from './methods/blindSet';
 import { updateRefs } from './methods/updateRefs';
-import { connect, disconnect, addSymbolFrom } from './methods/connect';
+import { connect, disconnect, freezeObject } from './methods/connect';
 import { observable } from './observable';
 import { observeProp, unobserveProp } from './methods/observeProp';
 import compute from './operators/compute';
@@ -276,10 +276,7 @@ export class Model extends Observer {
         }
 
         if (isChange) {
-            addSymbolFrom(attributes, this);
-            if (process.env.NODE_ENV === 'development') {
-                Object.freeze(attributes);
-            }
+            freezeObject(attributes, this);
             enqueueUpdate(this);
             updateRefs(this);
             if (state.hasOnAttrChangeListener) {

@@ -4,13 +4,14 @@ import { Collection } from "./Collection";
 import { updateRefs } from "./methods/updateRefs";
 import { enqueueUpdate } from "./methods/enqueueUpdate";
 import { isObservable } from "./predicates";
-import { disconnect, connect, addSymbolFrom } from "./methods/connect";
+import { disconnect, connect, freezeObject } from "./methods/connect";
 import { SymbolObserver } from "./symbols";
 
 const hasOwnProperty = Object.prototype.hasOwnProperty;
 const MARK_SWEEP = Symbol('mark and sweep');
 
 function emitChanges(changes) {
+    freezeObject(this.state.data, this);
     enqueueUpdate(this);
     updateRefs(this);
 
@@ -20,8 +21,6 @@ function emitChanges(changes) {
         }
     }
     this.state.changed = true;
-    addSymbolFrom(this.state.data, this);
-    Object.freeze(this.state.data);
 }
 
 function addChange(attributes, key, value, originValue, changes) {
@@ -52,6 +51,8 @@ export class Dictionary extends Observer {
         this.state.initialized = false;
         if (data) {
             this.set(data);
+        } else {
+            freezeObject(this.state.data, this);
         }
         this.state.initialized = true;
     }

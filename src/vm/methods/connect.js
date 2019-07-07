@@ -34,11 +34,25 @@ export function getMemberName(parent, child) {
     return child.state.mapper[parent.state.id];
 }
 
-export function addSymbolFrom(data, observer) {
+export function freezeObject(data, observer) {
     Object.defineProperty(data, SymbolFrom, {
         enumerable: false,
         configurable: false,
         writable: false,
         value: observer
     });
+
+    Object.defineProperty(data, 'withMutations', {
+        enumerable: false,
+        configurable: false,
+        writable: false,
+        value(fn) {
+            fn(observer);
+            return observer.state.data;
+        }
+    });
+
+    if (process.env.NODE_ENV === 'development') {
+        Object.freeze(data);
+    }
 }
