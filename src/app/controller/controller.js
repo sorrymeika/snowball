@@ -99,27 +99,27 @@ export function controller(route, componentClass, options) {
                 };
 
                 if (injectableProps) {
+                    const injectablePropKeys = Object.keys(injectableProps);
                     const reaction = new Reaction(() => {
                         reaction.track(() => {
                             const newState = {};
-                            Object.keys(injectableProps)
-                                .forEach((injectorName) => {
-                                    const old = store[injectorName];
-                                    let newProp = target[injectableProps[injectorName]];
-                                    if (old !== newProp) {
-                                        if (typeof newProp === 'function') {
-                                            if (old && old._cb === newProp) {
-                                                return;
-                                            } else {
-                                                newProp = bindMethod(newProp, target);
-                                            }
+                            injectablePropKeys.forEach((injectorName) => {
+                                const old = store[injectorName];
+                                let newProp = target[injectableProps[injectorName]];
+                                if (old !== newProp) {
+                                    if (typeof newProp === 'function') {
+                                        if (old && old._cb === newProp) {
+                                            return;
+                                        } else {
+                                            newProp = bindMethod(newProp, target);
                                         }
-                                        newState[injectorName] = store[injectorName] = newProp;
                                     }
-                                });
+                                    newState[injectorName] = store[injectorName] = newProp;
+                                }
+                            });
                             setState(newState);
                         });
-                    })
+                    }, true)
                         .track(() => {
                             Object.keys(injectableProps)
                                 .forEach((injectorName) => {
