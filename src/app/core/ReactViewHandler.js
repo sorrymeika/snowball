@@ -66,13 +66,13 @@ export default class ReactViewHandler {
         }, {}));
 
         if (this.componentInstance) {
-            this.syncComponentState(cb);
+            this.syncStateToView(cb);
         } else if (cb) {
             this.ready(cb);
         }
     }
 
-    syncComponentState(cb) {
+    syncStateToView(cb) {
         const data = this.model.attributes;
         if (data !== this.lastData) {
             this.lastData = data;
@@ -125,7 +125,7 @@ export default class ReactViewHandler {
 
             this.ready(() => {
                 this.model.on('change', () => {
-                    this.syncComponentState();
+                    this.syncStateToView();
                 });
             });
         }
