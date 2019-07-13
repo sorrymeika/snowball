@@ -138,15 +138,22 @@ function replaceActivityWithAnimation(activityManager, prevActivity, activity, i
 *
 * @param {Route} 页面路由
 */
-async function createActivity(route, location, application) {
+function createActivity(route, location, application) {
     let viewFactory = route.viewFactory;
 
     if (isThenable(viewFactory)) {
         loader.showLoader();
-        route.viewFactory = viewFactory = await viewFactory;
-        loader.hideLoader();
+        return viewFactory.then((res) => {
+            route.viewFactory = res;
+            loader.hideLoader();
+            return createActivityFromModule(res, application);
+        });
     }
 
+    return createActivityFromModule(viewFactory, application);
+}
+
+function createActivityFromModule(viewFactory, application) {
     viewFactory = viewFactory.default || viewFactory;
 
     return viewFactory[ACTIVITY_CREATOR]
@@ -263,7 +270,7 @@ export default class ActivityManager implements IActivityManager {
     }
 
     findLatest(path) {
-        for (var i = this.activitiesCache.length - 1; i >= 0; i--) {
+        for (let i = this.activitiesCache.length - 1; i >= 0; i--) {
             if (this.activitiesCache[i].location.path === path) {
                 return this.activitiesCache[i];
             }
@@ -271,14 +278,18 @@ export default class ActivityManager implements IActivityManager {
         return null;
     }
 
-    async getOrCreate(route, location, forceCreate: boolean): Activity {
-        var activity;
-
+    getOrCreate(route, location, forceCreate: boolean): Activity {
+        let activity;
         if (forceCreate || !(activity = this.findLatest(location.path))) {
-            activity = await createActivity(route, location, this.application);
+            activity = createActivity(route, location, this.application);
+            if (isThenable(activity)) {
+                return activity.then((realActivity) => {
+                    this.activitiesCache.push(realActivity);
+                    return realActivity;
+                });
+            }
             this.activitiesCache.push(activity);
         }
-
         return activity;
     }
 

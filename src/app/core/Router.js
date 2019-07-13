@@ -60,7 +60,7 @@ class Project {
     }
 
     async loadResources() {
-        var projectUrl = this.url;
+        const projectUrl = this.url;
 
         loader.showLoader();
 
@@ -72,12 +72,15 @@ class Project {
         this.promise = null;
     }
 
-    async load(path) {
+    load() {
+        if (this.state !== 1) {
+            return (this.promise || (this.promise = this.loadResources()));
+        }
+    }
+
+    match(path) {
         if (this.path.test(path)) {
-            if (this.state === 1) {
-                return true;
-            }
-            return await (this.promise || (this.promise = this.loadResources()));
+            return true;
         }
         return false;
     }
@@ -104,24 +107,31 @@ export default class Router implements IRouter {
         });
     }
 
-    async loadProject(path) {
-        for (var i = 0; i < this.projects.length; i++) {
-            var project = this.projects[i];
-            if (await project.load(path)) {
-                return;
+    loadProject(path) {
+        for (let i = 0; i < this.projects.length; i++) {
+            let project = this.projects[i];
+            if (project.match(path)) {
+                return project.load(path);
             }
         }
     }
 
-    async match(url) {
+    match(url) {
+        const searchMatch = /\?|!|&/.exec(url);
+        const searchIndex = searchMatch ? searchMatch.index : -1;
+        const path = (searchIndex === -1 ? url : url.substr(0, searchIndex)).replace(/^#/, '') || '/';
+        const search = searchIndex === -1 ? '' : ('?' + url.substr(searchIndex + 1));
+
+        const projectLoader = this.loadProject(path);
+        if (projectLoader) {
+            return projectLoader.then(() => this._match(path, search));
+        } else {
+            return this._match(path, search);
+        }
+    }
+
+    _match(path, search) {
         const routes = this.routes;
-        var searchMatch = /\?|!|&/.exec(url);
-        var searchIndex = searchMatch ? searchMatch.index : -1;
-        var path = (searchIndex === -1 ? url : url.substr(0, searchIndex)).replace(/^#/, '') || '/';
-        var search = searchIndex === -1 ? '' : ('?' + url.substr(searchIndex + 1));
-
-        await this.loadProject(path);
-
         for (let i = 0, len = routes.length; i < len; i++) {
             const location = routes[i].match(path, search);
             if (location) {

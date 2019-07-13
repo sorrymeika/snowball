@@ -1,5 +1,5 @@
 
-import { store } from '../../utils';
+import { store, isThenable } from '../../utils';
 import { popup } from '../../widget';
 
 import { IApplication, IRouter, IActivityManager } from '../types';
@@ -109,7 +109,10 @@ export default class Application implements IApplication {
      * 匹配路由并跳转至关联页面
      */
     async _navigate(url, options = {}, props?) {
-        const routeMatch = await this.router.match(url);
+        let routeMatch = this.router.match(url);
+        if (isThenable(routeMatch)) {
+            routeMatch = await routeMatch;
+        }
         if (!routeMatch) return false;
 
         const { route, location } = routeMatch;
@@ -133,7 +136,10 @@ export default class Application implements IApplication {
         let { isForward } = options;
 
         const activityManager = this.activityManager;
-        const newActivity = await activityManager.getOrCreate(route, location, isForward);
+        let newActivity = activityManager.getOrCreate(route, location, isForward);
+        if (isThenable(newActivity)) {
+            newActivity = await newActivity;
+        }
         if (!newActivity) {
             onNavigateFailure && onNavigateFailure();
             return false;
