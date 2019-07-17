@@ -1,7 +1,10 @@
 {
   "name": "snowball",
   "version": "0.1.0",
-  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sorrymeika/snowball.git"
+  },
   "devDependencies": {
     "@babel/core": "7.4.5",
     "@babel/plugin-proposal-decorators": "^7.4.4",
@@ -57,11 +60,11 @@
     "webpack": "4.29.6",
     "webpack-dev-server": "3.2.1",
     "webpack-manifest-plugin": "2.0.4",
-    "workbox-webpack-plugin": "4.2.0"
-  },
-  "dependencies": {
+    "workbox-webpack-plugin": "4.2.0",
     "canvas": "^2.5.0",
     "node-sass": "^4.12.0"
+  },
+  "dependencies": {
   },
   "scripts": {
     "start": "node scripts/start.js",
