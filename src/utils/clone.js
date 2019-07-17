@@ -5,7 +5,13 @@ var slice = Array.prototype.slice;
 
 function _extend(target, source, deep) {
     var isObj, isArr;
-    for (var key in source)
+    for (var key in source) {
+        if (key === 'constructor' && typeof source[key] === 'function') {
+            continue;
+        }
+        if (key === '__proto__') {
+            continue;
+        }
         if (deep && (((isObj = isObject(source[key])) && !(isArr = false)) || (isArr = isArray(source[key])))) {
             if (isObj && !isObject(target[key]))
                 target[key] = {};
@@ -14,6 +20,7 @@ function _extend(target, source, deep) {
             _extend(target[key], source[key], deep);
         }
         else if (source[key] !== undefined) target[key] = source[key];
+    }
     return target;
 }
 
