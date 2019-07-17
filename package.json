@@ -5,6 +5,13 @@
     "type": "git",
     "url": "https://github.com/sorrymeika/snowball.git"
   },
+  "keywords": [
+    "mvc",
+    "mvvm",
+    "immutable",
+    "template",
+    "snowball"
+  ],
   "devDependencies": {
     "@babel/core": "7.4.5",
     "@babel/plugin-proposal-decorators": "^7.4.4",
