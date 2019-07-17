@@ -1,6 +1,7 @@
 {
   "name": "snowball",
   "version": "0.1.0",
+  "main": "./src/index",
   "repository": {
     "type": "git",
     "url": "https://github.com/sorrymeika/snowball.git"
