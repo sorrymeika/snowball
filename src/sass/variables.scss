@@ -24,6 +24,8 @@ $blue: #3d96ff;
 
 @mixin rotate($deg) { -webkit-transform: rotate($deg); transform: rotate($deg); }
 
+%ff_def { font-family: 'PingFang SC', 'Helvetica Neue', 'Helvetica', 'STHeitiSC-Light', 'Arial', sans-serif;  }
+
 %dock { position: absolute; bottom: 0; left: 0; right: 0; top: 0; }
 %dock_t { position: absolute; top: 0; }
 %dock_b { position: absolute; bottom: 0; }

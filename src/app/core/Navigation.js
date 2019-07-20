@@ -5,7 +5,7 @@
 
 import * as env from '../../env';
 import { IApplication, INavigation } from '../types';
-import { $, appendQueryString, session } from '../../utils';
+import { $, appendQueryString, session, isPlainObject } from '../../utils';
 
 const NavigateType = {
     Forward: 1,
@@ -106,7 +106,13 @@ export default class Navigation implements INavigation {
      */
     back(url, props?, withAnimation = true) {
         const { application } = this;
-        var backUrl = url || (application.currentActivity._prev && application.currentActivity._prev.location.url);
+        if (isPlainObject(url)) {
+            withAnimation = props !== false;
+            props = url;
+            url = null;
+        }
+
+        const backUrl = url || (application.currentActivity._prev && application.currentActivity._prev.location.url);
         if (backUrl) {
             this.transitionTo(backUrl, NavigateType.Back, props, withAnimation);
         } else {
