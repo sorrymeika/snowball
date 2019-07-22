@@ -79,7 +79,7 @@ export default class Application implements IApplication {
         return this;
     }
 
-    then(fn) {
+    onIdle(fn) {
         return this.navigationTask
             ? (this.navigationTask = this.navigationTask.then(fn))
             : fn();

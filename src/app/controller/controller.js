@@ -4,7 +4,6 @@ import Activity from "../core/Activity";
 import { ACTIVITY_CREATOR } from "../core/ActivityManager";
 import { IS_CONTROLLER, INJECTABLE_PROPS } from "./symbols";
 import { internal_subscribeAllMessagesOnInit } from "./onMessage";
-import { getDisposableProps } from "./disposable";
 import { Reaction } from "../../vm";
 
 let isCreating = false;
@@ -18,6 +17,25 @@ export function internal_onControllerCreated(fn) {
         throw new Error('只能在controller创建时调用!');
     }
     controllerCreationHandlers.push(fn);
+}
+
+function createController(ControllerClass, props, ctx, onCreate) {
+    if (isCreating) {
+        throw new Error('不能同时初始化化两个controller');
+    }
+    isCreating = true;
+    controllerCreationHandlers = [];
+
+    const target = new ControllerClass(props, ctx);
+    target._ctx = ctx;
+
+    onCreate(target);
+
+    controllerCreationHandlers.forEach((fn) => fn(target, ctx));
+    controllerCreationHandlers = null;
+    isCreating = false;
+
+    return target;
 }
 
 function bindMethod(method, instance) {
@@ -50,47 +68,33 @@ export function controller(route, componentClass, options) {
     }
 
     return function (Target) {
-        Object.defineProperty(Target.prototype, 'context', {
+        Object.defineProperty(Target.prototype, 'ctx', {
             get() {
-                return this.__context;
+                return this._ctx;
             }
         });
         Target.prototype[IS_CONTROLLER] = true;
         Target.prototype['[[ConnectModel]]'] = false;
 
         const createActivity = (location, application) => new Activity(componentClass, location, application, (props, page) => {
-            if (isCreating) {
-                throw new Error('不能同时初始化化两个controller');
-            }
-            isCreating = true;
-            controllerCreationHandlers = [];
+            const { ctx } = page;
 
-            const target = new Target(props, page);
-            const lifecycle = {};
+            const target = createController(Target, props, ctx, (target) => {
+                const lifecycle = {};
 
-            target.__context = page;
-            target.onInit && (lifecycle.onInit = target.onInit.bind(target));
-            target.onQsChange && (lifecycle.onQsChange = target.onQsChange.bind(target));
-            target.onShow && (lifecycle.onShow = target.onShow.bind(target));
-            target.onCreate && (lifecycle.onCreate = target.onCreate.bind(target));
-            target.onResume && (lifecycle.onResume = target.onResume.bind(target));
-            target.onPause && (lifecycle.onPause = target.onPause.bind(target));
-            target.onDestroy && (lifecycle.onDestroy = target.onDestroy.bind(target));
-            target.shouldRender && (lifecycle.shouldRender = target.shouldRender.bind(target));
+                target.onInit && (lifecycle.onInit = target.onInit.bind(target));
+                target.onQsChange && (lifecycle.onQsChange = target.onQsChange.bind(target));
+                target.onShow && (lifecycle.onShow = target.onShow.bind(target));
+                target.onCreate && (lifecycle.onCreate = target.onCreate.bind(target));
+                target.onResume && (lifecycle.onResume = target.onResume.bind(target));
+                target.onPause && (lifecycle.onPause = target.onPause.bind(target));
+                target.onDestroy && (lifecycle.onDestroy = target.onDestroy.bind(target));
+                target.shouldRender && (lifecycle.shouldRender = target.shouldRender.bind(target));
 
-            page.setLifecycleDelegate(lifecycle);
-
-            controllerCreationHandlers.forEach((fn) => fn(target, page));
-            controllerCreationHandlers = null;
-            isCreating = false;
+                page.setLifecycleDelegate(lifecycle);
+            });
 
             internal_subscribeAllMessagesOnInit(target);
-
-            page.on('destroy', () => {
-                getDisposableProps(target).forEach((name) => {
-                    target[name] && target[name].destroy();
-                });
-            });
 
             return (setState) => {
                 const injectableProps = target[INJECTABLE_PROPS];

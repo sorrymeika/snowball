@@ -13,7 +13,7 @@ export function provide(mapPropsToStore) {
                 super(props, context);
 
                 const stores = mapPropsToStore(props);
-                var model = new Model(stores);
+                const model = new Model(stores);
                 model.observe(() => {
                     if (this.state.attributes !== model.attributes) {
                         Object.assign(this.store, this.model.attributes);
@@ -40,7 +40,7 @@ export function provide(mapPropsToStore) {
                 return (
                     <PageProviderContext.Provider
                         value={{
-                            ...this.context,
+                            ...context,
                             store: this.store
                         }}
                     >{factory({ ...this.state.attributes, ...this.props })}</PageProviderContext.Provider>

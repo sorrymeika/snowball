@@ -107,6 +107,16 @@ function replaceActivityWithAnimation(activityManager, prevActivity, activity, i
                 disposeUselessActivities(activityManager, prevActivity, activity);
             } else {
                 prevActivity.pause();
+
+                let prev = prevActivity._prev;
+                let count = 1;
+                while (prev) {
+                    if (count >= 10) {
+                        disposeActivity(activityManager, prev);
+                    }
+                    prev = prev._prev;
+                    count++;
+                }
             }
             resolve();
         });
@@ -232,7 +242,7 @@ export default class ActivityManager implements IActivityManager {
                             touch.triggerGestureEnd = null;
                         };
                     });
-                    application.then(() => gestureEnd);
+                    application.onIdle(() => gestureEnd);
                 } else {
                     touch.swiper = null;
                 }

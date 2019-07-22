@@ -27,20 +27,20 @@ function beforeAppStart() {
  * @param {Array} props 应用参数
  * @param {Object} props.projects 子项目映射
  * @param {Object} props.routes 路由映射
- * @param {Object} props.stores 全局stores
+ * @param {Object} props.ctx 上下文配置
  * @param {Element} rootElement 页面根元素
  */
 export function createApplication({
     projects,
     routes,
-    stores,
+    extend,
     options,
     autoStart = true
 }, rootElement, callback?) {
     if (application) throw new Error('application has already created!');
 
     application = new Application(
-        (application) => new Navigation(application),
+        (application) => new Navigation(application, options),
         (application) => new ActivityManager(application, options),
         new Router(projects, routes),
         rootElement,
@@ -51,6 +51,11 @@ export function createApplication({
         navigate: application.navigation.transitionTo,
         registerRoutes: application.registerRoutes.bind(application)
     };
+    const base = {
+        navigation: application.navigation
+    };
+    const ctx = extend ? { ...extend(app), ...base } : base;
+    application.ctx = ctx;
 
     if (autoStart) {
         beforeAppStart();
@@ -62,5 +67,5 @@ export function createApplication({
         };
     }
 
-    return app;
+    return ctx;
 }

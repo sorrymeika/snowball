@@ -3,57 +3,13 @@ import { $ } from '../../utils';
 import { ViewModel } from '../../vm';
 import { Page } from './Page';
 import ReactViewHandler from './ReactViewHandler';
+import SnowballViewHandler from './SnowballViewHandler';
 
 const ACTIVITY_STATUS_INIT = 0;
 const ACTIVITY_STATUS_CREATE = 1;
 const ACTIVITY_STATUS_RESUME = 2;
 const ACTIVITY_STATUS_PAUSE = 3;
 const ACTIVITY_STATUS_DESTROY = 4;
-
-class SnowballViewHandler {
-
-    constructor(props) {
-        const ViewClass = props.viewFactory;
-
-        this.props = props;
-        this.model = new ViewClass({
-            page: props.page,
-            globalStores: props.stores,
-            location: props.location
-        });
-        this.isReady = false;
-        this.readyActions = [];
-    }
-
-    ready(fn) {
-        if (this.isReady) {
-            fn();
-        } else {
-            this.readyActions.push(fn);
-        }
-    }
-
-    update(attributes, cb) {
-        this.model.set(attributes);
-
-        if (!this.isSetup) {
-            this.isSetup = true;
-            this.model.$el.appendTo(this.el);
-            this.model.nextTick(() => {
-                this.isReady = true;
-                this.readyActions.forEach((fn) => {
-                    fn();
-                });
-                this.readyActions = null;
-            });
-        }
-        cb && this.model.nextTick(cb);
-    }
-
-    destroy() {
-        this.model.destroy();
-    }
-}
 
 /**
  * 页面控制器
@@ -80,7 +36,7 @@ export class Activity {
         }
         this.location = location;
         this.el = this.$el[0];
-        this.page = new Page(this);
+        this.page = new Page(this, application.ctx);
 
         if (options) {
             this.transition = options.transition;

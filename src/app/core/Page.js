@@ -1,5 +1,5 @@
 import { IPage, PageLifecycleDelegate } from '../types';
-import { Model, State } from '../../vm';
+import { Model } from '../../vm';
 import { store } from '../../utils';
 import { EventEmitter } from '../../core/event';
 
@@ -23,35 +23,32 @@ export class Page extends EventEmitter implements IPage {
         }
     }
 
-    constructor(activity) {
+    constructor(activity, ctx) {
         super();
         this._activity = activity;
         this._cache = new Model();
         this._title = defaultTitle;
-
         this._messageChannel = new EventEmitter();
-        this.status = new State('new');
+
+        this.postMessage = this.postMessage.bind(this);
+        this.ctx = Object.create(ctx, {
+            page: this,
+            postMessage: this.postMessage
+        });
 
         extentions.forEach(({ initialize, onCreate, onShow, onDestroy }) => {
             if (initialize) initialize.call(this);
             if (onCreate) this.on('create', () => onCreate.call(this));
-            if (onShow) this.on('show', () => onCreate.call(this));
+            if (onShow) this.on('show', () => onShow.call(this));
             if (onDestroy) this.on('destroy', () => onDestroy.call(this));
         });
 
         this
-            .on('create init pause resume', (e) => this.status.set(e.type))
             .on('show', () => {
                 document.title = this._title;
-                this.status.set('show');
             })
             .on('destroy', () => {
                 this._messageChannel.off();
-                this.status
-                    .set('destroy')
-                    .then(() => {
-                        this.status.destroy();
-                    });
             });
     }
 

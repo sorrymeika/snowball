@@ -7,17 +7,17 @@ export class Service {
     constructor() {
         if (internal_isControllerCreating()) {
             internal_onControllerCreated((controller, page) => {
-                this.__context = page;
+                this._ctx = page;
                 internal_subscribeAllMessagesOnInit(this);
             });
         } else {
-            this.__context = currentContext();
+            this._ctx = currentContext();
             internal_subscribeAllMessagesOnInit(this);
         }
     }
 
-    get context() {
-        return this.__context;
+    get ctx() {
+        return this._ctx;
     }
 }
 

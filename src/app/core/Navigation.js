@@ -22,12 +22,63 @@ function isReplaceHistory(navigateType) {
 
 let isNavigateListenerStart = false;
 
+class History {
+    constructor(url) {
+        this.data = [{
+            url
+        }];
+    }
+
+    get length() {
+        return this.data.length;
+    }
+
+    set length(val) {
+        this.data.length = val;
+    }
+
+    add(url, withAnimation = true) {
+        console.log(url, withAnimation);
+        this.data.push({
+            url,
+            withAnimation
+        });
+        return this;
+    }
+
+    set(index, url, withAnimation = true) {
+        this.data[index] = {
+            url,
+            withAnimation
+        };
+        return this;
+    }
+
+    lastIndexOf(url) {
+        for (let i = this.data.length - 1; i >= 0; i--) {
+            if (this.data[i].url === url) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    get(index) {
+        return this.data[index];
+    }
+
+    pop() {
+        return this.data.pop();
+    }
+}
+
 export default class Navigation implements INavigation {
 
-    constructor(application: IApplication) {
+    constructor(application: IApplication, options) {
+        this.options = options;
         this.application = application;
         this.id = session('SNOWBALL_NAVIGATION_ID') || 0;
-        this.history = [location.hash.replace(/^#/, '') || '/'];
+        this.history = new History(location.hash.replace(/^#/, '') || '/');
         this.ignoreHashChangeCount = 0;
     }
 
@@ -47,13 +98,15 @@ export default class Navigation implements INavigation {
             historyLength = history.length;
 
             if (this.ignoreHashChangeCount <= 0) {
-                var navigateEvent = createEvent('beforenavigate');
+                const navigateEvent = createEvent('beforenavigate');
                 $window.trigger(navigateEvent);
                 if (navigateEvent.isDefaultPrevented()) return;
 
-                var historyUrls = this.history;
-                var url = location.hash.replace(/^#/, '') || '/';
-                var isBack = historyUrls[historyUrls.length - 2] === url;
+
+                const historyRecords = this.history;
+                const url = location.hash.replace(/^#/, '') || '/';
+                const prev = historyRecords.get(historyRecords.length - 2);
+                const isBack = prev && prev.url === url;
                 if (isBack || mayBeBack) {
                     var beforeBackEvent = createEvent('beforeback');
                     $window.trigger(beforeBackEvent);
@@ -65,13 +118,13 @@ export default class Navigation implements INavigation {
                 }
 
                 if (isBack) {
-                    historyUrls.pop();
+                    const current = historyRecords.pop();
                     this.application.navigate(url, {
                         isForward: false,
-                        withAnimation: true
+                        withAnimation: current.withAnimation
                     });
                 } else {
-                    historyUrls.length = 0;
+                    historyRecords.length = 0;
                     this.application.navigate(url, {
                         withAnimation: false
                     });
@@ -104,12 +157,14 @@ export default class Navigation implements INavigation {
      * @param {string} [url] 跳转连接，不填默认返回referrer
      * @param {object} [props] 传给下个页面的props
      */
-    back(url, props?, withAnimation = true) {
+    back(url, props?, withAnimation?) {
         const { application } = this;
         if (isPlainObject(url)) {
             withAnimation = props !== false;
             props = url;
             url = null;
+        } else if (withAnimation !== false) {
+            withAnimation = true;
         }
 
         const backUrl = url || (application.currentActivity._prev && application.currentActivity._prev.location.url);
@@ -147,6 +202,12 @@ export default class Navigation implements INavigation {
      * @param {object} [props] 传给下个页面的props
      */
     async transitionTo(url, navigateType, props, withAnimation) {
+        if (typeof navigateType === 'object') {
+            withAnimation = props;
+            props = navigateType;
+            navigateType = undefined;
+        }
+
         const { application } = this;
 
         await application.navigationTask;
@@ -155,7 +216,7 @@ export default class Navigation implements INavigation {
             if (isReplaceHistory(navigateType)) {
                 if (history.length > 1 && env.iOS) {
                     setTimeout(() => {
-                        location.href = 'redirect.html?go=-2&time=' + Date.now() + '&url=' + encodeURIComponent(url);
+                        location.replace(url);
                     }, 0);
                 } else {
                     location.replace(url);
@@ -166,31 +227,27 @@ export default class Navigation implements INavigation {
             return;
         }
 
-        if (typeof navigateType === 'object') {
-            withAnimation = props;
-            props = navigateType;
-            navigateType = undefined;
-        }
-
-        var isReplace = isReplaceHistory(navigateType);
+        const isReplace = isReplaceHistory(navigateType);
 
         url = url.replace(/^#/, '') || '/';
         if (url.startsWith('?')) {
             url = (application.currentActivity ? application.currentActivity.location.path : '/') + url;
         }
 
-        var currentUrl = application.currentActivity ? application.currentActivity.location.url : null;
-        var index = this.history.lastIndexOf(url);
-        var currIndex = this.history.lastIndexOf(currentUrl);
+        const currentUrl = application.currentActivity ? application.currentActivity.location.url : null;
+        const index = this.history.lastIndexOf(url);
+        const currIndex = this.history.lastIndexOf(currentUrl);
 
         if (currIndex === index && currIndex !== -1) {
             return;
         } else {
-            if (withAnimation == null) {
+            if (this.options.disableTransition) {
+                withAnimation = false;
+            } else if (withAnimation == null) {
                 withAnimation = !isReplace && navigateType !== undefined;
             }
 
-            var isForward = navigateType === undefined
+            const isForward = navigateType === undefined
                 ? (index === -1 || index > currIndex)
                 : isReplace
                     ? undefined
@@ -201,13 +258,13 @@ export default class Navigation implements INavigation {
                 session('SNOWBALL_NAVIGATION_ID', this.id);
             }
 
-            var navigateSuccess = await application.navigate(url, {
+            const navigateSuccess = await application.navigate(url, {
                 isForward,
                 withAnimation,
                 beforeNavigate: () => {
                     this.ignoreHashChangeCount++;
                     if (isReplace) {
-                        this.history[this.history.length - 1] = url;
+                        this.history.set(this.history.length - 1, url, withAnimation);
                         location.replace('#' + url);
                     } else if (!isForward && index !== -1) {
                         this.history.length = index + 1;
@@ -215,8 +272,8 @@ export default class Navigation implements INavigation {
                     } else {
                         this.history.length = currIndex + 1;
                         if (currIndex == -1 && currentUrl)
-                            this.history.push(currentUrl);
-                        this.history.push(url);
+                            this.history.add(currentUrl, withAnimation);
+                        this.history.add(url, withAnimation);
 
                         if (Date.now() - application.hashChangeTime < 500) {
                             // 两次hashchange间隔小于500ms容易不记录到history中，原理不明

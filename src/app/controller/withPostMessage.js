@@ -1,27 +1,27 @@
 import { createFactory, Component } from 'react';
 import { PageProviderContext } from '../core/ReactViewHandler';
 
-export function withDispatch(type) {
+export function withPostMessage(type) {
     const wrapper = (BaseComponent) => {
         const factory = createFactory(BaseComponent);
 
-        class WithNotifyEvent extends Component {
+        class WithPostMessage extends Component {
             static contextType = PageProviderContext;
 
             constructor(props, context) {
                 super(props, context);
-                const dispatch = context.__postMessage;
-                this.dispatch = (event) => {
-                    dispatch && dispatch(event);
+                const postMessage = context.__postMessage;
+                this.postMessage = (event) => {
+                    postMessage && postMessage(event);
                 };
             }
 
             render() {
-                return factory({ dispatch: this.dispatch, ...this.props });
+                return factory({ postMessage: this.postMessage, ...this.props });
             }
         }
 
-        return WithNotifyEvent;
+        return WithPostMessage;
     };
     if (typeof type === 'function') {
         return wrapper(type);
