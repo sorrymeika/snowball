@@ -12,24 +12,21 @@ export default class ReactViewHandler {
         this.page = page;
         this.activity = activity;
         this.model = new Model({
-            $context: page,
+            ctx: page.ctx,
             location
         });
-        this.state = {
-            $context: page.ctx,
-        };
-        this._definedProps = {};
-        this._reactToProps(['location']);
+        this.state = {};
+        this._defineProps(['ctx', 'location']);
         this.isReady = false;
         this.readyActions = [];
         this.mapStoreToProps = mapStoreToProps;
 
-        const handler = this;
+        const viewHandler = this;
 
         class PageProvider extends Component {
             shouldComponentUpdate() {
-                if (handler.activity.animationTask) {
-                    handler.activity.animationTask.then(() => {
+                if (viewHandler.activity.animationTask) {
+                    viewHandler.activity.animationTask.then(() => {
                         this.forceUpdate();
                     });
                     return false;
@@ -41,9 +38,9 @@ export default class ReactViewHandler {
                 return (
                     <PageProviderContext.Provider
                         value={{
-                            store: handler.state
+                            store: viewHandler.state
                         }}
-                    >{createElement(viewFactory, handler.model.attributes)}</PageProviderContext.Provider>
+                    >{createElement(viewFactory, viewHandler.model.attributes)}</PageProviderContext.Provider>
                 );
             }
         }
@@ -52,7 +49,7 @@ export default class ReactViewHandler {
 
     setState(data, cb) {
         const keys = Object.keys(data);
-        this._reactToProps(keys);
+        this._defineProps(keys);
         this.model.set(keys.reduce((newData, key) => {
             const item = data[key];
             newData[key] = (item && item[SymbolFrom]) || item;
@@ -172,8 +169,12 @@ export default class ReactViewHandler {
         this.model.destroy();
     }
 
-    async _reactToProps(names) {
+    async _defineProps(names) {
+        if (!this._definedProps)
+            this._definedProps = {};
+
         const { model } = this;
+
         names.forEach((name) => {
             if (!this._definedProps[name]) {
                 this._definedProps[name] = true;

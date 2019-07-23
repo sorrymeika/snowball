@@ -37,19 +37,19 @@ class History {
         this.data.length = val;
     }
 
-    add(url, withAnimation = true) {
-        console.log(url, withAnimation);
+    add(url, withTransition = true) {
+        console.log(url, withTransition);
         this.data.push({
             url,
-            withAnimation
+            withTransition
         });
         return this;
     }
 
-    set(index, url, withAnimation = true) {
+    set(index, url, withTransition = true) {
         this.data[index] = {
             url,
-            withAnimation
+            withTransition
         };
         return this;
     }
@@ -121,12 +121,12 @@ export default class Navigation implements INavigation {
                     const current = historyRecords.pop();
                     this.application.navigate(url, {
                         isForward: false,
-                        withAnimation: current.withAnimation
+                        withTransition: current.withTransition
                     });
                 } else {
                     historyRecords.length = 0;
                     this.application.navigate(url, {
-                        withAnimation: false
+                        withTransition: false
                     });
                 }
             } else {
@@ -157,19 +157,19 @@ export default class Navigation implements INavigation {
      * @param {string} [url] 跳转连接，不填默认返回referrer
      * @param {object} [props] 传给下个页面的props
      */
-    back(url, props?, withAnimation?) {
+    back(url, props?, withTransition?) {
         const { application } = this;
         if (isPlainObject(url)) {
-            withAnimation = props !== false;
+            withTransition = props !== false;
             props = url;
             url = null;
-        } else if (withAnimation !== false) {
-            withAnimation = true;
+        } else if (withTransition !== false) {
+            withTransition = true;
         }
 
         const backUrl = url || (application.currentActivity._prev && application.currentActivity._prev.location.url);
         if (backUrl) {
-            this.transitionTo(backUrl, NavigateType.Back, props, withAnimation);
+            this.transitionTo(backUrl, NavigateType.Back, props, withTransition);
         } else {
             if (closeWebViewTimer) clearTimeout(closeWebViewTimer);
             closeWebViewTimer = setTimeout(() => {
@@ -201,9 +201,9 @@ export default class Navigation implements INavigation {
      * @param {NavigateType} [navigateType]
      * @param {object} [props] 传给下个页面的props
      */
-    async transitionTo(url, navigateType, props, withAnimation) {
+    async transitionTo(url, navigateType, props, withTransition) {
         if (typeof navigateType === 'object') {
-            withAnimation = props;
+            withTransition = props;
             props = navigateType;
             navigateType = undefined;
         }
@@ -242,9 +242,9 @@ export default class Navigation implements INavigation {
             return;
         } else {
             if (this.options.disableTransition) {
-                withAnimation = false;
-            } else if (withAnimation == null) {
-                withAnimation = !isReplace && navigateType !== undefined;
+                withTransition = false;
+            } else if (withTransition == null) {
+                withTransition = !isReplace && navigateType !== undefined;
             }
 
             const isForward = navigateType === undefined
@@ -260,11 +260,11 @@ export default class Navigation implements INavigation {
 
             const navigateSuccess = await application.navigate(url, {
                 isForward,
-                withAnimation,
+                withTransition,
                 beforeNavigate: () => {
                     this.ignoreHashChangeCount++;
                     if (isReplace) {
-                        this.history.set(this.history.length - 1, url, withAnimation);
+                        this.history.set(this.history.length - 1, url, withTransition);
                         location.replace('#' + url);
                     } else if (!isForward && index !== -1) {
                         this.history.length = index + 1;
@@ -272,8 +272,8 @@ export default class Navigation implements INavigation {
                     } else {
                         this.history.length = currIndex + 1;
                         if (currIndex == -1 && currentUrl)
-                            this.history.add(currentUrl, withAnimation);
-                        this.history.add(url, withAnimation);
+                            this.history.add(currentUrl, withTransition);
+                        this.history.add(url, withTransition);
 
                         if (Date.now() - application.hashChangeTime < 500) {
                             // 两次hashchange间隔小于500ms容易不记录到history中，原理不明

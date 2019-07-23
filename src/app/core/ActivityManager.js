@@ -8,7 +8,7 @@ import Activity from './Activity';
 
 export const ACTIVITY_CREATOR = Symbol('ACTIVITY_CREATOR');
 
-const defaultAnimation = {
+const DEFAULT_TRANSITION = {
     openEnterZIndex: 2,
     closeEnterZIndex: 1,
     openExitZIndex: 1,
@@ -39,9 +39,9 @@ const defaultAnimation = {
     }
 };
 
-function getAnimation(isForward, animConfig) {
+function getTransition(isForward, animConfig) {
     animConfig = {
-        ...defaultAnimation,
+        ...DEFAULT_TRANSITION,
         ...animConfig
     };
     const type = isForward ? "open" : "close",
@@ -86,10 +86,10 @@ function disposeUselessActivities(activityManager, prevActivity, activity) {
     }
 }
 
-function replaceActivityWithAnimation(activityManager, prevActivity, activity, isForward, callback) {
+function replaceActivityWithTransition(activityManager, prevActivity, activity, isForward, callback) {
     const ease = 'cubic-bezier(.34,.86,.54,.99)';
     const duration = 400;
-    const { enterFrom, enterTo, exitFrom, exitTo } = getAnimation(isForward, isForward ? activity.transition : prevActivity.transition);
+    const { enterFrom, enterTo, exitFrom, exitTo } = getTransition(isForward, isForward ? activity.transition : prevActivity.transition);
 
     const { className: enterFromClassName, ...enterFromStyle } = enterFrom;
     const { className: enterToClassName, ...enterToStyle } = enterTo;
@@ -111,7 +111,7 @@ function replaceActivityWithAnimation(activityManager, prevActivity, activity, i
                 let prev = prevActivity._prev;
                 let count = 1;
                 while (prev) {
-                    if (count >= 10) {
+                    if (count >= activityManager.options.maxActivePages) {
                         disposeActivity(activityManager, prev);
                     }
                     prev = prev._prev;
@@ -222,7 +222,7 @@ export default class ActivityManager implements IActivityManager {
                 var isForward = false;
 
                 if (prevActivity && leftToRight) {
-                    var anim = getAnimation(isForward);
+                    var anim = getTransition(isForward);
 
                     touch.currentActivity = currentActivity;
                     touch.swiper = new Animation([{
@@ -242,7 +242,7 @@ export default class ActivityManager implements IActivityManager {
                             touch.triggerGestureEnd = null;
                         };
                     });
-                    application.onIdle(() => gestureEnd);
+                    application.whenIdle(() => gestureEnd);
                 } else {
                     touch.swiper = null;
                 }
@@ -307,12 +307,12 @@ export default class ActivityManager implements IActivityManager {
      * 页面切换
      * @param {Activity} prevActivity 当前要被替换掉的页面
      * @param {Activity} activity 当前要切换到的页面
-     * @param {ToggleOptions}  toggleOptions 切换选项
      * @param {object} intentProps 传给下个页面的props
+     * @param {ToggleOptions}  toggleOptions 切换选项
      */
-    replaceActivity(prevActivity, activity, toggleOptions: ToggleOptions, intentProps) {
+    replaceActivity(prevActivity, activity, intentProps, toggleOptions: ToggleOptions) {
         const application = this.application;
-        const { withAnimation, isForward } = toggleOptions;
+        const { withTransition, isForward } = toggleOptions;
 
         activity.$el.siblings('.app-view').each(function () {
             if (!prevActivity || this !== prevActivity.el) {
@@ -327,7 +327,7 @@ export default class ActivityManager implements IActivityManager {
             next = () => {
                 initialCount--;
                 if (initialCount === 0) {
-                    activity.setAnimationTask(null);
+                    activity.setTransitionTask(null);
                     resolve();
                 } else {
                     if (application.isStarting) {
@@ -340,7 +340,7 @@ export default class ActivityManager implements IActivityManager {
         });
 
         activity
-            .setAnimationTask(replacingTask)
+            .setTransitionTask(replacingTask)
             .setProps({
                 location: activity.location,
                 ...intentProps
@@ -351,8 +351,8 @@ export default class ActivityManager implements IActivityManager {
             return replacingTask;
         }
 
-        if (prevActivity && withAnimation) {
-            replaceActivityWithAnimation(this, prevActivity, activity, isForward, next);
+        if (prevActivity && withTransition) {
+            replaceActivityWithTransition(this, prevActivity, activity, isForward, next);
         } else {
             activity.$el.css({
                 opacity: 1,

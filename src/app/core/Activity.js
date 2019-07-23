@@ -56,19 +56,19 @@ export class Activity {
         });
 
         this.view.ready(() => {
-            this.lifecycle.onInit && this.lifecycle.onInit(this.page);
+            this.lifecycle.onInit && this.lifecycle.onInit(this.page.ctx);
             this.page.trigger('init');
         });
     }
 
-    setAnimationTask(animationTask) {
+    setTransitionTask(animationTask) {
         this.animationTask = animationTask;
         return this;
     }
 
     waitAnimation(fn) {
         if (!this.animationTask) {
-            console.error('call `setAnimationTask` first!');
+            console.error('call `setTransitionTask` first!');
             fn();
             return;
         }
@@ -83,7 +83,7 @@ export class Activity {
 
     qsChange() {
         if (typeof this.lifecycle.onQsChange === 'function') {
-            this.lifecycle.onQsChange(this.page);
+            this.lifecycle.onQsChange(this.page.ctx);
         }
         this.page.trigger('qschange');
     }
@@ -98,7 +98,7 @@ export class Activity {
             this.isActive = true;
             this.$el.addClass('app-view-actived');
             if (typeof this.lifecycle.onShow === 'function') {
-                this.lifecycle.onShow(this.page);
+                this.lifecycle.onShow(this.page.ctx);
             }
             this.page.trigger('show');
             callback && callback();
@@ -112,13 +112,13 @@ export class Activity {
         if (this.status == ACTIVITY_STATUS_INIT) {
             this.status = ACTIVITY_STATUS_CREATE;
             if (typeof this.lifecycle.onCreate === 'function') {
-                this.lifecycle.onCreate(this.page);
+                this.lifecycle.onCreate(this.page.ctx);
             }
             this.page.trigger('create');
         } else if (this.status == ACTIVITY_STATUS_PAUSE) {
             this.status = ACTIVITY_STATUS_RESUME;
             if (typeof this.lifecycle.onResume === 'function') {
-                this.lifecycle.onResume(this.page);
+                this.lifecycle.onResume(this.page.ctx);
             }
             this.page.trigger('resume');
         }
@@ -133,7 +133,7 @@ export class Activity {
             this.status = ACTIVITY_STATUS_PAUSE;
             this.isActive = false;
             if (typeof this.lifecycle.onPause === 'function') {
-                this.lifecycle.onPause(this.page);
+                this.lifecycle.onPause(this.page.ctx);
             }
             document.activeElement && document.activeElement.blur();
             this.page.trigger('pause');
@@ -158,7 +158,7 @@ export class Activity {
             this.$el = this.el = null;
 
             if (typeof this.lifecycle.onDestroy === 'function') {
-                this.lifecycle.onDestroy(this.page);
+                this.lifecycle.onDestroy(this.page.ctx);
             }
             this.page.trigger('destroy');
             this.page.off();

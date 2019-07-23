@@ -47,15 +47,22 @@ export function createApplication({
 }, rootElement, callback?) {
     if (application) throw new Error('application has already created!');
 
+    options = {
+        maxActivePages: 10,
+        disableTransition: false,
+        ...options
+    };
+
     application = new Application(
-        (application) => new Navigation(application, options),
-        (application) => new ActivityManager(application, options),
         new Router(projects, routes),
         rootElement,
         options
     );
 
-    const { navigation } = application;
+    const navigation = new Navigation(application, options);
+    application.setNavigation(navigation)
+        .setActivityManager(new ActivityManager(application, options));
+
     const app = {
         navigation: ['forward', 'back', 'replace', 'transitionTo', 'home'].reduce((nav, prop) => {
             const method = navigation[prop];

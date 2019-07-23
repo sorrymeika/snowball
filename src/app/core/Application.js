@@ -2,23 +2,31 @@
 import { store, isThenable } from '../../utils';
 import { popup } from '../../widget';
 
-import { IApplication, IRouter, IActivityManager } from '../types';
+import { IApplication, IRouter, IActivityManager, INavigation } from '../types';
 
 export default class Application implements IApplication {
 
+    activityManager: IActivityManager;
+    navigation: INavigation;
+
     constructor(
-        navigationFactory: (app: IApplication) => INavigation,
-        activityManagerFactory: (app: IApplication) => IActivityManager,
         router: IRouter,
         rootElement,
-        options = {}
+        options
     ) {
         this.router = router;
         this.rootElement = rootElement;
         this.options = options;
+    }
 
-        this.activityManager = activityManagerFactory(this, options);
-        this.navigation = navigationFactory(this, options);
+    setActivityManager(activityManager) {
+        this.activityManager = activityManager;
+        return this;
+    }
+
+    setNavigation(navigation) {
+        this.navigation = navigation;
+        return this;
     }
 
     /**
@@ -79,7 +87,7 @@ export default class Application implements IApplication {
         return this;
     }
 
-    onIdle(fn) {
+    whenIdle(fn) {
         return this.navigationTask
             ? (this.navigationTask = this.navigationTask.then(fn))
             : fn();
@@ -117,7 +125,7 @@ export default class Application implements IApplication {
 
         const { route, location } = routeMatch;
         const prevActivity = this.currentActivity;
-        const { withAnimation, beforeNavigate, onNavigateFailure } = options;
+        const { withTransition, beforeNavigate, onNavigateFailure } = options;
 
         beforeNavigate && await beforeNavigate();
 
@@ -168,10 +176,10 @@ export default class Application implements IApplication {
         this.prevActivity = prevActivity;
         this.currentActivity = newActivity;
 
-        await activityManager.replaceActivity(prevActivity, newActivity, {
+        await activityManager.replaceActivity(prevActivity, newActivity, props, {
             isForward,
-            withAnimation: withAnimation !== false
-        }, props);
+            withTransition: withTransition !== false
+        });
 
         newActivity.active();
 

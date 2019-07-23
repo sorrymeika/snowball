@@ -145,7 +145,7 @@ export class Page extends EventEmitter implements IPage {
             var cachedPageState = {
                 url: this.location.url,
                 scrollTop: mainScrollView.scrollTop(),
-                state: state
+                state
             };
 
             try {

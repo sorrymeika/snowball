@@ -99,11 +99,11 @@ export interface INavigation {
     replace: (url: string) => any;
 }
 
-export type ToggleOptions = { isForward: boolean, withAnimation: boolean };
+export type ToggleOptions = { isForward: boolean, withTransition: boolean };
 
 export interface IActivityManager {
     getOrCreate: (route, location: Location, isForward) => IActivity,
-    replaceActivity: (prevActivity: any, activity: any, toggleOptions: ToggleOptions, intentProps: any) => IActivity,
+    replaceActivity: (prevActivity: any, activity: any, intentProps: any, toggleOptions: ToggleOptions) => IActivity,
 }
 
 export interface IRouter {
@@ -121,7 +121,7 @@ type NavigateOptions = {
     /**
      * 是否带切换动画，默认true，NavigateOptions.isForward为undefined时为false
      */
-    withAnimation: boolean,
+    withTransition: boolean,
 
     /**
      * 替换hash
