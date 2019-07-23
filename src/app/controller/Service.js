@@ -1,19 +1,13 @@
 
-import { internal_isControllerCreating, internal_onControllerCreated } from "./controller";
+import { initWithContext } from "./controller";
 import { internal_subscribeAllMessagesOnInit } from "./onMessage";
-import { currentContext } from "./inject";
 
 export class Service {
     constructor() {
-        if (internal_isControllerCreating()) {
-            internal_onControllerCreated((controller, page) => {
-                this._ctx = page;
-                internal_subscribeAllMessagesOnInit(this);
-            });
-        } else {
-            this._ctx = currentContext();
+        initWithContext((ctx) => {
+            this._ctx = ctx;
             internal_subscribeAllMessagesOnInit(this);
-        }
+        });
     }
 
     get ctx() {

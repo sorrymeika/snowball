@@ -17,7 +17,7 @@ export default class ReactViewHandler {
             location
         });
         this.state = {
-            $context: page,
+            $context: page.ctx,
         };
         this._definedProps = {};
         this._reactToProps(['globalStores', 'location']);

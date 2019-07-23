@@ -5,7 +5,7 @@ import { observer } from './observer';
 
 let pageContext;
 
-export const currentContext = () => {
+export const getCurrentContext = () => {
     return pageContext;
 };
 

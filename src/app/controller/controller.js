@@ -1,39 +1,38 @@
 import { isFunction } from "../../utils";
+import { Reaction } from "../../vm";
 import { registerRoutes } from "../core/registerRoutes";
 import Activity from "../core/Activity";
 import { ACTIVITY_CREATOR } from "../core/ActivityManager";
 import { IS_CONTROLLER, INJECTABLE_PROPS } from "./symbols";
 import { internal_subscribeAllMessagesOnInit } from "./onMessage";
-import { Reaction } from "../../vm";
+import { getCurrentContext } from "./inject";
+
 
 let isCreating = false;
-export function internal_isControllerCreating() {
-    return isCreating;
-}
+let currentCtx = null;
 
-let controllerCreationHandlers;
-export function internal_onControllerCreated(fn) {
-    if (!isCreating) {
-        throw new Error('只能在controller创建时调用!');
+export function initWithContext(fn) {
+    const ctx = currentCtx || getCurrentContext();
+    if (!ctx) {
+        console.error('ctx 不能为空!');
     }
-    controllerCreationHandlers.push(fn);
+    fn(ctx);
 }
 
-function createController(ControllerClass, props, ctx, onCreate) {
+function createController(ControllerClass, props, ctx, callback) {
     if (isCreating) {
         throw new Error('不能同时初始化化两个controller');
     }
     isCreating = true;
-    controllerCreationHandlers = [];
+    currentCtx = ctx;
 
     const target = new ControllerClass(props, ctx);
     target._ctx = ctx;
 
-    onCreate(target);
+    callback(target);
 
-    controllerCreationHandlers.forEach((fn) => fn(target, ctx));
-    controllerCreationHandlers = null;
     isCreating = false;
+    currentCtx = null;
 
     return target;
 }

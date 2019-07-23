@@ -195,15 +195,19 @@ export class ChangeObserver implements IObservable {
 }
 
 ChangeObserver.prototype.compute = Observer.prototype.compute;
-
 ChangeObserver.prototype[TYPEOF] = 'ChangeObserver';
 
 /**
  * 立即触发型Observer
  */
 export class Emitter extends Observer {
-    static isEmitter = (emitter) => {
-        return emitter instanceof Emitter;
+    static create() {
+        const emitter = new this();
+        const emitWrapper = (fn) => emitter.observe(fn);
+        emitWrapper.emit = (data) => {
+            emitter.set(data);
+        };
+        return emitWrapper;
     }
 
     set(data) {
@@ -219,3 +223,6 @@ export class Emitter extends Observer {
         return this;
     }
 }
+
+Emitter.prototype.emit = Emitter.prototype.set;
+Emitter.prototype[TYPEOF] = 'Emitter';

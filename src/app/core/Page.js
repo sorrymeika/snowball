@@ -1,5 +1,5 @@
 import { IPage, PageLifecycleDelegate } from '../types';
-import { Model } from '../../vm';
+import { Model, Emitter } from '../../vm';
 import { store } from '../../utils';
 import { EventEmitter } from '../../core/event';
 
@@ -33,7 +33,16 @@ export class Page extends EventEmitter implements IPage {
         this.postMessage = this.postMessage.bind(this);
         this.ctx = Object.create(ctx, {
             page: this,
-            postMessage: this.postMessage
+            postMessage: this.postMessage,
+            createEmitter: () => {
+                const emitter = new Emitter();
+                const emitWrapper = (fn) => emitter.observe(fn);
+                emitWrapper.emit = (data) => {
+                    emitter.set(data);
+                };
+                this.on('destroy', () => emitter.destroy());
+                return emitWrapper;
+            }
         });
 
         extentions.forEach(({ initialize, onCreate, onShow, onDestroy }) => {
