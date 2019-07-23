@@ -31,8 +31,10 @@ export class Page extends EventEmitter implements IPage {
         this._messageChannel = new EventEmitter();
 
         this.postMessage = this.postMessage.bind(this);
+        this.onMessage = this.onMessage.bind(this);
         this.ctx = Object.create(ctx, {
             page: this,
+            onMessage: this.onMessage,
             postMessage: this.postMessage,
             createEmitter: () => {
                 const emitter = new Emitter();
@@ -90,6 +92,10 @@ export class Page extends EventEmitter implements IPage {
 
     isDestroyed() {
         return this._activity.isDestroyed;
+    }
+
+    onMessage(type, fn) {
+        this._messageChannel.on(type, fn);
     }
 
     postMessage(state) {
