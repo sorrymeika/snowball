@@ -876,14 +876,6 @@ for (var key in user) {
 // userName
 ```
 
-### 页面级事件
-
-#### `withNotifyEvent` 高阶组件
-* 给组件注入 `notifyEvent` 方法
-
-#### `onMessage` 修饰符
-* 为`controller` 或 `handler` 的方法增加事件监听
-
 <br>
 
 -------
@@ -961,11 +953,11 @@ import Home from "../containers/Home";
 /**
  * Controller类生命周期
  *     onInit: 页面第一次打开，且动画开始前触发
- *     pgOnShow: 页面显示，动画结束时触发
- *     pgOnCreate: 页面第一次打开，且动画结束后触发
- *     pgOnResume: 页面从后台进入前台，且动画结束时触发
- *     pgOnPause: 页面从前台进入后台，且动画结束时触发
- *     pgOnDestroy: 页面被销毁后触发
+ *     onShow: 页面显示，动画结束时触发
+ *     onCreate: 页面第一次打开，且动画结束后触发
+ *     onResume: 页面从后台进入前台，且动画结束时触发
+ *     onPause: 页面从前台进入后台，且动画结束时触发
+ *     onDestroy: 页面被销毁后触发
  * Controller方法、属性排序
  *     constructor
  *     页面生命周期
@@ -976,23 +968,22 @@ import Home from "../containers/Home";
 @controller(Home)
 export default class HomeController {
 
-    constructor(props, page) {
+    constructor(props, ctx) {
         // 框架会自动带入路由参数到 props 中
         // props.location.params 为路由 `/product/:type/:id ` 中的配置
         // props.location.query 为hash链接`?`后面的参数
-        const id = props.location.params.id;
-        const type = props.location.params.type;
+        const id = ctx.location.params.id;
+        const type = ctx.location.params.type;
 
         // /home?source=wap&id=1
         // 此时 props.location.query 为 { source: 'wap',id: 1 }
-        console.log(props.location.query);
+        console.log(ctx.location.query);
 
         // 页面信息
         // 页面是否是激活状态
         // console.log(page.isActive());
         // 页面是否是销毁
         // console.log(page.isDestroyed());
-        this.page = page;
 
         this.userService = new UserService();
     }
@@ -1022,10 +1013,10 @@ export default class HomeController {
         return this.service.getModel();
     }
 
-    // 把 `onTitleClick` 注入到 `Home` 组件
+    // 把 `handleTitleClick` 注入到 `Home` 组件
     // 使用 `@injectable` 后不要使用箭头函数
     @injectable
-    onTitleClick() {
+    handleTitleClick() {
         this.service.update();
     }
 }
@@ -1144,9 +1135,9 @@ class SomeComponent extends Component {
 }
 
 // `nextProps` 的优先级更高
-inject(({ globalStores, data }, nextProps)=>{
+inject(({ user, data }, nextProps)=>{
     return {
-        user: globalStores.user,
+        user,
         data
     }
 })(Component)
@@ -1169,27 +1160,25 @@ import { startApplication } from 'snowball';
 import HomeController from 'controller/HomeController';
 
 // 子应用根路由注册
-var projects = {
-    [env.PROJECTS.TRADE]: ['trade', 'spu', 'item', 'order', 'cart', 'address']
+const projects = {
+    "^/trade(?=/|)": "https://project.com/asset-manifest.json"
 };
 // 主应用路由注册，不可和子应用根路由重合
 // 尽量把路由收敛到 `routes.js` 中
-var routes = {
+const routes = {
     '/': HomeController,
-    '/product': require('bundle?lazy&name=product!controllers/ProductController')
+    '/product': import('controllers/ProductController')
 };
 // 启动应用
-var app = startApplication({
+const app = createApplication({
     projects,
     routes,
-    // 应用级数据提供，可使用inject('global')方法注入到子组件props.global中
-    stores: {
-        user
-    },
-    options: {}
+    options: {
+        // 禁用跳转切换动画
+        disableTrasition: true
+    }
 }, document.getElementById('root'), callback);
 ```
-
 
 #### `registerRoutes` 方法
 
@@ -1229,61 +1218,65 @@ registerRoutes(routes);
 
 <br>
 
+### ctx 应用上下文
+
+* 可在`Controller`和`Service`中使用`ctx`属性
+
+```js
+import { controller } from 'snowball/app';
+import User from './components/User';
+
+@controller(User)
+class UserController {
+    constructor(props, ctx) {
+        this.userId = ctx.location.params.id;
+    }
+
+    transitionToFav() {
+        this.ctx.navigation.forward('/fav')
+    }
+}
+
+class UserService extends Service {
+    transitionToOrder() {
+        this.ctx.navigation.forward('/order')
+    }
+}
+```
+
+
 ### 页面跳转
 
-#### `transitionTo` 方法
-
-* 通用跳转
-
-```js
-import { transitionTo } from 'snowball';
-
-// 跳转到商品页，依赖mall-core的应用跳转默认带前进函数
-transitionTo('/item/1');
-transitionTo('https://www.whatever.com/yao-h5/#/product/2');
-```
-
-#### `app-link` 属性
-
-```js
-<div app-link="/item/1"></div>
-<div app-link="@achror">锚点</div>
-<div app-anchor-name="achror">锚到这里</div>
-```
-
-#### `navigation.forward` 方法
+#### `ctx.navigation.forward` 方法
 
 * 跳转页面，带前进动画
 
 ```js
-import { navigation } from 'snowball';
 
 // 跳转到商品页
-navigation.forward('/item/1')
+ctx.navigation.forward('/item/1')
 
 // 跳转并传入 props
-navigation.forward('/item/2', {
+ctx.navigation.forward('/item/2', {
     action: 'dofast'
 })
 ```
 
-#### `navigation.back` 方法
+#### `ctx.navigation.back` 方法
 
 * 跳转页面，带返回动画
 
 ```js
-import { navigation } from 'snowball';
-
 // 返回到首页
-navigation.back('/')
+ctx.navigation.back('/')
 
 // 返回到首页并传入 props
-navigation.back('/', {
+ctx.navigation.back('/', {
     action: 'dofast'
 })
 ```
 
-#### `navigation.transitionTo` 方法
+#### `ctx.navigation.transitionTo` 方法
 
 * 跳转页面
 
@@ -1295,28 +1288,28 @@ navigation.back('/', {
  */
 
 // 不带动画跳转返回到首页并动画跳转到商品页，这样使用history records才不会错乱
-navigation.transitionTo('/')
+ctx.navigation.transitionTo('/')
     .forward('/product/5');
 
 // 不带动画跳转
-navigation.transitionTo('/product/4');
+ctx.navigation.transitionTo('/product/4');
 ```
 
-#### `navigation.replace` 方法
+#### `ctx.navigation.replace` 方法
 
 * 替换当前链接，覆盖最后一条历史
 
 ```js
-navigation.replace('/error/notfound?error=店铺状态异常');
+ctx.navigation.replace('/error/notfound?error=店铺状态异常');
 ```
 
 
-#### `navigation.home` 方法
+#### `ctx.navigation.home` 方法
 
-* 返回到native首页(关闭webview)
+* 返回到首页
 
 ```js
-navigation.home()
+ctx.navigation.home()
 ```
 
 <br>

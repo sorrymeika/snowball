@@ -7,6 +7,54 @@ const extentions = [];
 
 const defaultTitle = document.title;
 
+function createPageCtx(page, ctx) {
+    const messageChannel = new EventEmitter();
+    const pageCtx = Object.create(ctx, {
+        get location() {
+            return page.location;
+        },
+        page,
+        on: (type, fn) => {
+            const cb = (e, state) => fn(state);
+            cb._cb = fn;
+            messageChannel.on(type, cb);
+            return pageCtx;
+        },
+        off: (...args) => {
+            messageChannel.off(...args);
+            return pageCtx;
+        },
+        once: (type, callback) => {
+            function once(e, state) {
+                messageChannel.off(name, once);
+                return callback.call(pageCtx, state);
+            }
+            once._cb = callback;
+            messageChannel.on(type, once);
+            return pageCtx;
+        },
+        emit: (state) => {
+            if (!state.type) throw new Error('emit must has a `type`!');
+            this._messageChannel.trigger(state.type, state);
+        },
+        createEvent: () => {
+            const emitter = new Emitter();
+            const emitWrapper = (fn) => emitter.observe(fn);
+            emitWrapper.emit = (data) => {
+                emitter.set(data);
+            };
+            page.on('destroy', () => emitter.destroy());
+            return emitWrapper;
+        }
+    });
+
+    page.on('destroy', () => {
+        messageChannel.off();
+    });
+
+    return pageCtx;
+}
+
 export class Page extends EventEmitter implements IPage {
 
     static extentions = {
@@ -28,25 +76,7 @@ export class Page extends EventEmitter implements IPage {
         this._activity = activity;
         this._cache = new Model();
         this._title = defaultTitle;
-        this._messageChannel = new EventEmitter();
-
-        this.postMessage = this.postMessage.bind(this);
-        this.ctx = Object.create(ctx, {
-            page: this,
-            on: this._messageChannel.on.bind(this._messageChannel),
-            off: this._messageChannel.off.bind(this._messageChannel),
-            once: this._messageChannel.one.bind(this._messageChannel),
-            emit: this.postMessage,
-            createEvent: () => {
-                const emitter = new Emitter();
-                const emitWrapper = (fn) => emitter.observe(fn);
-                emitWrapper.emit = (data) => {
-                    emitter.set(data);
-                };
-                this.on('destroy', () => emitter.destroy());
-                return emitWrapper;
-            }
-        });
+        this.ctx = createPageCtx(this, ctx);
 
         extentions.forEach(({ initialize, onCreate, onShow, onDestroy }) => {
             if (initialize) initialize.call(this);
@@ -55,13 +85,9 @@ export class Page extends EventEmitter implements IPage {
             if (onDestroy) this.on('destroy', () => onDestroy.call(this));
         });
 
-        this
-            .on('show', () => {
-                document.title = this._title;
-            })
-            .on('destroy', () => {
-                this._messageChannel.off();
-            });
+        this.on('show', () => {
+            document.title = this._title;
+        });
     }
 
     get el() {
@@ -93,11 +119,6 @@ export class Page extends EventEmitter implements IPage {
 
     isDestroyed() {
         return this._activity.isDestroyed;
-    }
-
-    postMessage(state) {
-        if (!state.type) throw new Error('postMessage must has a `type`!');
-        this._messageChannel.trigger(state.type, state);
     }
 
     setLifecycleDelegate(delegate: PageLifecycleDelegate) {

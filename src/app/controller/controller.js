@@ -4,7 +4,6 @@ import { registerRoutes } from "../core/registerRoutes";
 import Activity from "../core/Activity";
 import { ACTIVITY_CREATOR } from "../core/ActivityManager";
 import { IS_CONTROLLER, INJECTABLE_PROPS } from "./symbols";
-import { internal_subscribeAllMessagesOnInit } from "./onMessage";
 import { getCurrentContext } from "./inject";
 
 
@@ -92,8 +91,6 @@ export function controller(route, componentClass, options) {
 
                 page.setLifecycleDelegate(lifecycle);
             });
-
-            internal_subscribeAllMessagesOnInit(target);
 
             return (setState) => {
                 const injectableProps = target[INJECTABLE_PROPS];

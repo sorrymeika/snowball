@@ -7,27 +7,22 @@ import { SymbolFrom } from '../../vm/symbols';
 export const PageProviderContext = React.createContext();
 
 export default class ReactViewHandler {
-    constructor({ el, page, activity, stores, location, viewFactory, mapStoreToProps }) {
+    constructor({ el, page, activity, location, viewFactory, mapStoreToProps }) {
         this.el = el;
         this.page = page;
         this.activity = activity;
         this.model = new Model({
             $context: page,
-            globalStores: stores,
             location
         });
         this.state = {
             $context: page.ctx,
         };
         this._definedProps = {};
-        this._reactToProps(['globalStores', 'location']);
+        this._reactToProps(['location']);
         this.isReady = false;
         this.readyActions = [];
         this.mapStoreToProps = mapStoreToProps;
-
-        const postMessage = (state) => {
-            page.postMessage(state);
-        };
 
         const handler = this;
 
@@ -46,7 +41,6 @@ export default class ReactViewHandler {
                 return (
                     <PageProviderContext.Provider
                         value={{
-                            __postMessage: postMessage,
                             store: handler.state
                         }}
                     >{createElement(viewFactory, handler.model.attributes)}</PageProviderContext.Provider>

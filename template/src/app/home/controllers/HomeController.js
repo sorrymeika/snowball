@@ -1,4 +1,4 @@
-import { controller, injectable, navigation } from "snowball/app";
+import { controller, injectable } from "snowball/app";
 import Home from "../containers/Home";
 
 @controller('/', Home)
@@ -13,7 +13,7 @@ class HomeController {
 
     @injectable
     onButtonClick() {
-        navigation.forward('/test');
+        this.ctx.navigation.forward('/test');
     }
 }
 

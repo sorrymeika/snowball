@@ -1,17 +1,16 @@
 
 import { initWithContext } from "./controller";
-import { internal_subscribeAllMessagesOnInit } from "./onMessage";
+import { getApplicationCtx } from "../core/createApplication";
 
 export class Service {
     constructor() {
         initWithContext((ctx) => {
             this._ctx = ctx;
-            internal_subscribeAllMessagesOnInit(this);
         });
     }
 
     get ctx() {
-        return this._ctx;
+        return this._ctx || getApplicationCtx();
     }
 }
 

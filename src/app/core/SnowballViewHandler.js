@@ -6,7 +6,6 @@ export default class SnowballViewHandler {
         this.props = props;
         this.model = new ViewClass({
             page: props.page,
-            globalStores: props.stores,
             location: props.location
         });
         this.isReady = false;

@@ -5,10 +5,15 @@ import Application from './Application';
 
 // 当前启动的应用的实例
 let application;
+let applicationCtx;
 let actionsBeforeAppStart = [];
 
 export function internal_getApplication() {
     return application;
+}
+
+export function getApplicationCtx() {
+    return applicationCtx;
 }
 
 export function internal_beforeStartApplication(fn) {
@@ -27,8 +32,11 @@ function beforeAppStart() {
  * @param {Array} props 应用参数
  * @param {Object} props.projects 子项目映射
  * @param {Object} props.routes 路由映射
- * @param {Object} props.ctx 上下文配置
+ * @param {Object} props.extend 扩展应用上下文
+ * @param {Object} [props.options] 应用属性
+ * @param {boolean} [props.options.disableTransition] 禁用跳转切换动画
  * @param {Element} rootElement 页面根元素
+ * @param {Element} [callback] 回调函数
  */
 export function createApplication({
     projects,
@@ -47,14 +55,18 @@ export function createApplication({
         options
     );
 
+    const { navigation } = application;
     const app = {
-        navigate: application.navigation.transitionTo,
+        navigation: ['forward', 'back', 'replace', 'transitionTo', 'home'].reduce((nav, prop) => {
+            const method = navigation[prop];
+            nav[prop] = (...args) => {
+                method.apply(navigation, args);
+            };
+            return nav;
+        }, {}),
         registerRoutes: application.registerRoutes.bind(application)
     };
-    const base = {
-        navigation: application.navigation
-    };
-    const ctx = extend ? { ...extend(app), ...base } : base;
+    const ctx = extend ? { ...extend(app), ...app } : app;
     application.ctx = ctx;
 
     if (autoStart) {
