@@ -35,7 +35,7 @@ function createPageCtx(page, ctx) {
         },
         emit: (state) => {
             if (!state.type) throw new Error('emit must has a `type`!');
-            this._messageChannel.trigger(state.type, state);
+            messageChannel.trigger(state.type, state);
         },
         createEvent: () => {
             const emitter = new Emitter();
