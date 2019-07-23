@@ -31,12 +31,13 @@ export class Page extends EventEmitter implements IPage {
         this._messageChannel = new EventEmitter();
 
         this.postMessage = this.postMessage.bind(this);
-        this.onMessage = this.onMessage.bind(this);
         this.ctx = Object.create(ctx, {
             page: this,
-            onMessage: this.onMessage,
-            postMessage: this.postMessage,
-            createEmitter: () => {
+            on: this._messageChannel.on.bind(this._messageChannel),
+            off: this._messageChannel.off.bind(this._messageChannel),
+            once: this._messageChannel.one.bind(this._messageChannel),
+            emit: this.postMessage,
+            createEvent: () => {
                 const emitter = new Emitter();
                 const emitWrapper = (fn) => emitter.observe(fn);
                 emitWrapper.emit = (data) => {
@@ -92,10 +93,6 @@ export class Page extends EventEmitter implements IPage {
 
     isDestroyed() {
         return this._activity.isDestroyed;
-    }
-
-    onMessage(type, fn) {
-        this._messageChannel.on(type, fn);
     }
 
     postMessage(state) {
