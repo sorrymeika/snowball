@@ -15,14 +15,14 @@ function replaceImport(source, _package, replaceWith) {
     _package = '(' + _package + ')';
 
     source = source
-        .replace(new RegExp("\\bimport\\s+\\*\\s+as\\s+([\\w$]+)\\s+from\\s+(\"|')" + _package + "\\2\\s*;?", 'mg'), function (match, name, q, packageName) {
+        .replace(new RegExp("\\bimport\\s*\\*\\sas\\s+([\\w$]+)\\s+from\\s*(\"|')" + _package + "\\2\\s*;?", 'mg'), function (match, name, q, packageName) {
             return getImportExp(name, packageName);
         })
-        .replace(new RegExp("\\bimport\\s+([\\w$]+)(?:\\s*,\\s*(\\{[^}]+\\}))?\\s+from\\s+(\"|')" + _package + "\\3\\s*;?", "mg"), function (match, name, names, q, packageName) {
+        .replace(new RegExp("\\bimport\\s*([\\w$]+)(?:\\s*,\\s*(\\{[^}]+\\}))?\\s*from\\s*(\"|')" + _package + "\\3\\s*;?", "mg"), function (match, name, names, q, packageName) {
             return getImportExp(name, packageName)
                 + getImportExp(names, packageName);
         })
-        .replace(new RegExp("\\bimport\\s+(\\{[^}]+\\})(?:\\s*,\\s*([\\w$]+))?\\s+from\\s+(\"|')" + _package + "\\3\\s*;?", "mg"), function (match, names, name, q, packageName) {
+        .replace(new RegExp("\\bimport\\s*(\\{[^}]+\\})(?:\\s*,\\s*([\\w$]+))?\\s*from\\s*(\"|')" + _package + "\\3\\s*;?", "mg"), function (match, names, name, q, packageName) {
             return getImportExp(names, packageName)
                 + getImportExp(name, packageName);
         });
@@ -57,6 +57,8 @@ module.exports = function (source, inputSourceMap) {
                 content = replaceImport(content, name, options.modules[name]);
             });
     }
+
+    console.log(content);
 
     this.callback(null, content, inputSourceMap);
 };
