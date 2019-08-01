@@ -38,7 +38,7 @@ module.exports = function (source, inputSourceMap) {
     this.cacheable();
 
     var options = loaderUtils.getOptions(this);
-    console.log(options);
+    // console.log(options);
 
     var content = replaceImport(source, "snowball", "window.Snowball");
     content = replaceImport(content, "snowball/app", "window.Snowball._app");
@@ -58,7 +58,7 @@ module.exports = function (source, inputSourceMap) {
             });
     }
 
-    console.log(content);
+    // console.log(content);
 
     this.callback(null, content, inputSourceMap);
 };
