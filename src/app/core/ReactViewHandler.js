@@ -150,8 +150,6 @@ export default class ReactViewHandler {
             console.time(timer);
         }
 
-        console.log('start render');
-
         this.componentInstance = ReactDOM.render(createElement(this.renderPage), this.el, () => {
             callback && callback();
             if (process.env.NODE_ENV !== 'test') {

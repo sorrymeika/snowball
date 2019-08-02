@@ -180,7 +180,10 @@ export default class ActivityManager implements IActivityManager {
         this.activitiesCache = [];
         this.options = options;
         this.application = application;
-        this.bindBackGesture(application.rootElement, application);
+
+        if ('ontouchmove' in document.body) {
+            this.bindBackGesture(application.rootElement, application);
+        }
     }
 
     bindBackGesture(rootElement, application) {

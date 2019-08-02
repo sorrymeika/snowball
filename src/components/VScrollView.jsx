@@ -25,13 +25,15 @@ const [rAF, cAF] = false
     : [requestAnimationFrame, cancelAnimationFrame];
 
 const SHOULD_ADJUST_SCROLLTOP_FOR_INPUTS = android && IS_SNOWBALL_WEBVIEW;
-
 const touchMoveEventStore = new WeakSet();
-(document.getElementById('root') || document.body).addEventListener('touchmove', (e) => {
-    if (touchMoveEventStore.has(e) && !e.isFromScrollMove) {
-        e.preventDefault();
-    }
-});
+
+if ('ontouchmove' in document.body) {
+    (document.getElementById('root') || document.body).addEventListener('touchmove', (e) => {
+        if (touchMoveEventStore.has(e) && !e.isFromScrollMove) {
+            e.preventDefault();
+        }
+    });
+}
 
 export default class VScrollView extends Component {
 
