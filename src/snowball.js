@@ -7,6 +7,8 @@ import * as _widget from './widget';
 import * as _nativeSdk from './native-sdk';
 import * as util from './utils';
 
+export const $ = util.$;
+
 export {
     util,
     _React,

@@ -9,43 +9,61 @@ const defaultTitle = document.title;
 
 function createPageCtx(page, ctx) {
     const messageChannel = new EventEmitter();
+    const toDiscriptor = (props) => {
+        return Object.keys(props)
+            .reduce((res, key) => {
+                res[key] = {
+                    writable: false,
+                    value: props[key]
+                };
+                return res;
+            }, {});
+    };
     const pageCtx = Object.create(ctx, {
-        get location() {
-            return page.location;
-        },
-        page,
-        on: (type, fn) => {
-            const cb = (e, state) => fn(state);
-            cb._cb = fn;
-            messageChannel.on(type, cb);
-            return pageCtx;
-        },
-        off: (...args) => {
-            messageChannel.off(...args);
-            return pageCtx;
-        },
-        once: (type, callback) => {
-            function once(e, state) {
-                messageChannel.off(name, once);
-                return callback.call(pageCtx, state);
+        location: {
+            get() {
+                return page.location;
             }
-            once._cb = callback;
-            messageChannel.on(type, once);
-            return pageCtx;
         },
-        emit: (state) => {
-            if (!state.type) throw new Error('emit must has a `type`!');
-            messageChannel.trigger(state.type, state);
+        page: {
+            get() {
+                return page;
+            }
         },
-        createEvent: () => {
-            const emitter = new Emitter();
-            const emitWrapper = (fn) => emitter.observe(fn);
-            emitWrapper.emit = (data) => {
-                emitter.set(data);
-            };
-            page.on('destroy', () => emitter.destroy());
-            return emitWrapper;
-        }
+        ...toDiscriptor({
+            on: (type, fn) => {
+                const cb = (e, state) => fn(state);
+                cb._cb = fn;
+                messageChannel.on(type, cb);
+                return pageCtx;
+            },
+            off: (...args) => {
+                messageChannel.off(...args);
+                return pageCtx;
+            },
+            once: (type, callback) => {
+                function once(e, state) {
+                    messageChannel.off(name, once);
+                    return callback.call(pageCtx, state);
+                }
+                once._cb = callback;
+                messageChannel.on(type, once);
+                return pageCtx;
+            },
+            emit: (state) => {
+                if (!state.type) throw new Error('emit must has a `type`!');
+                messageChannel.trigger(state.type, state);
+            },
+            createEvent: () => {
+                const emitter = new Emitter();
+                const emitWrapper = (fn) => emitter.observe(fn);
+                emitWrapper.emit = (data) => {
+                    emitter.set(data);
+                };
+                page.on('destroy', () => emitter.destroy());
+                return emitWrapper;
+            }
+        })
     });
 
     page.on('destroy', () => {
@@ -77,6 +95,8 @@ export class Page extends EventEmitter implements IPage {
         this._cache = new Model();
         this._title = defaultTitle;
         this.ctx = createPageCtx(this, ctx);
+
+        console.log(this.ctx);
 
         extentions.forEach(({ initialize, onCreate, onShow, onDestroy }) => {
             if (initialize) initialize.call(this);
