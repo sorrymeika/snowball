@@ -1,4 +1,5 @@
-import { isModel, isObservable } from "./predicates";
+import { isObservable } from "./predicates";
+import { defer } from "./methods/enqueueUpdate";
 
 let currentReaction;
 
@@ -12,7 +13,7 @@ function put(model, name) {
     const id = model.state.id + ':' + name;
     const value = model.state.observableProps[name];
     const oldDispose = this._disposers[id];
-    const deepChange = value && isObservable(value) && !isModel(value);
+    const deepChange = value && isObservable(value) && !value.state.facade;
 
     if (!oldDispose) {
         observe.call(this, model, name, id, deepChange, value);
@@ -54,8 +55,6 @@ function observe(model, name, id, deepChange, value) {
     model.on('change:' + name, emit);
 }
 
-const nextTick = Promise.prototype.then.bind(Promise.resolve());
-
 /**
  * @example
  * const reaction = new Reaction(() => {
@@ -81,7 +80,7 @@ export class Reaction {
             this.emit = () => {
                 if (!emitted) {
                     emitted = true;
-                    nextTick(() => {
+                    defer(() => {
                         emitted = false;
                         for (let i = 0; i < funcs.length; i++) {
                             funcs[i]();
