@@ -1,7 +1,10 @@
-import React, { Component, createElement } from 'react';
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable react-hooks/rules-of-hooks */
+import React, { Component, createElement, useMemo, useState } from 'react';
 import { isString, isArray, isFunction } from '../../utils';
 import { PageProviderContext } from '../core/ReactViewHandler';
 import { observer } from './observer';
+import { Reaction } from '../../vm';
 
 let pageContext;
 
@@ -15,11 +18,36 @@ function isStateless(component) {
     return !(component.prototype && component.prototype.render);
 }
 
-function createStoreInjector(grabStoresFn, componentClass, makeReactive) {
+function makeStatelessComponentReacitve(statelessComponentClass) {
+    const componentClass = (props) => {
+        let [version, setRendering] = useState(0);
 
+        const reaction = useMemo(() => {
+            const reaction = new Reaction(() => {
+                if (!reaction.isRenderingPending) {
+                    reaction.isRenderingPending = true;
+                    setRendering(version + 1);
+                }
+            }, true);
+            return reaction;
+        }, []);
+        reaction.isRenderingPending = false;
+
+        let element;
+        reaction.track(() => {
+            element = statelessComponentClass(props);
+        });
+        return element;
+    };
+    componentClass.injectorName = statelessComponentClass.injectorName || statelessComponentClass.name;
+    return componentClass;
+}
+
+function createStoreInjector(grabStoresFn, componentClass, makeReactive) {
     const _isStateless = isStateless(componentClass);
     if (_isStateless) {
         makeReactive = true;
+        componentClass = makeStatelessComponentReacitve(componentClass);
     } else {
         componentClass = observer(componentClass);
     }
@@ -34,12 +62,10 @@ function createStoreInjector(grabStoresFn, componentClass, makeReactive) {
             for (let key in additionalProps) {
                 props[key] = additionalProps[key];
             }
-
             if (!_isStateless) {
                 props.ref = forwardRef;
-                return createElement(componentClass, props);
             }
-            return componentClass(props);
+            return createElement(componentClass, props);
         }
     }
 

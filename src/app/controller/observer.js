@@ -6,12 +6,7 @@ const IsObserverComponent = Symbol('IsObserverComponent');
 
 export function observer(componentClass) {
     if (!componentClass.prototype || !componentClass.prototype.render) {
-        return observer(class extends Component {
-            static injectorName = componentClass.injectorName || componentClass.name;
-            render() {
-                return componentClass.call(this, this.props, this.context);
-            }
-        });
+        throw new Error('could\'t use `observer` to decorate stateless component! please use Hooks to instead!');
     }
 
     const target = componentClass.prototype;

@@ -96,8 +96,6 @@ export class Page extends EventEmitter implements IPage {
         this._title = defaultTitle;
         this.ctx = createPageCtx(this, ctx);
 
-        console.log(this.ctx);
-
         extentions.forEach(({ initialize, onCreate, onShow, onDestroy }) => {
             if (initialize) initialize.call(this);
             if (onCreate) this.on('create', () => onCreate.call(this));

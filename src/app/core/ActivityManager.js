@@ -376,3 +376,37 @@ export default class ActivityManager implements IActivityManager {
         return replacingTask;
     }
 }
+
+export const renderActivity = function (controllerClass, props, container, cb) {
+    const location = (props && props.location) || {};
+    const activity = controllerClass[ACTIVITY_CREATOR](location, {
+        rootElement: container
+    })
+        .setTransitionTask(Promise.resolve())
+        .setProps({
+            location,
+            ...props
+        }, cb);
+
+    activity.$el.css({
+        opacity: 1,
+        display: 'block',
+        '-webkit-transform': 'translate3d(0%,0%,0)'
+    });
+    activity.show();
+
+    const wrapper = {
+        destroy() {
+            activity.destroy();
+            return wrapper;
+        },
+        setState(state, cb) {
+            activity.setProps(state, cb);
+            return wrapper;
+        },
+        get $el() {
+            return activity.$el;
+        }
+    };
+    return wrapper;
+};
