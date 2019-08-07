@@ -4,11 +4,12 @@ import { Collection } from "../Collection";
 import { freezeObject } from "./connect";
 
 export function blindSet(model, renew, keys, val) {
-    var lastKey = keys.pop();
     var tmp;
     var key;
     var nextKey;
     var isArray;
+    var index;
+    var defaultData;
 
     for (var i = 0, len = keys.length; i < len; i++) {
         key = keys[i];
@@ -16,11 +17,9 @@ export function blindSet(model, renew, keys, val) {
         isArray = /^\[(\d+)\]$/.test(nextKey);
 
         if (!isModel(model.state.observableProps[key])) {
-            let defaultData;
-            let index;
             if (isArray) {
-                index = nextKey.slice(1, -1);
-                defaultData = Array.from(index).fill({});
+                index = Number(nextKey.slice(1, -1));
+                defaultData = Array(index + 1).fill({});
                 i++;
             } else {
                 defaultData = {};
@@ -37,7 +36,17 @@ export function blindSet(model, renew, keys, val) {
             model = isArray ? tmp[index] : tmp;
         } else {
             model = model.state.observableProps[key];
+            if (isArray) {
+                index = Number(nextKey.slice(1, -1));
+                model = model[index];
+                i++;
+            }
+        }
+
+        if (i >= len - 2) {
+            return isArray && i === len - 1
+                ? model.set(renew, val)
+                : model.set(renew, keys[len - 1], val);
         }
     }
-    return model.set(renew, lastKey, val);
 }
