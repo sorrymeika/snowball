@@ -168,7 +168,9 @@ export class Model extends Observer {
         } else if (keyIsObject) {
             attrs = key;
         } else {
-            keys = keyType === '[object Array]' ? key : key.split('.');
+            keys = keyType === '[object Array]' ? key : key.replace(/\[(\d+)\]/g, '.[$1]')
+                .split('.')
+                .filter((name) => name);
 
             if (keys.length > 1) {
                 model = blindSet(this, renew, keys, val);
