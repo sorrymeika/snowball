@@ -164,23 +164,24 @@ function emitChange(target) {
 }
 
 function bubbleChange(target, paths) {
-    if (!bubbled[target.state.id]) {
-        bubbled[target.state.id] = true;
-        const parents = target.state.parents;
-        if (parents) {
-            const length = parents.length;
-            var i = -1;
-            var parent;
-            while (++i < length) {
-                parent = parents[i];
-                var name = getMemberName(parent, target);
-                var nextPaths = paths ? name + '/' + paths : name;
+    const parents = target.state.parents;
+    if (parents) {
+        const length = parents.length;
+        var i = -1;
+        var parent;
+        while (++i < length) {
+            parent = parents[i];
+            var name = getMemberName(parent, target);
+            var nextPaths = paths ? name + '/' + paths : name;
+            var id = parent.state.id + ':' + nextPaths;
+            if (!bubbled[id]) {
+                bubbled[id] = true;
                 parent.trigger('datachanged:' + nextPaths, {
                     paths: nextPaths
                 });
-                bubbleChange(parent, nextPaths);
-                !paths && emitChange(parent);
             }
+            bubbleChange(parent, nextPaths);
+            !paths && emitChange(parent);
         }
     }
 }
