@@ -55,6 +55,7 @@ let dirts;
 let flags;
 let flushing = false;
 let changed;
+let bubbled;
 
 export function enqueueInit(observer) {
     initializers[observer.state.id] = observer;
@@ -130,7 +131,9 @@ function flushDirts() {
         const length = dirts.length;
 
         const lastChanged = changed;
+        const lastBubbled = bubbled;
         changed = {};
+        bubbled = {};
 
         var i = -1;
         var target;
@@ -145,6 +148,7 @@ function flushDirts() {
         }
 
         changed = lastChanged;
+        bubbled = lastBubbled;
     }
     flushing = false;
 }
@@ -160,20 +164,23 @@ function emitChange(target) {
 }
 
 function bubbleChange(target, paths) {
-    const parents = target.state.parents;
-    if (parents) {
-        const length = parents.length;
-        var i = -1;
-        var parent;
-        while (++i < length) {
-            parent = parents[i];
-            var name = getMemberName(parent, target);
-            var nextPaths = paths ? name + '/' + paths : name;
-            parent.trigger('datachanged:' + nextPaths, {
-                paths: nextPaths
-            });
-            bubbleChange(parent, nextPaths);
-            !paths && emitChange(parent);
+    if (!bubbled[target.state.id]) {
+        bubbled[target.state.id] = true;
+        const parents = target.state.parents;
+        if (parents) {
+            const length = parents.length;
+            var i = -1;
+            var parent;
+            while (++i < length) {
+                parent = parents[i];
+                var name = getMemberName(parent, target);
+                var nextPaths = paths ? name + '/' + paths : name;
+                parent.trigger('datachanged:' + nextPaths, {
+                    paths: nextPaths
+                });
+                bubbleChange(parent, nextPaths);
+                !paths && emitChange(parent);
+            }
         }
     }
 }
@@ -187,9 +194,12 @@ export function emitUpdate(target) {
         }
     }
     const lastChanged = changed;
+    const lastBubbled = bubbled;
     changed = {};
+    bubbled = {};
     emitChange(target);
     changed = lastChanged;
+    bubbled = lastBubbled;
 }
 
 function newFiber() {
