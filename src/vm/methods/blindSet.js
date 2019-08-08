@@ -1,4 +1,4 @@
-import { isModel } from "../predicates";
+import { isObservable } from "../predicates";
 import { Model } from "../Model";
 import { Collection } from "../Collection";
 import { freezeObject } from "./connect";
@@ -16,7 +16,7 @@ export function blindSet(model, renew, keys, val) {
         nextKey = keys[i + 1];
         isArray = /^\[(\d+)\]$/.test(nextKey);
 
-        if (!isModel(model.state.observableProps[key])) {
+        if (!isObservable(model.state.observableProps[key])) {
             if (isArray) {
                 index = Number(nextKey.slice(1, -1));
                 defaultData = Array(index + 1).fill({});
