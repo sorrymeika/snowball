@@ -584,6 +584,23 @@ export class Collection extends Observer {
         return this;
     }
 
+    swap(aIndex, bIndex) {
+        collectionWillUpdate(this);
+        const a = this[aIndex];
+        const b = this[bIndex];
+
+        this[aIndex] = b;
+        this[bIndex] = a;
+
+        setMapper(this, b, aIndex);
+        setMapper(this, a, bIndex);
+
+        this.state.data[aIndex] = b.state.data;
+        this.state.data[bIndex] = a.state.data;
+        this.state.changed = true;
+        return collectionDidUpdate(this);
+    }
+
     splice(start, count, array) {
         if (!count && !array) return [];
 
@@ -643,9 +660,7 @@ export class Collection extends Observer {
         }
 
         this.state.changed = true;
-
         collectionDidUpdate(this);
-
         return spliced;
     }
 
