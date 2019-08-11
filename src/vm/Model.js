@@ -115,7 +115,12 @@ export class Model extends Observer {
     }
 
     pick(keys) {
-        return keys && keys.map((key) => this.get(key));
+        return keys
+            ? keys.reduce((result, key) => {
+                result[key] = this.get(key);
+                return result;
+            }, {})
+            : {};
     }
 
     get(key) {
@@ -166,7 +171,7 @@ export class Model extends Observer {
             }
             return this;
         } else if (keyIsObject) {
-            attrs = key;
+            attrs = { ...key };
         } else {
             keys = keyType === '[object Array]' ? key : key.replace(/\[(\d+)\]/g, '.[$1]')
                 .split('.')
