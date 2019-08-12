@@ -39,6 +39,10 @@ input.flexitem, input.flex_1, input.flex_0 { border: 0; height: 100%; background
 .of_s { overflow: scroll; -webkit-overflow-scrolling: touch; }
 .ofx_h { overflow-x: hidden; }
 .ofx_a { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.ofx_s { overflow-x: scroll; -webkit-overflow-scrolling: touch; }
+.ofy_h { overflow-y: hidden; }
+.ofy_a { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.ofy_s { overflow-y: scroll; -webkit-overflow-scrolling: touch; }
 
 .dp_f { display: flex; }
 .dp_b { display: block; }
