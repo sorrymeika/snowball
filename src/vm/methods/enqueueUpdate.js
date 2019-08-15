@@ -251,17 +251,22 @@ if (typeof MessageChannel !== 'undefined' && /^\[object MessageChannelConstructo
     _scheduleFlushViews = () => setTimeout(flushViews, 0);
 }
 
+let renderNothing = false;
 function scheduleFlushViews() {
     flushingStartTime = getCurrentTime();
     requestAnimationFrameWithTimeout(_scheduleFlushViews);
 }
 
 export function shouldContinueFlushingViews() {
+    if (renderNothing) {
+        flushingStartTime = getCurrentTime() - 16;
+    }
     return process.env.NODE_ENV === 'test' ? true : (getCurrentTime() - flushingStartTime < 33);
 }
 
 function flushViews() {
     if (!shouldContinueFlushingViews()) {
+        renderNothing = true;
         scheduleFlushViews();
         return;
     }
