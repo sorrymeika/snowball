@@ -156,14 +156,14 @@ function createActivity(route, location, application) {
         return viewFactory.then((res) => {
             route.viewFactory = res;
             loader.hideLoader();
-            return createActivityFromModule(res, application);
+            return createActivityFromModule(res, location, application);
         });
     }
 
-    return createActivityFromModule(viewFactory, application);
+    return createActivityFromModule(viewFactory, location, application);
 }
 
-function createActivityFromModule(viewFactory, application) {
+function createActivityFromModule(viewFactory, location, application) {
     viewFactory = viewFactory.default || viewFactory;
 
     return viewFactory[ACTIVITY_CREATOR]

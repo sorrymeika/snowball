@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable react-hooks/rules-of-hooks */
-import React, { Component, createElement, useMemo, useState } from 'react';
+import React, { Component, createElement, useMemo, useState, useEffect } from 'react';
 import { isString, isArray, isFunction } from '../../utils';
 import { PageProviderContext } from '../core/ReactViewHandler';
 import { observer } from './observer';
@@ -34,6 +34,8 @@ function makeStatelessComponentReacitve(statelessComponentClass) {
             return reaction;
         }, []);
         reaction.isRenderingPending = false;
+
+        useEffect(() => () => reaction.destroy(), []);
 
         let element;
         reaction.track(() => {
