@@ -258,10 +258,8 @@ function scheduleFlushViews() {
 }
 
 export function shouldContinueFlushingViews() {
-    if (renderNothing) {
-        flushingStartTime = getCurrentTime() - 16;
-    }
-    return process.env.NODE_ENV === 'test' ? true : (getCurrentTime() - flushingStartTime < 33);
+    const currentTime = getCurrentTime();
+    return process.env.NODE_ENV === 'test' ? true : (currentTime - flushingStartTime < 33 || (renderNothing && (flushingStartTime = currentTime - 16)));
 }
 
 function flushViews() {
@@ -270,6 +268,7 @@ function flushViews() {
         scheduleFlushViews();
         return;
     }
+    renderNothing = false;
 
     const { index, views, viewIds } = fiber;
 
