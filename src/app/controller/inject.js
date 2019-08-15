@@ -23,10 +23,12 @@ function makeStatelessComponentReacitve(statelessComponentClass) {
         let [version, setRendering] = useState(0);
 
         const reaction = useMemo(() => {
+            let ver = version;
             const reaction = new Reaction(() => {
+                ver++;
                 if (!reaction.isRenderingPending) {
                     reaction.isRenderingPending = true;
-                    setRendering(version + 1);
+                    setRendering(ver);
                 }
             }, true);
             return reaction;
