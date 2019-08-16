@@ -82,11 +82,22 @@ window.preloader = (function (window, document, preloadOptions, undefined) {
                     addBodyClass('app-fix-statusbar');
                 }
             }
-            newStyle(
-                'cssHack',
-                '.app-screen-width,.vw_100{width:' + window.innnerWith + 'px}' +
-                '.app-screen-height,.vh_100{height:' + window.innnerHeight + 'px}'
-            );
+
+            function refreshCssHack() {
+                newStyle(
+                    'cssHack',
+                    '.app-screen-width,.w_100vw{width:' + window.innerWidth + 'px}' +
+                    '.app-screen-height,h_100vh{height:' + window.innerHeight + 'px}' +
+                    '.mh_100vh{min-height:' + window.innerHeight + 'px}'
+                );
+            }
+
+            var timeoutId;
+            window.addEventListener('resize', function () {
+                clearTimeout(timeoutId);
+                timeoutId = setTimeout(refreshCssHack, 300);
+            }, false);
+            refreshCssHack();
         }
     ]);
 

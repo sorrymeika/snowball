@@ -289,6 +289,20 @@ export function get(data, path) {
     return data;
 }
 
+export function hasKey(data, path) {
+    if (isString(path)) {
+        path = castPath(path);
+    }
+
+    for (var i = 0, len = path.length; i < len; i++) {
+        if (data == null || !(path[i] in data))
+            return false;
+        data = data[path[i]];
+    }
+
+    return true;
+}
+
 // Note: this method is deprecated
 export function value(data, paths) {
     console.error('`util.value` is deprecated use `util.get` instead!!');
