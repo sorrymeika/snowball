@@ -2,11 +2,12 @@
 /* eslint-disable react-hooks/rules-of-hooks */
 import React, { Component, createElement, useMemo, useState, useEffect } from 'react';
 import { isString, isArray, isFunction } from '../../utils';
-import { PageProviderContext } from '../core/ReactViewHandler';
 import { observer } from './observer';
 import { Reaction } from '../../vm';
 
 let pageContext;
+
+export const PageProviderContext = React.createContext();
 
 export const getCurrentContext = () => {
     return pageContext;
@@ -45,6 +46,12 @@ function makeStatelessComponentReacitve(statelessComponentClass) {
     };
     componentClass.injectorName = statelessComponentClass.injectorName || statelessComponentClass.name;
     return componentClass;
+}
+
+export function makeComponentReacitve(componentClass) {
+    return isStateless(componentClass)
+        ? makeStatelessComponentReacitve(componentClass)
+        : observer(componentClass);
 }
 
 function createStoreInjector(grabStoresFn, componentClass, makeReactive) {

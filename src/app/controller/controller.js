@@ -4,7 +4,7 @@ import { registerRoutes } from "../core/registerRoutes";
 import Activity from "../core/Activity";
 import { ACTIVITY_CREATOR } from "../core/ActivityManager";
 import { IS_CONTROLLER, INJECTABLE_PROPS } from "./symbols";
-import { getCurrentContext } from "./inject";
+import { getCurrentContext } from "../react/inject";
 
 
 let isCreating = false;

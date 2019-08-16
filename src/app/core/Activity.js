@@ -1,9 +1,9 @@
 
 import { $ } from '../../utils';
 import { ViewModel } from '../../vm';
-import { Page } from './Page';
-import ReactViewHandler from './ReactViewHandler';
+import ReactViewHandler from '../react/ReactViewHandler';
 import SnowballViewHandler from './SnowballViewHandler';
+import { Page } from './Page';
 
 const ACTIVITY_STATUS_INIT = 0;
 const ACTIVITY_STATUS_CREATE = 1;

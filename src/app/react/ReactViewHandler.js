@@ -3,8 +3,7 @@ import React, { Component, createElement } from 'react';
 import ReactDOM from 'react-dom';
 import { Model } from '../../vm';
 import { SymbolFrom } from '../../vm/symbols';
-
-export const PageProviderContext = React.createContext();
+import { PageProviderContext, makeComponentReacitve } from './inject';
 
 export default class ReactViewHandler {
     constructor({ el, page, activity, location, viewFactory, mapStoreToProps }) {
@@ -22,6 +21,7 @@ export default class ReactViewHandler {
         this.mapStoreToProps = mapStoreToProps;
 
         const viewHandler = this;
+        const reactiveView = makeComponentReacitve(viewFactory);
 
         class PageProvider extends Component {
             shouldComponentUpdate() {
@@ -40,7 +40,7 @@ export default class ReactViewHandler {
                         value={{
                             store: viewHandler.state
                         }}
-                    >{createElement(viewFactory, viewHandler.model.attributes)}</PageProviderContext.Provider>
+                    >{createElement(reactiveView, viewHandler.model.attributes)}</PageProviderContext.Provider>
                 );
             }
         }

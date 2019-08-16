@@ -1,6 +1,6 @@
 import React from 'react';
 import { Model } from '../../vm';
-import { PageProviderContext } from '../core/ReactViewHandler';
+import { PageProviderContext } from './inject';
 
 export function provide(mapPropsToStore) {
     return (componentClass) => {

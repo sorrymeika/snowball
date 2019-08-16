@@ -1,4 +1,4 @@
-import { injectable } from "./injectable";
+import { injectable } from "../controller/injectable";
 
 export function ref(target, name, descriptor) {
     injectable(target, name, descriptor);
