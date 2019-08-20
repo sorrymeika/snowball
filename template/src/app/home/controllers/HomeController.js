@@ -1,7 +1,7 @@
 import { controller, injectable } from "snowball/app";
 import Home from "../containers/Home";
 
-@controller('/', Home)
+@controller(Home)
 class HomeController {
     constructor({ location }, context) {
         console.log(location);

@@ -39,7 +39,7 @@ function beforeAppStart() {
  * @param {Element} [callback] 回调函数
  */
 export function createApplication({
-    projects,
+    projects = {},
     routes,
     extend,
     options,

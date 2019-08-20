@@ -4,7 +4,7 @@ var fs = require('fs');
 var path = require('path');
 var JsUtils = require('../../../node-libs/js-utils');
 
-var stringRE = "'(?:(?:\\\\{2})+|\\\\'|[^'])*'|\"(?:(?:\\\\{2})+|\\\\\"|[^\"])*\"";
+var stringRE = "'(?:(?:\\\\{2})+|\\\\'|[^'])*'|\"(?:(?:\\\\{2})+|\\\\\"|[^\"])*\"|`(?:(?:\\\\{2})+|\\\\`|[^`])*`";
 
 function createRegExp(exp, flags, deep) {
     if (typeof flags === 'number') {
@@ -39,7 +39,7 @@ function createRegExp(exp, flags, deep) {
     return new RegExp(result, flags);
 }
 
-var REQUIRE_RE = /"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\/\*[\S\s]*?\*\/|\/(?:\\\/|[^\/\r\n])+\/(?=[^\/])|\/\/.*|\.\s*require|(?:^|[^$])\bvar\s+([a-zA-Z0-9_]+)\s*=\s*require\s*\(\s*(["'])(.+?)\2\s*\)/g;
+var REQUIRE_RE = /"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\/\*[\S\s]*?\*\/|\/(?:\\\/|[^/\r\n])+\/(?=[^/])|\/\/.*|\.\s*require|(?:^|[^$])\bvar\s+([a-zA-Z0-9_]+)\s*=\s*require\s*\(\s*(["'])(.+?)\2\s*\)/g;
 var USELESS_FN_RE = createRegExp("\\s(ref|on[A-Z]\\w+|app-link|app-track|app-track-params)={...}", 'g');
 
 var route;

@@ -16,7 +16,7 @@ class Route {
                     return '(' + (regex || '[^\\/]+') + ')';
                 });
         });
-        this.regex = new RegExp("^" + paths.join('\\/') + "$");
+        this.regex = new RegExp("^" + paths.join('\\/') + "$", 'i');
     }
 
     match(path, search) {
@@ -55,7 +55,7 @@ class Project {
     path;
 
     constructor(path, url) {
-        this.path = new RegExp(path);
+        this.path = new RegExp(path, 'i');
         this.url = url;
     }
 

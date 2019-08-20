@@ -7,10 +7,12 @@ function replaceImport(source, _package, replaceWith) {
             return replaceWith;
         };
 
-    const getImportExp = function (varName, packageName) {
+    const getImportExp = function (varName, packageName, semicolon = ';') {
         if (!varName) return '';
-        return "var " + varName.replace(/([$\w]+)\s+as\s+([$\w]+)/g, "$1:$2") + "=" + getPackageName(packageName) + ";";
+        return "var " + varName.replace(/([$\w]+)\s+as\s+([$\w]+)/g, "$1:$2") + "=" + getPackageName(packageName) + semicolon;
     };
+
+    // const STRING_RE = "'(?:(?:\\\\{2})+|\\\\'|[^'])*'|\"(?:(?:\\\\{2})+|\\\\\"|[^\"])*\"|`(?:(?:\\\\{2})+|\\\\`|[^`])*`";
 
     _package = '(' + _package + ')';
 
@@ -27,9 +29,13 @@ function replaceImport(source, _package, replaceWith) {
                 + getImportExp(name, packageName);
         });
 
-    source = source.replace(new RegExp("\\b(?:var|const|let|,)\\s+([\\w$]+)\\s*=\\s*require\\(\\s*(\"|')" + _package + "\\2\\s*\\)\\s*;?", 'mg'), function (match, name, q, packageName) {
-        return getImportExp(name, packageName);
-    });
+    source = source
+        .replace(new RegExp("\\b(?:var|const|let|,)\\s+([\\w$]+)\\s*=\\s*require\\(\\s*(\"|')" + _package + "\\2\\s*\\)\\s*(;)?", 'mg'), function (match, name, q, packageName, semicolon) {
+            return getImportExp(name, packageName, semicolon || '');
+        })
+        .replace(new RegExp("\\brequire\\(\\s*(\"|')" + _package + "\\2\\s*\\)\\s*(;)?", 'mg'), function (match, name, q, packageName) {
+            return '';
+        });
 
     return source;
 }
@@ -37,8 +43,15 @@ function replaceImport(source, _package, replaceWith) {
 module.exports = function (source, inputSourceMap) {
     this.cacheable();
 
-    var options = loaderUtils.getOptions(this);
-    // console.log(options);
+    const options = loaderUtils.getOptions(this);
+    const url = inputSourceMap.sources[0];
+
+    if (options && options.excludes) {
+        if (options.excludes.some((exclude) => (typeof exclude === 'string' ? url.indexOf(exclude) !== -1 : exclude.test(url)))) {
+            this.callback(null, source, inputSourceMap);
+            return;
+        }
+    }
 
     var content = replaceImport(source, "snowball", "window.Snowball");
     content = replaceImport(content, "snowball/app", "window.Snowball._app");

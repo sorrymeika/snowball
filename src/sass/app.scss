@@ -16,7 +16,7 @@
 .app-header { height: 44px; color: $fc; background: $lightbgc; @extend .flex; position: relative; z-index: 200; background-clip: border-box; }
 .app-header:after { @include border(#ddd); border-top: 0; border-left: 0; border-right: 0; }
 .app-header.app-header-with-bg:after { display: none; }
-.app-header-con { @extend %dock; width: 100%; height: 100%; z-index: 0; @extend .flex; }
+.app-header-con { @extend .dock; width: 100%; height: 100%; z-index: 0; @extend .flex; }
 .app-header-title, .app-header-tab { margin: 0 1rem; text-align: center; width: 1.75rem; }
 .app-header-tab { position: relative; height: 100%; }
 .app-header-tab .curr { color: $color; }

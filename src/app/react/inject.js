@@ -86,6 +86,7 @@ function createStoreInjector(grabStoresFn, componentClass, makeReactive) {
         React.createElement(Injector, { ...props, forwardRef: ref })
     );
     InjectHocRef.wrappedComponent = componentClass;
+    InjectHocRef.$$isInjector = true;
 
     return InjectHocRef;
 }

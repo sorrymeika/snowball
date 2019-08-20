@@ -1,18 +1,7 @@
-import { createApplication } from "snowball/app";
-import "./sass/style.scss";
-import "./app/home/controllers/HomeController";
-
-const projects = {
-};
-
-const routes = {
-    '/test': import("./Test")
-};
-
-createApplication({
-    projects,
-    routes,
-    autoStart: true
-}, document.getElementById('root'), () => {
-    console.log('application start!');
-});
+if (process.env.NODE_ENV === 'production') {
+    require('./index.prod');
+} else {
+    window.SNOWBALL_MAIN_APP
+        ? require('./index.prod')
+        : require('./index.dev');
+}

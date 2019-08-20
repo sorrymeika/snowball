@@ -21,7 +21,7 @@ export default class ReactViewHandler {
         this.mapStoreToProps = mapStoreToProps;
 
         const viewHandler = this;
-        const reactiveView = makeComponentReacitve(viewFactory);
+        const reactiveView = viewFactory.$$isInjector === true ? viewFactory : makeComponentReacitve(viewFactory);
 
         class PageProvider extends Component {
             shouldComponentUpdate() {

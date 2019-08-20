@@ -1,28 +1,34 @@
 @import "variables.scss";
 
-.ff_def { @extend %ff_def; }
+.ff_def { font-family: $ff; }
 
-.flex { @extend %flex; @extend %ai_c; }
-.flexwrap { @extend %flexwrap; }
-.flex_r { @extend %flex_r; }
-.fd_r { @extend %fd_r; }
-.fd_rr { @extend %fd_rr; }
-.fd_c { @extend %fd_c; }
-.fd_cr { @extend %fd_cr; }
-.jc_c { @extend %jc_c; }
-.jc_e { @extend %jc_e; }
-.jc_sb { @extend %jc_sb; }
-.jc_sa { @extend %jc_sa; }
-.ai_s { @extend %ai_s; }
-.ai_c { @extend %ai_c; }
-.ai_b { @extend %ai_b; }
-.ai_fs { @extend %ai_fs; }
-.ai_fe { @extend %ai_fe; }
-.as_c { @extend %as_c; }
-.as_s { @extend %as_s; }
-.as_fs { @extend %as_fs; }
-.as_fe { @extend %as_fe; }
+.flex {
+    display: -webkit-box; display: flex; -webkit-box-align: center; align-items: center;
+    > a { display: block }
+    > a:active { background-color: rgba(0,0,0,.1); }
+}
+.flexwrap { display: -webkit-box; -webkit-box-lines: multiple; display: flex; flex-wrap: wrap; }
+.flex_r { @extend.flex; @extend .ai_fs; -webkit-box-direction: reverse; -webkit-box-pack: end; flex-direction: row-reverse; }
+.fd_r { -webkit-box-orient: horizontal; flex-direction: row; }
+.fd_rr { -webkit-box-direction: reverse; flex-direction: row-reverse; }
+.fd_c { -webkit-box-orient: vertical; flex-direction: column; }
+.fd_cr { -webkit-box-orient: vertical; -webkit-box-direction: reverse; flex-direction: column-reverse; }
+.jc_c { -webkit-box-pack: center; justify-content: center; }
+.jc_e { -webkit-box-pack: end; justify-content: flex-end; }
+.jc_sb { -webkit-box-pack: justify; justify-content: space-between; }
+.jc_sa { -webkit-box-pack: justify; justify-content: space-around; }
+.ai_c { -webkit-box-align: center; align-items: center; }
+.ai_s { align-items: stretch; }
+.ai_b { -webkit-box-align: baseline; align-items: baseline; }
+.ai_fs { -webkit-box-align: start; align-items: flex-start; }
+.ai_fe { -webkit-box-align: end; align-items: flex-end; }
+.as_c { align-self: center; }
+.as_s { align-self: stretch; }
+.as_fs { align-self: flex-start; }
+.as_fe { align-self: flex-end; }
 
+%flexavg, %flex_0 { display: block; -webkit-box-flex: 1; flex: 1; width: 0px; }
+%flexitem, %flex_1 { display: block; -webkit-box-flex: 1; flex: 1; }
 .fx_n { flex: none; }
 .fx_0 { flex: 0; }
 .fx_1 { flex: 1; }
@@ -80,21 +86,21 @@ input.flexitem, input.flex_1, input.flex_0 { border: 0; height: 100%; background
 .to_e2:before,.to_e3:before { content: ''; }
 .to_e3 { -webkit-line-clamp: 3; }
 
-.dock { @extend %dock; }
-.dock_t { @extend %dock_t; }
-.dock_b { @extend %dock_b; }
-.dock_l { @extend %dock_l; }
-.dock_r { @extend %dock_r; }
-.dock_tb { @extend %dock_tb; }
-.dock_tl { @extend %dock_tl; }
-.dock_tlr { @extend %dock_tlr; }
-.dock_tr { @extend %dock_tr; }
-.dock_tbl { @extend %dock_tbl; }
-.dock_tbr { @extend %dock_tbr; }
-.dock_blr { @extend %dock_blr; }
-.dock_bl { @extend %dock_bl; }
-.dock_br { @extend %dock_br; }
-.dock_lr { @extend %dock_lr; }
+.dock { position: absolute; bottom: 0; left: 0; right: 0; top: 0; }
+.dock_t { position: absolute; top: 0; }
+.dock_b { position: absolute; bottom: 0; }
+.dock_l { position: absolute; left: 0; }
+.dock_r { position: absolute; right: 0; }
+.dock_tb { position: absolute; top: 0; bottom: 0; }
+.dock_tl { position: absolute; top: 0; left: 0; }
+.dock_tlr { position: absolute; top: 0; left: 0; right: 0; }
+.dock_tr { position: absolute; top: 0; right: 0; }
+.dock_tbl { position: absolute; top: 0; bottom: 0; left: 0; }
+.dock_tbr { position: absolute; top: 0; bottom: 0; right: 0; }
+.dock_blr { position: absolute; bottom: 0; left: 0; right: 0; }
+.dock_bl { position: absolute; bottom: 0; left: 0; }
+.dock_br { position: absolute; bottom: 0; right: 0; }
+.dock_lr { position: absolute; left: 0; right: 0; }
 
 .pd_s { padding: 5px; }
 .pd_m { padding: 10px; }

@@ -6,10 +6,13 @@ import * as _graphics from './graphics';
 import * as _widget from './widget';
 import * as _nativeSdk from './native-sdk';
 import * as util from './utils';
+import * as env from './env';
 
 export const $ = util.$;
+export const resource = _app.resource;
 
 export {
+    env,
     util,
     _React,
     _ReactDOM,
@@ -19,6 +22,7 @@ export {
     _widget,
     _nativeSdk
 };
+
 
 export * from "./vm";
 export * from "./core/event";

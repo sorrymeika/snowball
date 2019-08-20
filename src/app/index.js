@@ -2,8 +2,10 @@
  * 功能: 单页应用
  * 作者: sunlu
  */
+import * as resource from './core/resource';
 export { createApplication } from './core/createApplication';
 export { registerRoutes } from './core/registerRoutes';
+export { resource };
 export * from './core/backEventHandlers';
 
 export { controller } from './controller/controller';

@@ -1,21 +1,27 @@
 import preloader from '../../preloader';
-import { isString, loadJs } from '../../utils';
+import { isString, loadJs, joinPath } from '../../utils';
 
 export async function loadProject(projectUrl) {
-    var mainUrl;
-    var mainJS;
-    var mainCSS;
+    let mainUrl;
+    let mainJS;
+    let vendorsJS;
+    let bundleJS;
+    let mainCSS;
 
     if (/asset-manifest\.json$/.test(projectUrl)) {
-        var manifest = preloader.getManifest(projectUrl);
+        let manifest = preloader.getManifest(projectUrl);
         if (!manifest) {
             manifest = await loadJSON(projectUrl);
         }
+        mainUrl = projectUrl.slice(0, projectUrl.lastIndexOf('/') + 1);
+
+        Object.keys(manifest.files)
+            .forEach((key, path) => {
+            });
         mainJS = manifest['main.js'];
         mainCSS = manifest['main.css'];
-        mainUrl = projectUrl.slice(0, projectUrl.lastIndexOf('/') + 1);
     } else {
-        var result = await fetch(
+        const result = await fetch(
             projectUrl,
             projectUrl.startsWith('http://localhost')
                 ? undefined
@@ -28,13 +34,17 @@ export async function loadProject(projectUrl) {
         ).then(response => response.text());
 
         mainUrl = projectUrl;
-        mainCSS = result.match(/<link\s+href="(?:\.\/)?([\w./]+\.css)"/)[1];
-        mainJS = result.match(/<script[^>]+?src="(?:\.\/)?(static\/js\/[\w.]+\.js)"/)[1];
+        mainCSS = (result.match(/<link\s+href="(?:\.\/)?([\w./]+\.css)"/) || [])[1];
+
+        bundleJS = result.match(/<script[^>]+?src="(?:\.)?(?:\/)?(static\/js\/bundle[\w.]*\.js)"/)[1];
+        vendorsJS = result.match(/<script[^>]+?src="(?:\.)?(?:\/)?(static\/js\/(vendors)[~\w.]*\.js)"/)[1];
+        mainJS = result.match(/<script[^>]+?src="(?:\.)?(?:\/)?(static\/js\/main[\w.]*\.js)"/)[1];
     }
 
-    loadCss(mainUrl + mainCSS);
-
-    await loadJs(mainUrl + mainJS);
+    mainCSS && loadCss(joinPath(mainUrl, mainCSS));
+    bundleJS && await loadJs(joinPath(mainUrl, bundleJS));
+    vendorsJS && await loadJs(joinPath(mainUrl, vendorsJS));
+    await loadJs(joinPath(mainUrl, mainJS));
 }
 
 export async function loadJSON(src: string) {

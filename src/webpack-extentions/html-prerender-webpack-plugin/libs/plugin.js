@@ -6,7 +6,7 @@ function createPreloaderJS(options) {
 
     preloader = preloader
         .replace('`preloadOptions`', JSON.stringify({
-            bundle: options.bundle,
+            bundles: options.bundles,
             bundleLevel: options.bundleLevel,
             projects: options.projects
         }))
@@ -15,7 +15,7 @@ function createPreloaderJS(options) {
         .replace(/\bprocess\.env\.NODE_ENV\s?!==?\s?('|")PRELOAD\1/g, 'false')
         .replace(/('|")PRELOAD\1\s?!==?\s?process\.env\.NODE_ENV/g, 'false');
 
-    return options.bundle.indexOf('main') != -1
+    return process.env.NODE_ENV === 'production'
         ? JsUtils.minify(JsUtils.toES5(preloader))
         : preloader;
 }
@@ -60,16 +60,18 @@ HtmlPreRenderWebpackPlugin.prototype.apply = function (compiler) {
         if (asset) {
             var html = asset.source();
             var bundleLevel = self.options.bundleLevel;
-            var bundleIsHighLevel = bundleLevel !== 'low';
+            var replaceOnce = '%__PRELOADER_AND_SKELETON__%';
+            config.bundleLevel = bundleLevel;
+            config.bundles = {};
 
             html = html
-                .replace(/<script (?:type="text\/javascript"\s+)?src="([^"]*(?:static\/js\/bundle\.js|static\/js\/main\.(?:\w+)\.js))"><\/script>/, (match, bundlejs) => {
-                    var replacement = '%__PRELOADER_AND_SKELETON__%';
-                    if (bundleIsHighLevel) {
+                .replace(/<script (?:type="text\/javascript"\s+)?src="([^"]*(?:static\/js\/(bundle|main|vendors)[\w~.]*\.js))"><\/script>/g, (match, bundleJS, bundleName) => {
+                    var replacement = replaceOnce;
+                    replaceOnce = '';
+                    if (bundleLevel !== 'low') {
                         replacement += match;
                     }
-                    config.bundleLevel = bundleLevel;
-                    config.bundle = bundlejs;
+                    config.bundles[bundleName] = bundleJS;
                     return replacement;
                 })
                 .replace('%__PRELOADER_AND_SKELETON__%', function () {
