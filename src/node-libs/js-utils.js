@@ -26,7 +26,6 @@ exports.minify = function minify(code, mangle_names) {
             hoist_vars: false, // hoist variable declarations
             if_return: true, // optimize if-s followed by return/continue
             join_vars: true, // join var declarations
-            cascade: true, // try to cascade `right` into `left` in sequences
             side_effects: true, // drop side-effect-free statements
             warnings: false, // warn about potentially dangerous optimizations/code
             global_defs: {}
@@ -40,16 +39,18 @@ exports.minify = function minify(code, mangle_names) {
 
 
 exports.toES5 = function toES5(script) {
-    script = babel.transform(script, {
+    script = babel.transformSync(script, {
         presets: ['react-app'],
+        filename: 'tmp.js',
         plugins: [
-            "syntax-async-functions",
-            "transform-async-to-generator",
-            "transform-decorators-legacy",
-            ["transform-es2015-modules-commonjs", {
-                "allowTopLevelThis": true
-            }]
-        ]
+            ["@babel/plugin-proposal-decorators",
+                {
+                    "legacy": true
+                }]
+        ],
+        babelrc: false,
+        code: true,
+        configFile: false,
     });
     return script.code;
 };

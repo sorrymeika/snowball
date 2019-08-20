@@ -36,9 +36,9 @@ export async function loadProject(projectUrl) {
         mainUrl = projectUrl;
         mainCSS = (result.match(/<link\s+href="(?:\.\/)?([\w./]+\.css)"/) || [])[1];
 
-        bundleJS = result.match(/<script[^>]+?src="(?:\.)?(?:\/)?(static\/js\/bundle[\w.]*\.js)"/)[1];
-        vendorsJS = result.match(/<script[^>]+?src="(?:\.)?(?:\/)?(static\/js\/(vendors)[~\w.]*\.js)"/)[1];
-        mainJS = result.match(/<script[^>]+?src="(?:\.)?(?:\/)?(static\/js\/main[\w.]*\.js)"/)[1];
+        bundleJS = result.match(/<script[^>]+?src="[^"]*(static\/js\/bundle[\w.]*\.js)"/)[1];
+        vendorsJS = result.match(/<script[^>]+?src="[^"]*(?:\/)?(static\/js\/(vendors)[~\w.]*\.js)"/)[1];
+        mainJS = result.match(/<script[^>]+?src="[^"]*(static\/js\/main[\w.]*\.js)"/)[1];
     }
 
     mainCSS && loadCss(joinPath(mainUrl, mainCSS));

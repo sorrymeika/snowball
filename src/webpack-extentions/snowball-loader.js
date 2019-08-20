@@ -32,9 +32,6 @@ function replaceImport(source, _package, replaceWith) {
     source = source
         .replace(new RegExp("\\b(?:var|const|let|,)\\s+([\\w$]+)\\s*=\\s*require\\(\\s*(\"|')" + _package + "\\2\\s*\\)\\s*(;)?", 'mg'), function (match, name, q, packageName, semicolon) {
             return getImportExp(name, packageName, semicolon || '');
-        })
-        .replace(new RegExp("\\brequire\\(\\s*(\"|')" + _package + "\\2\\s*\\)\\s*(;)?", 'mg'), function (match, name, q, packageName) {
-            return '';
         });
 
     return source;
