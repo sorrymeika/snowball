@@ -152,6 +152,7 @@ module.exports = function (webpackEnv) {
       // changing JS code would still trigger a refresh.
     ].filter(Boolean),
     output: {
+      jsonpFunction: 'wpJsonp' + process.env.REACT_APP_PROJECT_NAME,
       // The build folder.
       path: isEnvProduction ? paths.appBuild : undefined,
       // Add /* filename */ comments to generated require()s in the output.
