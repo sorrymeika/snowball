@@ -73,7 +73,8 @@ export function createApplication({
         }, {}),
         registerRoutes: application.registerRoutes.bind(application)
     };
-    const ctx = extend ? { ...extend(app), ...app } : app;
+
+    const ctx = extend ? Object.defineProperties(app, Object.getOwnPropertyDescriptors(extend(app))) : app;
     application.ctx = ctx;
 
     if (autoStart) {
