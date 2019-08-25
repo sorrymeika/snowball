@@ -211,6 +211,7 @@ export class Emitter extends Observer {
         emitWrapper.emit = (data) => {
             emitter.set(data);
         };
+        emitWrapper.event = emitter;
         return emitWrapper;
     }
 
