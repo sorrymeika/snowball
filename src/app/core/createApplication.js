@@ -1,3 +1,4 @@
+import { isFunction } from '../../utils';
 import ActivityManager from './ActivityManager';
 import Router from './Router';
 import Navigation from './Navigation';
@@ -63,7 +64,7 @@ export function createApplication({
     application.setNavigation(navigation)
         .setActivityManager(new ActivityManager(application, options));
 
-    const app = {
+    const ctx = {
         navigation: ['forward', 'back', 'replace', 'transitionTo', 'home'].reduce((nav, prop) => {
             const method = navigation[prop];
             nav[prop] = (...args) => {
@@ -74,14 +75,25 @@ export function createApplication({
         registerRoutes: application.registerRoutes.bind(application)
     };
 
-    const ctx = extend ? Object.defineProperties(app, Object.getOwnPropertyDescriptors(extend(app))) : app;
+    if (extend) {
+        const descriptors = Object.getOwnPropertyDescriptors(extend(ctx));
+        Object.keys(descriptors)
+            .forEach((key) => {
+                const descriptor = descriptors[key];
+                if (isFunction(descriptor.get)) {
+                    descriptor.get = descriptor.get.bind(ctx);
+                }
+                Object.defineProperty(ctx, key, descriptor);
+            });
+    }
+
     application.ctx = ctx;
 
     if (autoStart) {
         beforeAppStart();
         application.start(callback);
     } else {
-        app.start = (cb) => {
+        ctx.start = (cb) => {
             beforeAppStart();
             application.start(cb);
         };
