@@ -2,9 +2,9 @@ import { $ } from '../utils';
 
 var promise = Promise.resolve();
 var timer;
-var $el = $('<div class="toast" style="display:none"></div>')
+var $el = $('<div class="app-toast" style="display:none"></div>')
     .on($.fx.transitionEnd, function () {
-        if ($el.hasClass('toast-hide')) {
+        if ($el.hasClass('app-toast-hide')) {
             $el.hide();
             timer && clearTimeout(timer);
             timer = null;
@@ -16,10 +16,10 @@ const Toast = {
     msec: 2000,
 
     show() {
-        if (!$el.hasClass('toast-show'))
-            $el.removeClass('toast-hide')
+        if (!$el.hasClass('app-toast-show'))
+            $el.removeClass('app-toast-hide')
                 .show()
-                .addClass('toast-show');
+                .addClass('app-toast-show');
     },
 
     msg(msg) {
@@ -40,7 +40,7 @@ const Toast = {
     },
 
     hide() {
-        $el.removeClass('toast-show').addClass('toast-hide');
+        $el.removeClass('app-toast-show').addClass('app-toast-hide');
         timer = setTimeout(() => {
             $el.hide();
         }, 400);

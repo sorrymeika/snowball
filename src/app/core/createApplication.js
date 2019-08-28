@@ -80,10 +80,43 @@ export function createApplication({
         Object.keys(descriptors)
             .forEach((key) => {
                 const descriptor = descriptors[key];
-                if (isFunction(descriptor.get)) {
-                    descriptor.get = descriptor.get.bind(ctx);
+
+                if (key === 'services' || key === 'service') {
+                    const services = descriptor.value;
+                    const cache = {};
+                    const serviceClasses = {};
+
+                    Object.defineProperty(ctx, 'service', {
+                        writable: false,
+                        value: Object.defineProperties({}, services.reduce((classes, serviceClass) => {
+                            const className = serviceClass.name.replace(/Service$/, '')
+                                .replace(/^[A-Z]/, (match) => {
+                                    return match.toLowerCase();
+                                });
+
+                            serviceClass.prototype.ctx = ctx;
+
+                            serviceClasses[className] = serviceClass;
+                            classes[className] = {
+                                get() {
+                                    let service = cache[className];
+                                    if (!service) {
+                                        const ServiceClass = serviceClasses[className];
+                                        serviceClasses[className] = null;
+                                        return (cache[className] = new ServiceClass(ctx));
+                                    }
+                                    return service;
+                                }
+                            };
+                            return classes;
+                        }, {}))
+                    });
+                } else {
+                    if (isFunction(descriptor.get)) {
+                        descriptor.get = descriptor.get.bind(ctx);
+                    }
+                    Object.defineProperty(ctx, key, descriptor);
                 }
-                Object.defineProperty(ctx, key, descriptor);
             });
     }
 
