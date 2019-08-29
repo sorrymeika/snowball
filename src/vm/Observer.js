@@ -67,8 +67,7 @@ export class Observer implements IObservable {
     }
 
     observe(fn) {
-        const cb = () => fn.call(this, this.get());
-        cb._cb = fn;
+        const cb = (e) => fn.call(this, this.get(), e);
         this.on('datachanged', cb);
         return () => this.off('datachanged', fn);
     }

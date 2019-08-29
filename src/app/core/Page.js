@@ -1,5 +1,5 @@
 import { IPage, PageLifecycleDelegate } from '../types';
-import { Model, Emitter } from '../../vm';
+import { Model, Emitter, observable } from '../../vm';
 import { store } from '../../utils';
 import { EventEmitter } from '../../core/event';
 
@@ -62,6 +62,11 @@ function createPageCtx(page, ctx) {
                 };
                 page.on('destroy', () => emitter.destroy());
                 return emitWrapper;
+            },
+            useObservable: (value) => {
+                const observer = observable(value);
+                page.on('destroy', () => observer.destroy());
+                return observer;
             }
         })
     });
