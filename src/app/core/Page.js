@@ -32,7 +32,7 @@ function createPageCtx(page, ctx) {
         },
         ...toDiscriptor({
             on: (type, fn) => {
-                const cb = (e, state) => fn(state);
+                const cb = (e) => fn(e);
                 cb._cb = fn;
                 messageChannel.on(type, cb);
                 return pageCtx;
@@ -42,9 +42,9 @@ function createPageCtx(page, ctx) {
                 return pageCtx;
             },
             once: (type, callback) => {
-                function once(e, state) {
+                function once(e) {
                     messageChannel.off(name, once);
-                    return callback.call(pageCtx, state);
+                    return callback.call(pageCtx, e);
                 }
                 once._cb = callback;
                 messageChannel.on(type, once);
@@ -52,7 +52,7 @@ function createPageCtx(page, ctx) {
             },
             emit: (state) => {
                 if (!state.type) throw new Error('emit must has a `type`!');
-                messageChannel.trigger(state.type, state);
+                messageChannel.trigger(state);
             },
             createEvent: () => {
                 const emitter = new Emitter();
