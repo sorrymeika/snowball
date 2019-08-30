@@ -6,8 +6,8 @@ import { nextTick } from "../methods/enqueueUpdate";
 
 const factories = {};
 
-export function createComponent(tagName) {
-    return new factories[tagName]();
+export function createComponent(tagName, props) {
+    return new factories[tagName](props);
 }
 
 export function component({
