@@ -14,7 +14,7 @@ export function updateRefs(model) {
         }
     }
     if (model.state.hasOnChangeListener) {
-        model.trigger('change');
+        model.trigger('change', model.state.data);
     }
 }
 

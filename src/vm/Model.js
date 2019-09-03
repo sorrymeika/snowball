@@ -344,7 +344,7 @@ export class Model extends Observer {
     observe(attribute, fn) {
         if (isString(attribute)) {
             if (fn) {
-                const cb = (e, oldValue, newValue) => {
+                const cb = (e, newValue, oldValue) => {
                     if (e.target === this) {
                         return fn.call(this, newValue, oldValue);
                     }
