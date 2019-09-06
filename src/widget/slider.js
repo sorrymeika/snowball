@@ -39,7 +39,7 @@ function Slider(options) {
 
     self.$slider = $slider = self.$el.find('.js_slider');
     self.slider = $slider[0];
-    self.$dots = self.$el.find('.js_slide_navs').appendTo(self.$el);
+    self.$dots = self.$el.find('.J_SlideNavs').appendTo(self.$el);
 
     this.touch = new Toucher(self.$el, {
         enableVertical: options.vScroll,
@@ -80,17 +80,6 @@ function Slider(options) {
 
     self.set(data);
 
-    if (options.arrow) {
-        self._prev = $('<span class="app-slider-pre js_pre"></span>').appendTo(self.$el);
-        self._next = $('<span class="app-slider-next js_next"></span>').appendTo(self.$el);
-
-        self.$el.on('tap', '.js_pre', function (e) {
-            self._toPage(options.index - 1, 250);
-        }).on('tap', '.js_next', function (e) {
-            self._toPage(options.index + 1, 250);
-        });
-    }
-
     $(window).on('ortchange', $.proxy(self.adjustWidth, self));
 
     if (options.autoLoop) {
@@ -103,8 +92,8 @@ function Slider(options) {
 Object.assign(Slider.prototype, {
     loop: false,
     x: 0,
-    itemTemplate: '<a app-link="<%=$data.url%>" <%=$data.attributes%> forward><img src="<%=$data.src%>" /></a>',
-    template: util.template('<div class="app-slider"><ul class="js_slider app-slider-con flex"></ul><ol class="js_slide_navs app-slider-nav"></ol></div>'),
+    itemTemplate: '<a href="<%=$data.url%>" <%=$data.attributes%>><img src="<%=$data.src%>" /></a>',
+    template: util.template('<div class="app-slider"><ul class="js_slider app-slider-con flex"></ul><ol class="J_SlideNavs app-slider-nav"></ol></div>'),
 
     _loadImage: function () {
         var self = this;
@@ -266,7 +255,7 @@ Object.assign(Slider.prototype, {
                     .join(' ')
             };
         }
-        return '<li class="js_slide_item slider-item flexitem">' + this.itemTemplate(dataItem) + '</li>';
+        return '<li class="J_SlideItem slider-item flexitem">' + this.itemTemplate(dataItem) + '</li>';
     },
 
     render: function () {

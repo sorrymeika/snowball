@@ -62,7 +62,9 @@ export default class Application implements IApplication {
             .then(() => {
                 this.pageCache = null;
             })
-            .then(callback);
+            .then(() => {
+                callback && callback(this.ctx);
+            });
 
         if (cache) {
             this.navigationTask.then(async () => {
