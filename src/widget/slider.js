@@ -11,7 +11,7 @@ function Slider(options) {
         dots: false,
         loop: false,
         // 自动播放间隔时间
-        autoLoop: false,
+        autoLoop: 2000,
         align: 'center',
         container: null
     }, options);
@@ -255,7 +255,7 @@ Object.assign(Slider.prototype, {
                     .join(' ')
             };
         }
-        return '<li class="J_SlideItem slider-item flexitem">' + this.itemTemplate(dataItem) + '</li>';
+        return '<li class="J_SlideItem app-slider-item flexitem">' + this.itemTemplate(dataItem) + '</li>';
     },
 
     render: function () {
@@ -267,7 +267,7 @@ Object.assign(Slider.prototype, {
 
         for (var i = 0, n = data.length; i < n; i++) {
             itemsHtml += self.renderItem(Object.assign({ $i: i }, data[i]));
-            dotsHtml += '<li class="slider-nav-item"></li>';
+            dotsHtml += '<li class="app-slider-nav-item"></li>';
         }
 
         var $slider = self.$slider.html(itemsHtml);

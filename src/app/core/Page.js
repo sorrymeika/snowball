@@ -60,6 +60,14 @@ function createPageCtx(page, ctx) {
                 emitWrapper.emit = (data) => {
                     emitter.set(data);
                 };
+                emitWrapper.once = (fn) => {
+                    let dispose;
+                    const cb = (data, e) => {
+                        dispose();
+                        fn(data, e);
+                    };
+                    dispose = emitter.observe(cb);
+                };
                 page.on('destroy', () => emitter.destroy());
                 return emitWrapper;
             },

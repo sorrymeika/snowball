@@ -68,8 +68,9 @@ export class Observer implements IObservable {
 
     observe(fn) {
         const cb = (e) => fn.call(this, this.get(), e);
+        cb._cb = fn;
         this.on('datachanged', cb);
-        return () => this.off('datachanged', fn);
+        return () => this.off('datachanged', cb);
     }
 
     unobserve(fn) {
@@ -211,6 +212,14 @@ export class Emitter extends Observer {
             emitter.set(data);
         };
         emitWrapper.event = emitter;
+        emitWrapper.once = (fn) => {
+            let dispose;
+            const cb = (data, e) => {
+                dispose();
+                fn(data, e);
+            };
+            dispose = emitter.observe(cb);
+        };
         return emitWrapper;
     }
 

@@ -142,7 +142,19 @@ class Popup {
         if (React.isValidElement(content) || content instanceof React.Component) {
             content = children.length && children.length > 1 ? <div>{children}</div> : content;
             if (portal) {
-                ReactDOM.unstable_renderSubtreeIntoContainer(portal, content, $container.children()[0]);
+                if (!ReactDOM.unstable_renderSubtreeIntoContainer) {
+                    class Provider extends React.Component {
+                        getChildContext() {
+                            return portal.context;
+                        }
+                        render() {
+                            return content;
+                        }
+                    }
+                    ReactDOM.render(React.createElement(Provider), $container.children()[0]);
+                } else {
+                    ReactDOM.unstable_renderSubtreeIntoContainer(portal, content, $container.children()[0]);
+                }
             } else {
                 ReactDOM.render(content, $container.children()[0]);
             }
