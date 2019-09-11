@@ -88,22 +88,19 @@ export function createApplication({
 
                     Object.defineProperty(ctx, 'service', {
                         writable: false,
-                        value: Object.defineProperties({}, services.reduce((classes, serviceClass) => {
-                            const className = serviceClass.name.replace(/Service$/, '')
-                                .replace(/^[A-Z]/, (match) => {
-                                    return match.toLowerCase();
-                                });
+                        value: Object.defineProperties({}, Object.keys(services).reduce((classes, key) => {
+                            const serviceClass = services[key];
 
                             serviceClass.prototype.ctx = ctx;
 
-                            serviceClasses[className] = serviceClass;
-                            classes[className] = {
+                            serviceClasses[key] = serviceClass;
+                            classes[key] = {
                                 get() {
-                                    let service = cache[className];
+                                    let service = cache[key];
                                     if (!service) {
-                                        const ServiceClass = serviceClasses[className];
-                                        serviceClasses[className] = null;
-                                        return (cache[className] = new ServiceClass(ctx));
+                                        const ServiceClass = serviceClasses[key];
+                                        serviceClasses[key] = null;
+                                        return (cache[key] = new ServiceClass(ctx));
                                     }
                                     return service;
                                 }
