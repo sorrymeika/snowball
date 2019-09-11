@@ -90,9 +90,7 @@ export function createApplication({
                         writable: false,
                         value: Object.defineProperties({}, Object.keys(services).reduce((classes, key) => {
                             const serviceClass = services[key];
-
                             serviceClass.prototype.ctx = ctx;
-
                             serviceClasses[key] = serviceClass;
                             classes[key] = {
                                 get() {

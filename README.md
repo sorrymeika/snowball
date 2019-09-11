@@ -34,31 +34,6 @@
 
 `snowball`的视图层采用专有的模版语言、实时模版编译和`fiber`模式渲染。视图层接收`string`类型模版，组件实例化后，`snowball`会对模版进行实时编译，生成虚拟`dom`。渲染阶段会对实体`dom`的生成和变更进行`分片`渲染，避免界面卡顿。
 
-```js
-// 这是一个简单的 `component` 示例
-@component({
-    tagName: 'Order',
-    template: `<div @click={user.name='new name'}>{user.name}</div>
-    <ul>
-        <li sn-repeat="item,i in orderList" @click={this.handleOrder(item, i)}>{i}:{item.tradeCode}</li>
-    </ul>`
-})
-class Order extends Model {
-    handleOrder(item, i) {
-        console.log(item, i);
-    }
-}
-
-new Order({
-    user: {
-        name: 'UserName'
-    },
-    orderList: [{
-        tradeCode: '1234'
-    }]
-}).appendTo(document.body)
-```
-
 ### 优点
 
 1. 在需要从服务端拉取模版渲染的场景优于`React`和`Angular`等框架。
@@ -89,21 +64,6 @@ new Order({
 * run `npm run sprity` to build sprity images.
 * to see the built project, please visit `http://localhost:3000/dist/#/`
 
-**if you get some error about `canvas`**
-
-* run `brew install pkgconfig` if show "**pkg-config: command not found**"
-* run `brew install cairo` if show "**No package 'cairo' found**"
-* if you don't have **brew** command in your computer, see the [brew installation](https://brew.sh/)
-* install the [XQuartz](https://www.xquartz.org/)
-
-**or**
-
-* see the [Installation OSX](https://github.com/Automattic/node-canvas/wiki/Installation---OSX) to install without **brew** command
-
-**or**
-
-* just remove the `canvas` module from `package.json`
-
 ## 打包
 ```
 业务项目打包后会剔除掉`react`,`react-dom`,`polyfill`等框架和框架中的公共组件/公共样式
@@ -120,11 +80,79 @@ new Order({
 ## 项目结构
 
 * 项目主要分为`Controller`、`Service`、`View`层
-* `Controller`层用来组织`Service`层，并通过`injectable`注解将数据注入到`View`层
+* `Controller`层用来组织`Service`层，并通过`injectable`注解将`service`和`状态`注入到`View`层
 
-## 项目代码示例
+```html
+snowball-project
+├── package.json
+├── index.js
+├── app
+|   ├── router.js
+│   └── home <!-- 业务文件夹 -->
+│       ├── controllers 
+│       ├── services 
+│       ├── css 
+│       ├── containers 
+│       └── components
+├── domain
+│   ├── models
+│   └── services
+```
 
-* 看完上面的文档再看例子
+## 启动应用
+
+* `index.js` 创建并启动应用
+
+```js
+import { createApplication } from 'snowball/app';
+
+const app = createApplication({
+    projects: {
+        "^/(subroute1|subroute2)/": 'http://localhost/subproject/assets-manifest.json'
+    },
+    routes: {
+        '/': import('./app/home/controllers/HomeController'),
+        '/item/:id': import('./app/item/controllers/ItemController'),
+    },
+    options: {
+        // 禁用跳转切换动画
+        disableTrasition: true
+    },
+    // 对ctx进行扩展
+    extends() {
+        return {
+            env: {
+                api: 'https://**'
+            },
+            get server(){
+                if (!this[SymbolServer]) {
+                    this[SymbolServer] = new Server({
+                        baseUrl: this.env.api
+                    })
+                }
+                return this[SymbolServer];
+            },
+            // 注册服务，注册的服务可通过 ctx.service.xxx获取单例，如:
+            // class HomeService extends Service { 
+            //     @observable addressList;
+            //     getAddress() {
+            //          this.ctx.service.address.getAddress()
+            //              .then((res) => {
+            //                  this.addressList = res.data;
+            //              })
+            //     }
+            // }
+            services: {
+                address: AddressService
+            }
+        }
+    }
+}, document.getElementById('root'), callback);
+```
+
+## Model
+
+* `models/UserModel.js`
 
 ```js
 import { Model, Collection, Reaction, attributes } from 'snowball';
@@ -183,10 +211,13 @@ interface IUserService {
     setUserName(): void;
     loadUser(): Promise<IUser>;
 }
+```
 
+* `services/UserService.js`
+
+```js
 // Service
-@service
-class UserService implements IUserService {
+class UserService extends Service implements IUserService {
     constructor() {
         this._user = new User();
     }
@@ -196,16 +227,20 @@ class UserService implements IUserService {
     }
 
     loadUser() {
+        return this.ctx.server.post('/getUser');
     }
 
     setUserName(userName) {
         this.user.userName = userName;
     }
 }
+```
 
-// observer 组件
-@observer(['userService', 'buttonStatus'])
-class App extends Component<{ userService: IUserService }, never> {
+* `app/home/containers/Home.jsx`
+
+```js
+@observer
+class Home extends Component<{ userService: IUserService }, never> {
     @attributes.string
     ohNo = 'oh, no!!';
 
@@ -225,10 +260,14 @@ class App extends Component<{ userService: IUserService }, never> {
         )
     }
 }
+```
 
+* `app/home/controllers/HomeController.js`
+
+```js
 // Controller
-@controller(App)
-class AppController {
+@controller(Home)
+class HomeController {
     @injectable userService: IUserService;
     @injectable buttonStatus;
 
@@ -247,6 +286,24 @@ class AppController {
     }
 }
 ```
+
+## 常见问题
+
+**if you get some error about `canvas`**
+
+* run `brew install pkgconfig` if show "**pkg-config: command not found**"
+* run `brew install cairo` if show "**No package 'cairo' found**"
+* if you don't have **brew** command in your computer, see the [brew installation](https://brew.sh/)
+* install the [XQuartz](https://www.xquartz.org/)
+
+**or**
+
+* see the [Installation OSX](https://github.com/Automattic/node-canvas/wiki/Installation---OSX) to install without **brew** command
+
+**or**
+
+* just remove the `canvas` module from `package.json`
+
 
 ## api文档
 
@@ -888,20 +945,10 @@ for (var key in user) {
 * 应用服务层，主要作用为调用领域层，存储UI状态，处理UI逻辑。应用services间可互相调用。必须写interface.
 
 ```js
-import * as unicorn from "../../../apis/unicorn";
 import UserModel from "../models/UserModel";
 
-let instance;
 
 export default class UserService implements IUserService {
-
-    // 仅限多个页面需要的共享数据的时候使用单例模式
-    static getInstance(): IUserService {
-        if (instance) {
-            instance = new UserService();
-        }
-        return instance;
-    }
 
     constructor() {
         this._userModel = new UserModel();
@@ -1151,12 +1198,12 @@ inject(({ user, data }, nextProps)=>{
 
 ### 应用和路由
 
-#### `startApplication` 方法
+#### `createApplication` 方法
 
 * 启动应用
 
 ```js
-import { startApplication } from 'snowball';
+import { createApplication } from 'snowball';
 import HomeController from 'controller/HomeController';
 
 // 子应用根路由注册
@@ -1515,16 +1562,33 @@ emitter.trigger(new Event('dataload', {
 
 <br>
 
-###  `gateway` 接口请求
+###  `@component` 注解
 
 ```js
-import { gateway } from 'snowball';
+// 这是一个简单的 `component` 示例
+@component({
+    tagName: 'Order',
+    template: `<div @click={user.name='new name'}>{user.name}</div>
+    <ul>
+        <li sn-repeat="item,i in orderList" @click={this.handleOrder(item, i)}>{i}:{item.tradeCode}</li>
+    </ul>`
+})
+class Order extends Model {
+    handleOrder(item, i) {
+        console.log(item, i);
+    }
+}
 
-var result = await gateway.request(_mt, needLogin?, postData?);
-// result = { success: true|false, data: Object, stat, code, message }
+new Order({
+    user: {
+        name: 'UserName'
+    },
+    orderList: [{
+        tradeCode: '1234'
+    }]
+}).appendTo(document.body)
 ```
 
-<br>
 
 -------
 
