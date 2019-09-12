@@ -1129,7 +1129,8 @@ export default class HomeController {
 
 #### `controller` 层业务逻辑拆分
 
-* 业务逻辑过多时需要将业务逻辑拆分，并使用 `mix` 方法合并需要的 `mixin`
+* 业务逻辑过多时需要将业务逻辑拆分，推荐使用多个`service`组合，不推荐使用 `mixin`
+* 下面是一个使用 `mixin` 的示例
 
 ```js
 // types.js
