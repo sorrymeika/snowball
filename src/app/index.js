@@ -7,6 +7,7 @@ import { Page as _P } from './core/Page';
 
 export { createApplication } from './core/createApplication';
 export { registerRoutes } from './core/registerRoutes';
+export { default as lazy } from './core/lazy';
 export { resource };
 export const Page = { extentions: _P.extentions };
 export * from './core/backEventHandlers';

@@ -54,7 +54,7 @@
 2. run `cd snowball && npm install`
 3. run `npm run project yourProjectName` to create your own project
 4. `import { env, Model } from "snowball"`
-5. see `https://github.com/sorrymeika/juicy` to get the full example!
+5. see `https://github.com/sorrymeika/juicy` or `https://github.com/sorrymeika/sn-trade-mngr` to get the full example!
 
 ### Getting Start
 
@@ -90,13 +90,13 @@ snowball-project
 |   ├── router.js
 │   └── home <!-- 业务文件夹 -->
 │       ├── controllers 
-│       ├── services 
+│       ├── services <!-- 业务服务 -->
 │       ├── css 
 │       ├── containers 
 │       └── components
 ├── domain
-│   ├── models
-│   └── services
+│   ├── models <!-- 领域模型 -->
+│   └── services <!-- 领域服务 -->
 ```
 
 ## 启动应用
@@ -104,15 +104,18 @@ snowball-project
 * `index.js` 创建并启动应用
 
 ```js
-import { createApplication } from 'snowball/app';
+import { createApplication, lazy } from 'snowball/app';
 
 const app = createApplication({
     projects: {
         "^/(subroute1|subroute2)/": 'http://localhost/subproject/assets-manifest.json'
     },
     routes: {
-        '/': import('./app/home/controllers/HomeController'),
-        '/item/:id': import('./app/item/controllers/ItemController'),
+        '/': require('./app/home/controllers/HomeController'),
+        // 异步加载
+        '/item/\\d+:id': import('./app/item/controllers/ItemController'),
+        // 懒加载
+        '/type/\\d+:type(?:/\\d+:subType)?': lazy(() => import('./app/type/controllers/TypeController')),
     },
     options: {
         // 禁用跳转切换动画
@@ -133,21 +136,137 @@ const app = createApplication({
                 return this[SymbolServer];
             },
             // 注册服务，注册的服务可通过 ctx.service.xxx获取单例，如:
-            // class HomeService extends Service { 
-            //     @observable addressList;
-            //     getAddress() {
-            //          this.ctx.service.address.getAddress()
-            //              .then((res) => {
-            //                  this.addressList = res.data;
-            //              })
-            //     }
-            // }
+            //      this.ctx.service.user.getUser()
+            //          .then((res) => {
+            //              this.user = res.data;
+            //          })
             services: {
-                address: AddressService
+                // 在此注册的 Service 无需继承 require('snowball/app').Service
+                user: UserService
             }
         }
     }
 }, document.getElementById('root'), callback);
+```
+
+* `domain/services/UserService.js`
+
+```js
+// Service 的接口必须定义
+interface IUserService {
+    getUser(): Promise<IUser>;
+}
+
+// 挂在ctx.service下，无需继承 Service
+class UserService implements IUserService {
+    getUser() {
+        // Service 和 Controller 都可直接使用 ctx
+        return this.ctx.server.post('/getUser');
+    }
+}
+```
+
+* `app/home/controllers/HomeController.js`
+
+```js
+import { controller, injectable } from "snowball/app";
+
+// Controller
+@controller(Home)
+class HomeController {
+    @injectable typeUIService = new TypeUIService();
+
+    onInit() {
+    }
+}
+```
+
+* `app/home/containers/Home.jsx`
+
+```js
+import { attributes } from "snowball";
+import { observer } from "snowball/app";
+
+@observer
+class Home extends Component {
+    // 在 React.Component 中 `attributes` 可和 `observer` 配合使用
+    @attributes.string
+    ohNo = 'oh, no!!';
+
+    ohYes = () => {
+        this.ohNo = 'oh, yeah!!';
+    }
+
+    render() {
+        return (
+            <div >
+                <p onClick={this.ohYes}>{this.ohNo}</p>
+                <TypeSelect />
+            </div>
+        )
+    }
+}
+```
+
+* `app/home/containers/TypeSelect.jsx`
+
+```js
+import { inject } from "snowball/app";
+
+// 可通过 `inject` 方法将 `controller` 中 `injectable` 的属性注入到组件的 `props` 中
+const TypeSelect = inject(({ typeUIService }) => (
+    typeUIService
+    ? {
+        types: typeUIService.types,
+        onTypeChange: typeUIService.onTypeChange.emit,
+        onInit: typeUIService.onInit.emit
+    }
+    : {}
+))((props) => {
+    const { type, subTypes, onInit, onTypeChange } = props;
+
+    useEffect(() => {
+        return onInit();
+    }, [onInit])
+
+    return (
+        <>
+            <select onChange={onTypeChange}>{types.map((type)=><option value={type.id}>{type.name}<option>)}</select>
+            <select>{subTypes.map((subType)=><option>{subType.name}<option>)}</select>
+        </>
+    );
+})
+```
+
+* `app/shared/services/TypeUIService.js`
+
+```js
+import { observable } from 'snowball';
+import { Service } from 'snowball/app';
+
+// 在 Controller 中实例化的 Service 必须继承 `Service`
+class TypeUIService extends Service {
+    @observable types = [];
+    @observable subTypes = [];
+
+    // 创建事件
+    onInit = this.ctx.createEvent();
+    onTypeChange = this.ctx.createEvent();
+
+    constructor() {
+        this.onTypeChange((typeId) => this.changeType(typeId));
+        // 仅执行一次
+        this.onInit.once(() => this.init());
+    }
+
+    init() {
+        this.types = await this.ctx.server.post('/getTypes');
+    }
+
+    changeType(typeId) {
+        this.subTypes = await this.ctx.server.post('/getSubTypes', typeId);
+    }
+}
 ```
 
 ## Model
@@ -205,86 +324,25 @@ setTimeout(() => {
     reaction.destroy();
 }, 1000);
 
-// Service 的接口必须定义
-interface IUserService {
-    user: IUser;
-    setUserName(): void;
-    loadUser(): Promise<IUser>;
-}
 ```
 
-* `services/UserService.js`
+# 扩展页面ctx
 
 ```js
-// Service
-class UserService extends Service implements IUserService {
-    constructor() {
-        this._user = new User();
+import { Page } from 'snowball/app';
+
+Page.extentions.lifecycle({
+    initialize() {
+        // this.ctx.logger.error('some error!');
+        Object.defineProperty(this.ctx, 'logger', {
+            value: {
+                error: (message) => {
+                    console.error(this.location.url, ":", message);
+                }
+            }
+        })
     }
-
-    get user() {
-        return this._user
-    }
-
-    loadUser() {
-        return this.ctx.server.post('/getUser');
-    }
-
-    setUserName(userName) {
-        this.user.userName = userName;
-    }
-}
-```
-
-* `app/home/containers/Home.jsx`
-
-```js
-@observer
-class Home extends Component<{ userService: IUserService }, never> {
-    @attributes.string
-    ohNo = 'oh, no!!';
-
-    ohYes = () => {
-        this.ohNo = 'oh, yeah!!';
-    }
-
-    render() {
-        const { userService } = this.props;
-        return (
-            <div
-                onClick={userService.setUserName.bind(null)}
-            >
-                {userService.user.userName}
-                <p onClick={this.ohYes}>{this.ohNo}</p>
-            </div>
-        )
-    }
-}
-```
-
-* `app/home/controllers/HomeController.js`
-
-```js
-// Controller
-@controller(Home)
-class HomeController {
-    @injectable userService: IUserService;
-    @injectable buttonStatus;
-
-    constructor({ location }) {
-        this.userService = new UserService();
-        this.buttonStatus = observable(1);
-    }
-
-    onInit() {
-        this.userService.loadUser();
-    }
-
-    @injectable
-    buttonClick() {
-        this.buttonStatus.set(0);
-    }
-}
+});
 ```
 
 ## 常见问题
