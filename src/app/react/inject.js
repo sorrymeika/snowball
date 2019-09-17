@@ -201,6 +201,7 @@ export function inject(deps, injection) {
         if (typeof injection !== 'function') {
             throw new Error('injection must be function!!');
         }
+        makeReactive = true;
         grabStoresFn = (baseStores, nextProps, injectorName, injector) => {
             const depProps = { ...nextProps };
             deps.forEach(function (storeName, i) {
