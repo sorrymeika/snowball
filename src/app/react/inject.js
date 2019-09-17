@@ -175,25 +175,41 @@ function injectFactoryInstance(baseStores, nextProps, injector, factoryName, map
  * nextProps优先级高与stores
  *
  * @example
+ * // 将 `storeName1` 和 `storeName2` 注入到 props 中
  * inject('storeName1', 'storeName2')(componentClass)
  *
  * inject((stores, nextProps) => ({
  *   storeName1: stores.storeName1
  * }))(componentClass)
+ *
+ * // 不会将 `foo` 和 `bar` 注入到 props 中
+ * inject(['foo', 'bar'], ({ foo, bar }) => ({
+ *  barName: bar.name
+ *  fooName: foo.name
+ * }))(componentClass)
  */
-export function inject(injection) {
+export function inject(deps, injection) {
     let grabStoresFn;
     let makeReactive = false;
 
-    if (typeof injection === "function") {
+    if (typeof deps === "function") {
         makeReactive = true;
         grabStoresFn = compose([].slice.call(arguments));
-    } else if (isString(injection)) {
+    } else if (isString(deps)) {
         grabStoresFn = grabStoresByName([].slice.call(arguments));
-    } else if (isArray(injection)) {
-        grabStoresFn = grabStoresByName(injection);
+    } else if (isArray(deps)) {
+        if (typeof injection !== 'function') {
+            throw new Error('injection must be function!!');
+        }
+        grabStoresFn = (baseStores, nextProps, injectorName, injector) => {
+            const depProps = { ...nextProps };
+            deps.forEach(function (storeName, i) {
+                mapStoreToProps(baseStores, depProps, injectorName, injector, storeName);
+            });
+            return injection(depProps);
+        };
     } else {
-        grabStoresFn = renameProps(injection);
+        grabStoresFn = renameProps(deps);
     }
 
     return function (componentClass) {
