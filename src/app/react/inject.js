@@ -137,12 +137,12 @@ function mapStoreToProps(baseStores, nextProps, injectorName, injector, storeNam
             return;
         }
 
-        if (injectFactoryInstance(baseStores, nextProps, nameWithPrefix + 'Factory', mapName)) {
+        if (injectFactoryInstance(baseStores, nextProps, injector, nameWithPrefix + 'Factory', mapName)) {
             return;
         }
     }
 
-    if (injectFactoryInstance(baseStores, nextProps, storeName + 'Factory', mapName)) {
+    if (injectFactoryInstance(baseStores, nextProps, injector, storeName + 'Factory', mapName)) {
         return;
     }
 
@@ -155,14 +155,14 @@ function mapStoreToProps(baseStores, nextProps, injectorName, injector, storeNam
     nextProps[mapName] = baseStores[storeName];
 }
 
-function injectFactoryInstance(baseStores, nextProps, factoryName, injector, mapName) {
+function injectFactoryInstance(baseStores, nextProps, injector, factoryName, mapName) {
     const factory = baseStores[factoryName];
     if (injector[factoryName]) {
         nextProps[mapName] = injector[factoryName];
         return true;
     }
     if (isFunction(factory)) {
-        pageContext = baseStores.$context;
+        pageContext = baseStores.ctx;
         injector[factoryName] = nextProps[mapName] = factory(nextProps);
         pageContext = null;
         return true;
