@@ -3,7 +3,7 @@ import React, { Component, createElement } from 'react';
 import ReactDOM from 'react-dom';
 import { Model } from '../../vm';
 import { SymbolFrom } from '../../vm/symbols';
-import { PageProviderContext, makeComponentReacitve } from './inject';
+import { PageContext, makeComponentReacitve } from './inject';
 
 export default class ReactViewHandler {
     constructor({ el, page, activity, location, viewFactory, mapStoreToProps }) {
@@ -36,11 +36,9 @@ export default class ReactViewHandler {
 
             render() {
                 return (
-                    <PageProviderContext.Provider
-                        value={{
-                            store: viewHandler.state
-                        }}
-                    >{createElement(reactiveView, viewHandler.model.attributes)}</PageProviderContext.Provider>
+                    <PageContext.Provider
+                        value={viewHandler.state}
+                    >{createElement(reactiveView, viewHandler.model.attributes)}</PageContext.Provider>
                 );
             }
         }

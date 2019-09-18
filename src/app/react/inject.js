@@ -7,7 +7,7 @@ import { Reaction } from '../../vm';
 
 let pageContext;
 
-export const PageProviderContext = React.createContext();
+export const PageContext = React.createContext();
 
 export const getCurrentContext = () => {
     return pageContext;
@@ -64,12 +64,12 @@ function createStoreInjector(grabStoresFn, componentClass, makeReactive) {
     }
 
     class Injector extends Component {
-        static contextType = PageProviderContext;
+        static contextType = PageContext;
 
         render() {
             const { forwardRef, ...props } = this.props;
 
-            const additionalProps = grabStoresFn(this.context.store || {}, props, componentClass.injectorName || componentClass.name, this) || {};
+            const additionalProps = grabStoresFn(this.context || {}, props, componentClass.injectorName || componentClass.name, this) || {};
             for (let key in additionalProps) {
                 props[key] = additionalProps[key];
             }
