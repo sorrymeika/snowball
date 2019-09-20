@@ -10,6 +10,17 @@ export const TEXT_NODE = document.TEXT_NODE || 3;
 export const COMMENT_NODE = document.COMMENT_NODE || 8;
 export const ELEMENT_NODE = document.ELEMENT_NODE || 1;
 
+export function reflow(el) {
+    if (el.length && el[0]) {
+        for (let i = 0; i < el.length; i++) {
+            void el[i].clientHeight;
+        }
+    } else {
+        void el.clientHeight;
+    }
+    return el;
+}
+
 export function getElementOffsetTop(el) {
     var parent = el.offsetParent;
     var top = el.offsetTop;
@@ -126,7 +137,7 @@ export function fade(el, val) {
     var isInitDisplay = true;
     if (!$el.hasClass('sn-display')) {
         isInitDisplay = false;
-        void $el.addClass('sn-display')[0].clientHeight;
+        reflow($el.addClass('sn-display'));
     }
     var display = isNo(val) ? 'none' : val == 'block' || val == 'inline' || val == 'inline-block' ? val : '';
     if (display == 'none') {
@@ -143,7 +154,16 @@ export function fade(el, val) {
         $el.css({
             display: display
         });
-        void el.clientHeight;
-        $el.removeClass('sn-display-hide');
+        reflow($el)
+            .removeClass('sn-display-hide');
     }
+}
+
+export function isScrollToBottom(scrollElement) {
+    if (!scrollElement) return false;
+    var overflowY = getComputedStyle(scrollElement)['overflow-y'];
+    if (overflowY !== 'auto' && overflowY !== 'scroll') {
+        return (document.documentElement.scrollTop || document.body.scrollTop) + window.innerHeight >= scrollElement.scrollHeight - 50;
+    }
+    return scrollElement.scrollTop + scrollElement.clientHeight >= scrollElement.scrollHeight - 50;
 }

@@ -13,10 +13,9 @@ export * from './object';
 export * from './regex';
 export * from './string';
 export * from './style';
-export * from './validate';
+export * from './validator';
 export { throttle } from './throttle';
 export { debounce } from './debounce';
 export { jsonp } from './jsonp';
 export { compose } from './compose';
 export { loadJs, loadJsInQueue } from './loadJs';
-

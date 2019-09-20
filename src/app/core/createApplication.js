@@ -72,7 +72,10 @@ export function createApplication({
             };
             return nav;
         }, {}),
-        registerRoutes: application.registerRoutes.bind(application)
+        registerRoutes: application.registerRoutes.bind(application),
+        get current() {
+            return application.currentActivity.page.ctx;
+        }
     };
 
     if (extend) {

@@ -1,5 +1,5 @@
 import LinkList from "../libs/linklist";
-import { $ } from '../utils';
+import { $, reflow } from '../utils';
 import rAF from '../core/rAF';
 
 import Matrix2D from "./Matrix2D";
@@ -74,9 +74,7 @@ export function castStyle(css) {
     return result;
 }
 
-export function reflow(el) {
-    void el.clientHeight;
-}
+export { reflow };
 
 $.fn.transform = function (css) {
     this.css(castStyle(css));

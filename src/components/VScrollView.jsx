@@ -452,7 +452,7 @@ VScrollView.prototype._scrollStop = debounce(function () {
     };
     this.scrollStopListeners.forEach(fn => fn(e, e));
     if (this.isScrollToBottom()) {
-        this.props.onReachBottom && this.props.onReachBottom(e);
+        this.props.onScrollToBottom && this.props.onScrollToBottom(e);
     }
 }, 80);
 

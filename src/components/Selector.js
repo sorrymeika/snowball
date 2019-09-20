@@ -1,5 +1,5 @@
 import * as util from '../utils';
-import { $ } from '../utils/dom';
+import { $, reflow } from '../utils';
 import { Toucher } from '../widget';
 
 function SelectorItem(options) {
@@ -200,7 +200,7 @@ Selector.prototype = {
             this.$container.show();
             this.$mask.show();
             this.$el.show();
-            void $scroll[0].clientHeight;
+            reflow($scroll);
             this.$el.addClass('show');
 
             $scroll.animate({ color: "#333" }, 100, 'ease-out');

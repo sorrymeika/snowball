@@ -1,5 +1,6 @@
 import { isArray, isNo } from '../../utils/is';
 import { $, TEXT_NODE, ELEMENT_NODE, eachElement, insertElementAfter, fade } from '../../utils/dom';
+import { isViewModel } from '../predicates';
 import FunctionCompiler from './FunctionCompiler';
 import {
     createCompilerManager,
@@ -209,16 +210,22 @@ export class TemplateCompiler {
 
 function updateTextNode(el, val) {
     var removableTails = el.snTails;
+
     if (isArray(val) || (typeof val === 'object' && val.nodeType && (val = [val]))) {
-        var node = el;
-        var newTails = [];
+        const newTails = [];
+        let node = el;
 
         val.reduce((res, item) => {
-            Array.isArray(item) ? res.push(...item) : res.push(item);
+            if (isViewModel(item))
+                return res.concat(item.nodes());
+            else if (Array.isArray(item))
+                return res.concat(item);
+            res.push(item);
             return res;
         }, []).forEach(function (item) {
             if (item == null) item = '';
-            var nextSibling = node.nextSibling;
+            const nextSibling = node.nextSibling;
+
             if (nextSibling !== item) {
                 if (
                     (item && item.nodeType) || (
@@ -234,7 +241,7 @@ function updateTextNode(el, val) {
                 }
             }
             if (removableTails) {
-                var index = removableTails.indexOf(item);
+                const index = removableTails.indexOf(item);
                 if (index !== -1) {
                     removableTails.splice(index, 1);
                 }

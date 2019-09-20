@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import ReactDOM from 'react-dom';
-import { $ } from '../utils';
+import { $, reflow } from '../utils';
 
 var popups = [];
 var $mask = $('<div class="app-popup-mask"></div>')
@@ -28,8 +28,8 @@ function hidePopup(isClickMaskToHide) {
 }
 
 function showMask() {
-    void $mask.show()[0].clientHeight;
-    $mask.addClass('show');
+    reflow($mask.show())
+        .addClass('show');
 }
 
 type PopupProps = {
@@ -166,7 +166,7 @@ class Popup {
         if (this.visible) return;
 
         $container.insertBefore($mask);
-        void $container[0].offsetHeight;
+        reflow($container);
 
         showMask();
         $container.addClass('show');

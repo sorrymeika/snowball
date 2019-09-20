@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import ReactDOM from 'react-dom';
-import { $ } from '../utils/dom';
+import { $, reflow } from '../utils/dom';
 import { Event } from '../core/event';
 import { Toucher } from '../widget';
 
@@ -44,7 +44,7 @@ export default class ItemSwiper extends Component<ItemSwiperProps, any> {
                     return;
                 }
                 // 强制引发reflow，获取的el才能正确
-                void self.$mask[0].offsetHeight;
+                reflow(self.$mask);
                 var el = document.elementFromPoint(point.pageX, point.pageY);
                 var target = self.$target[0].parentNode;
 

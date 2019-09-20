@@ -14,17 +14,20 @@ export class PhotoViewer extends ViewModel {
         index: 0,
         images: [],
         minScale: 1,
-        after: null
+        after: null,
+        slots: [],
     }
 
     get el() {
         return `<div class= "app-photoviewer t_3" sn-transitionend="this.transitionEnd()" sn-click="this.resetSize()" sn-touchstart="this.touchStart()" sn-touchmove="this.touchMove()" sn-touchend="this.touchEnd()">
-        <ul class="app-photoviewer-con" ref="content" style="-webkit-transform:translate({x}px,0px) translateZ(0);width:{images.length*100}%">
+        <div class="app-photoviewer-before" sn-if="{slots.length}" ref="before"></div>
+        <ul class="app-photoviewer-con" ref="content" style="-webkit-transform:translate({x}px,0px) translateZ(0);width:{(images.length + slots.length)*100}%">
+            <li class="app-photoviewer-item" sn-repeat="slot in slots"><div class="app-photoviewer-item-con" ref="slots"></div></li>        
             <li class="app-photoviewer-item" sn-repeat="item in images"><div class="app-photoviewer-item-con" ref="items"><p ref="bds" style="-webkit-transform:translate({item.x}px,{item.y}px) translateZ(0);-webkit-transform-origin: 0% 0%;"><img style="-webkit-transform:translate(-50%,-50%) scale({item.s});-webkit-transform-origin: 50% 50%;" sn-image="{item.src}" ref="images" /></p></li>
             <li class="app-photoviewer-after" sn-if="{images.length}" sn-html="{after}"></li>
         </ul>
-        <div class="app-photoviewer-indicator flex jc_c cl_fff">{index+1}/{images.length}</div>
-</div>`;
+        <div class="app-photoviewer-indicator flex jc_c cl_fff" sn-if="{!(slots.length > 0 && index < slots.length)}">{index+1-slots.length}/{images.length}</div>
+    </div>`;
     }
 
     constructor(attributes) {
@@ -61,6 +64,7 @@ export class PhotoViewer extends ViewModel {
 
     hide() {
         this.$el.removeClass('show');
+        this.attributes.onPhotoViewHide && this.attributes.onPhotoViewHide(this.attributes.index);
         removeOnBeforeBackListener(onBack);
     }
 
@@ -71,16 +75,20 @@ export class PhotoViewer extends ViewModel {
         addOnBeforeBackListener(onBack);
     }
 
-    resetSize() {
-        if (!this.currentItem || this.currentItem.attributes.s === 1) {
-            this.hide();
-        } else {
-            this.currentItem.set({
-                s: 1,
-                x: 0,
-                y: 0
-            });
-        }
+    resetSize(e) {
+        setTimeout(() => {
+            if (!e.isPropagationStopped()) {
+                if (!this.currentItem || this.currentItem.attributes.s === 1) {
+                    this.hide();
+                } else {
+                    this.currentItem.set({
+                        s: 1,
+                        x: 0,
+                        y: 0
+                    });
+                }
+            }
+        });
     }
 
     setImages(images) {
@@ -96,13 +104,24 @@ export class PhotoViewer extends ViewModel {
         return this;
     }
 
+    setSlots(slots) {
+        this.set({
+            slots
+        });
+        return this;
+    }
+
+    onPhotoChange(index) {
+        this.attributes.onPhotoChange && this.attributes.onPhotoChange(index);
+    }
+
     touchStart(e) {
         if (this.bounceBack) return;
         if (this.momentum) {
             this.momentum.stop();
             this.momentum = null;
         }
-        var touches = e.touches;
+        const touches = e.touches;
 
         this.startTouches = [].map.call(touches, function (item) {
             return {
@@ -110,21 +129,23 @@ export class PhotoViewer extends ViewModel {
                 y: item.pageY
             };
         });
-        var index = this.attributes.index;
+        const index = this.attributes.index;
+        const slots = this.attributes.slots;
+        const imageIndex = this.attributes.index - slots.length;
+        const isSlot = slots.length > 0 && index < slots.length;
 
-        this.currentItem = this._('images[' + index + ']');
+        if (isSlot) {
+            this.currentItem = this.collection('slots')[index];
+            this.currentEl = this.refs.slots[index];
+        } else {
+            this.currentItem = this.collection('images')[imageIndex];
+            this.currentEl = this.refs.items[imageIndex];
+        }
 
         if (this.currentItem) {
             this.isStart = true;
             this.touchLen = -1;
             this.bounce = 0;
-
-            this.currentEl = this.refs.items[index];
-            this.currentImage = this.refs.images[index];
-            this.currentBd = this.refs.bds[index];
-
-            // this.currentImage.style.width = '200%';
-            // this.currentImage.style.maxWidth = '200%';
 
             this.originX = this.attributes.x;
             this.originY = this.attributes.y;
@@ -136,27 +157,32 @@ export class PhotoViewer extends ViewModel {
             this.isMoveItem = false;
             this.isMoveLeft = false;
 
-            if (this.currentImage.complete) {
-                this.imageW = Math.round(this.currentImage.offsetWidth * this.originS);
-                this.imageH = Math.round(this.currentImage.offsetHeight * this.originS);
+            if (!isSlot) {
+                this.currentImage = this.refs.images[imageIndex];
+                this.currentBd = this.refs.bds[imageIndex];
 
-                this.maxX = Math.max(0, (this.originW - this.imageW) / 2 * -1);
-                this.maxY = Math.max(0, (this.originH - this.imageH) / 2 * -1);
-                this.minX = Math.min(0, (this.originW - this.imageW) / 2);
-                this.minY = Math.min(0, (this.originH - this.imageH) / 2);
+                if (this.currentImage.complete) {
+                    this.imageW = Math.round(this.currentImage.offsetWidth * this.originS);
+                    this.imageH = Math.round(this.currentImage.offsetHeight * this.originS);
 
-                if (touches.length == 2) {
-                    var w = touches[0].pageX - touches[1].pageX;
-                    var h = touches[0].pageY - touches[1].pageY;
-                    this.startL = Math.sqrt(w * w + h * h);
-                    this.startPointX = (touches[0].pageX + touches[1].pageX) / 2;
-                    this.startPointY = (touches[0].pageY + touches[1].pageY) / 2;
+                    this.maxX = Math.max(0, (this.originW - this.imageW) / 2 * -1);
+                    this.maxY = Math.max(0, (this.originH - this.imageH) / 2 * -1);
+                    this.minX = Math.min(0, (this.originW - this.imageW) / 2);
+                    this.minY = Math.min(0, (this.originH - this.imageH) / 2);
 
-                    this.pointerLeft = this.startPointX - this.itemStartX - ((this.originW - this.imageW) / 2);
-                    this.pointerTop = this.startPointY - this.itemStartY - ((this.originH - this.imageH) / 2);
-                } else if (this.imageW > this.originW || this.imageH > this.originH) {
-                    this.isMoveItem = true;
-                    this.touchesCaches = [{ x: touches[0].pageX, y: touches[0].pageY, timerstamp: Date.now() }];
+                    if (touches.length == 2) {
+                        var w = touches[0].pageX - touches[1].pageX;
+                        var h = touches[0].pageY - touches[1].pageY;
+                        this.startL = Math.sqrt(w * w + h * h);
+                        this.startPointX = (touches[0].pageX + touches[1].pageX) / 2;
+                        this.startPointY = (touches[0].pageY + touches[1].pageY) / 2;
+
+                        this.pointerLeft = this.startPointX - this.itemStartX - ((this.originW - this.imageW) / 2);
+                        this.pointerTop = this.startPointY - this.itemStartY - ((this.originH - this.imageH) / 2);
+                    } else if (this.imageW > this.originW || this.imageH > this.originH) {
+                        this.isMoveItem = true;
+                        this.touchesCaches = [{ x: touches[0].pageX, y: touches[0].pageY, timerstamp: Date.now() }];
+                    }
                 }
             }
         }
@@ -174,13 +200,13 @@ export class PhotoViewer extends ViewModel {
     }
 
     touchMove(e) {
-        var self = this;
+        const self = this;
 
         this.clearLongTabTimeout();
 
         if (!this.isStart) return;
 
-        var touches = e.touches;
+        const touches = e.touches;
 
         if (this.touchLen != -1) {
             if (this.touchLen != touches.length) {
@@ -193,8 +219,6 @@ export class PhotoViewer extends ViewModel {
         $(e.target).trigger('touchcancel');
 
         if (this.touchLen == 1) {
-            if (this.isTwo) return;
-
             var dx0 = touches[0].pageX - this.startTouches[0].x;
             var dy0 = touches[0].pageY - this.startTouches[0].y;
             var x;
@@ -344,6 +368,7 @@ export class PhotoViewer extends ViewModel {
                     bounceBack && this.attributes.onBounceBack && this.attributes.onBounceBack(bounceBack);
 
                     if (indexChanged) {
+                        this.onPhotoChange(index);
                         currentItem.set({
                             s: 1,
                             x: 0,
@@ -390,6 +415,9 @@ export default class PhotoViewerComponent extends React.Component<IPhotoViewerCo
     static show(images, {
         index: defaultIndex = 0,
         after,
+        slots = [],
+        onPhotoChange,
+        onPhotoViewHide,
         onBounceMove,
         onBounceBack,
         onLongTap,
@@ -399,6 +427,7 @@ export default class PhotoViewerComponent extends React.Component<IPhotoViewerCo
             this.photoViewer = new PhotoViewer({
                 images,
                 index: defaultIndex,
+                slots,
                 onHide: () => {
                     this.photoViewer.setImages([]);
                 }
@@ -406,9 +435,12 @@ export default class PhotoViewerComponent extends React.Component<IPhotoViewerCo
         } else {
             this.photoViewer.setImages(images)
                 .index(defaultIndex);
+            this.photoViewer.setSlots(slots);
         }
         this.photoViewer.set({
             after,
+            onPhotoChange,
+            onPhotoViewHide,
             onBounceMove,
             onBounceBack,
             onLongTap

@@ -9,7 +9,11 @@ export function isObservable(observer) {
 }
 
 export function isModel(model) {
-    return model && model[TYPEOF] === 'Model';
+    return model && (model[TYPEOF] === 'Model' || model[TYPEOF] === 'ViewModel');
+}
+
+export function isViewModel(model) {
+    return model && model[TYPEOF] === 'ViewModel';
 }
 
 export function isCollection(collection) {

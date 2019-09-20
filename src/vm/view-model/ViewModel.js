@@ -1,7 +1,7 @@
-import * as objectUtils from '../../utils/object';
 import { $ } from '../../utils/dom';
-import * as $filter from './filter';
 import * as util from '../../utils';
+import * as $filter from './filter';
+
 
 import { unbindEvents, bindEvents } from './events';
 import { TemplateCompiler } from './template';
@@ -216,24 +216,35 @@ export class ViewModel extends Model {
             .prependTo(parentNode);
     }
 
-    prependTo(parent) {
-        this.$el
-            .prependTo(parent)
-            .each(function (i, el) {
+    nodes() {
+        const nodes = [];
+        this.$el.each((i, el) => {
+            if (!el.snSeparated) {
+                nodes.push(el);
                 if (el.snIfSource && !el.snIfSource.parentNode && el.snIfSource.snIfStatus) {
-                    $(el.snIfSource).insertAfter(el);
+                    nodes.push(el.snIfSource);
                 }
-            });
+            }
+        });
+        return nodes;
+    }
+
+    prependTo(parent) {
+        const firstChild = parent.firstChild;
+        if (!firstChild) {
+            return this.appendTo(parent);
+        }
+        this.nodes().forEach((node) => {
+            parent.insertBefore(node, firstChild);
+        });
+        return this;
     }
 
     appendTo(parent) {
-        this.$el
-            .appendTo(parent)
-            .each(function (i, el) {
-                if (el.snIfSource && !el.snIfSource.parentNode && el.snIfSource.snIfStatus) {
-                    $(el.snIfSource).insertAfter(el);
-                }
-            });
+        this.nodes().forEach((node) => {
+            parent.appendChild(node);
+        });
+        return this;
     }
 
     removeAll() {
@@ -246,11 +257,12 @@ export class ViewModel extends Model {
             .remove();
     }
 
-    borrows(childNode) {
+    separate(childNode) {
         childNode = findOwnNode(this, childNode);
         if (!childNode) return null;
 
         childNode.snViewModel = this;
+        childNode.snSeparated = true;
         this.$el.push(childNode);
         bindEvents($(childNode), this);
         (this._outerNodes || (this._outerNodes = [])).push(childNode);
@@ -261,6 +273,7 @@ export class ViewModel extends Model {
         var index = this.$el.indexOf(childNode);
         if (index != -1) {
             delete childNode.snViewModel;
+            childNode.snSeparated = false;
             Array.prototype.splice.call(this.$el, index, 1);
             this._outerNodes.splice(this._outerNodes.indexOf(childNode), 1);
             unbindEvents($(childNode), this);
@@ -275,6 +288,7 @@ export class ViewModel extends Model {
                 var index = this.$el.indexOf(childNode);
                 if (index != -1) {
                     delete childNode.snViewModel;
+                    childNode.snSeparated = false;
                     Array.prototype.splice.call(this.$el, index, 1);
                     unbindEvents(this, $(childNode));
                 }
@@ -300,13 +314,13 @@ export class ViewModel extends Model {
         if (arguments.length == 3) {
             switch (name) {
                 case 'srcElement':
-                    objectUtils.get(el, attrs.slice(1, -1))[attrs.pop()] = value;
+                    util.get(el, attrs.slice(1, -1))[attrs.pop()] = value;
                     break;
                 case 'document':
-                    objectUtils.get(document, attrs.slice(1, -1))[attrs.pop()] = value;
+                    util.get(document, attrs.slice(1, -1))[attrs.pop()] = value;
                     break;
                 case 'window':
-                    objectUtils.get(window, attrs.slice(1, -1))[attrs.pop()] = value;
+                    util.get(window, attrs.slice(1, -1))[attrs.pop()] = value;
                     break;
                 default:
                     model.set(attrs, value);

@@ -44,13 +44,12 @@ export default function MainScrollView(props) {
     );
 }
 
-export const MainScrollViewWithHandler = inject((store) => {
-    const mainScrollViewHandler = store.mainScrollViewHandler || store.mainScroll;
+export const MainScrollViewWithHandler = inject(({ mainScrollViewHandler }) => {
     return (
         mainScrollViewHandler
             ? {
-                onScrollViewInit: mainScrollViewHandler.svOnInit,
-                onScrollViewDestroy: mainScrollViewHandler.svOnDestroy
+                onScrollViewInit: mainScrollViewHandler.onInit.emit,
+                onScrollViewDestroy: mainScrollViewHandler.onDestroy.emit
             }
             : {}
     );

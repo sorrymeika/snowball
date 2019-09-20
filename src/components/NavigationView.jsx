@@ -1,9 +1,10 @@
 import React from "react";
 import ReactDOM from "react-dom";
 
-import VScrollView from './VScrollView';
-import { $ } from '../utils';
+import { $, reflow } from '../utils';
 import { IS_LTE_ANDROID_4_3 } from "../env";
+
+import VScrollView from './VScrollView';
 
 export default class NavigationView extends VScrollView {
     constructor(props) {
@@ -171,7 +172,7 @@ export default class NavigationView extends VScrollView {
         this.navStartX = this.x || 0;
         this.navMinX = (this.props.navigationItems.length - 1) * this.wrapperWidth * -1;
 
-        void $(this._navContent).removeClass('t_3')[0].clientHeight;
+        reflow($(this._navContent).removeClass('t_3'));
     }
 
     onNavContentTouchMove = (e) => {

@@ -1,7 +1,7 @@
 import React, { Component, ReactNode } from "react";
 import ReactDOM from "react-dom";
 
-import { $ } from '../utils';
+import { $, reflow } from '../utils';
 
 type TabItem = {
     title: string,
@@ -48,7 +48,7 @@ export default class Tab extends Component<TabProps, { index: number }> {
     }
 
     onTabTitleClick(index) {
-        void $(this.body).removeClass('t_3')[0].clientHeight;
+        reflow($(this.body).removeClass('t_3'));
 
         this.onTabChange(index, () => {
             $(this.body).addClass('t_3');
@@ -86,7 +86,7 @@ export default class Tab extends Component<TabProps, { index: number }> {
         this.startPageY = e.touches[0].pageY;
         this.startX = this.x || 0;
         this.minX = (this.props.items.length - 1) * this.wrapWidth * -1;
-        void $(this.body).removeClass('t_3')[0].clientHeight;
+        reflow($(this.body).removeClass('t_3'));
     }
 
     onBodyTouchMove = (e) => {

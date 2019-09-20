@@ -1,14 +1,14 @@
 import { isArray, isString, isFunction, isNumber } from '../utils/is';
 import * as arrayUtils from '../utils/array';
 import { extend } from '../utils/clone';
+import { contains } from '../utils/object';
 
 import { Observer } from './Observer';
 import { Model } from './Model';
+import { isModel, isObservable, isCollection, TYPEOF } from './predicates';
 import { enqueueUpdate } from './methods/enqueueUpdate';
 import { updateRefs } from './methods/updateRefs';
 import { connect, setMapper, disconnect, freezeObject } from './methods/connect';
-import { isModel, isObservable, isCollection, TYPEOF } from './predicates';
-import { contains } from '../utils/object';
 import { observeProp, unobserveProp } from './methods/observeProp';
 import compute from './operators/compute';
 import { SymbolObserver } from './symbols';

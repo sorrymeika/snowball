@@ -1,4 +1,4 @@
-import { $ } from "../utils";
+import { $, reflow } from "../utils";
 
 export default class TextCarousel {
 
@@ -64,11 +64,11 @@ export default class TextCarousel {
                     index = 0;
                     $container.removeClass('t_3');
                     this.container.style.top = `0px`;
-                    void this.container.clientHeight;
+                    reflow(this.container);
                     $container.addClass('t_3');
                 }
             });
-        void this.container.clientHeight;
+        reflow(this.container);
     }
 
     stop() {

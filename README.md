@@ -1436,12 +1436,12 @@ import { ScrollView, MainScrollView } from 'snowball/components';
 /**
  * @param {function} [onScrollViewInit] 初始化事件
  * @param {function} [pullToRefresh] 下拉刷新
- * @param {function} [onReachBottom] 滚动到底部事件
+ * @param {function} [onScrollToBottom] 滚动到底部事件
  * @param {string|PagiationStatus} [loadMoreStatus] 加载更多状态
 */
 <MainScrollView
     loadMoreStatus={PagiationStatus}
-    onReachBottom={autoLoadMore}
+    onScrollToBottom={autoLoadMore}
     pullToRefresh={()=>{  }}
 >
 </MainScrollView>
