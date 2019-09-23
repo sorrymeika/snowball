@@ -2,6 +2,7 @@ import { $ } from '../../utils/dom';
 import * as util from '../../utils';
 import * as $filter from './filter';
 
+import { TYPEOF } from '../predicates';
 
 import { unbindEvents, bindEvents } from './events';
 import { TemplateCompiler } from './template';
@@ -420,3 +421,5 @@ export class ViewModel extends Model {
         }
     }
 }
+
+ViewModel.prototype[TYPEOF] = 'ViewModel';

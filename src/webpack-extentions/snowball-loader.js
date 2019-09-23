@@ -37,18 +37,8 @@ function replaceImport(source, _package, replaceWith) {
     return source;
 }
 
-module.exports = function (source, inputSourceMap) {
-    this.cacheable();
-
+module.exports = function (source) {
     const options = loaderUtils.getOptions(this);
-    const url = inputSourceMap.sources[0];
-
-    if (options && options.excludes) {
-        if (options.excludes.some((exclude) => (typeof exclude === 'string' ? url.indexOf(exclude) !== -1 : exclude.test(url)))) {
-            this.callback(null, source, inputSourceMap);
-            return;
-        }
-    }
 
     var content = replaceImport(source, "snowball", "window.Snowball");
     content = replaceImport(content, "snowball/app", "window.Snowball._app");
@@ -68,7 +58,7 @@ module.exports = function (source, inputSourceMap) {
             });
     }
 
-    // console.log(content);
+    this.cacheable();
 
-    this.callback(null, content, inputSourceMap);
+    this.callback(null, content);
 };

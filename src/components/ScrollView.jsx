@@ -56,7 +56,7 @@ class ScrollHandler extends Service {
         if (this.scrollViewRef || this.isDestroy) {
             cb(this.scrollViewRef);
         } else {
-            this.onInit.one(() => cb(this.scrollViewRef));
+            this.onInit.once(() => cb(this.scrollViewRef));
         }
     }
 

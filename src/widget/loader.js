@@ -1,4 +1,4 @@
-import { $ } from '../utils';
+import { $, reflow } from '../utils';
 
 var loaderTimer;
 var showTimer;
@@ -28,9 +28,8 @@ export default {
                 if (!$dataLoader) {
                     $dataLoader = transEnd($('<div class="app-loader"></div>').appendTo('body'));
                 }
-                /* eslint no-unused-expressions:"off" */
-                $dataLoader.show()[0].offsetHeight;
-                $dataLoader.addClass('show');
+                reflow($dataLoader.show())
+                    .addClass('show');
                 showTimer = null;
             }, 300);
         }

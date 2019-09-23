@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import { $ } from '../utils';
+import { $, reflow } from '../utils';
 import { ViewModel } from '../vm';
 import { addOnBeforeBackListener, removeOnBeforeBackListener } from '../app';
 import { animate, computeFrame } from '../graphics/animation';
@@ -11,9 +11,9 @@ export class PhotoViewer extends ViewModel {
         x: 0,
         y: 0,
         s: 1,
+        minScale: 1,
         index: 0,
         images: [],
-        minScale: 1,
         after: null,
         slots: [],
     }
@@ -24,7 +24,7 @@ export class PhotoViewer extends ViewModel {
         <ul class="app-photoviewer-con" ref="content" style="-webkit-transform:translate({x}px,0px) translateZ(0);width:{(images.length + slots.length)*100}%">
             <li class="app-photoviewer-item" sn-repeat="slot in slots"><div class="app-photoviewer-item-con" ref="slots"></div></li>        
             <li class="app-photoviewer-item" sn-repeat="item in images"><div class="app-photoviewer-item-con" ref="items"><p ref="bds" style="-webkit-transform:translate({item.x}px,{item.y}px) translateZ(0);-webkit-transform-origin: 0% 0%;"><img style="-webkit-transform:translate(-50%,-50%) scale({item.s});-webkit-transform-origin: 50% 50%;" sn-image="{item.src}" ref="images" /></p></li>
-            <li class="app-photoviewer-after" sn-if="{images.length}" sn-html="{after}"></li>
+            <li class="app-photoviewer-after" sn-if="{images.length||slots.length}">{after&&after()}</li>
         </ul>
         <div class="app-photoviewer-indicator flex jc_c cl_fff" sn-if="{!(slots.length > 0 && index < slots.length)}">{index+1-slots.length}/{images.length}</div>
     </div>`;
@@ -69,26 +69,23 @@ export class PhotoViewer extends ViewModel {
     }
 
     show() {
-        /* eslint no-unused-expressions: "off" */
-        this.$el.appendTo(document.body)[0].offsetHeight;
-        this.$el.addClass('show');
+        reflow(this.$el.appendTo(document.body))
+            .addClass('show');
         addOnBeforeBackListener(onBack);
     }
 
     resetSize(e) {
-        setTimeout(() => {
-            if (!e.isPropagationStopped()) {
-                if (!this.currentItem || this.currentItem.attributes.s === 1) {
-                    this.hide();
-                } else {
-                    this.currentItem.set({
-                        s: 1,
-                        x: 0,
-                        y: 0
-                    });
-                }
+        if (!e.isPropagationStopped()) {
+            if (!this.currentItem || this.currentItem.attributes.s === 1) {
+                this.hide();
+            } else {
+                this.currentItem.set({
+                    s: 1,
+                    x: 0,
+                    y: 0
+                });
             }
-        });
+        }
     }
 
     setImages(images) {
@@ -356,14 +353,14 @@ export class PhotoViewer extends ViewModel {
                 }
             }
             var currentItem = this.currentItem;
-            $(this.refs.content).addClass('t_3')[0].clientHeight;
+            reflow($(this.refs.content).addClass('t_3'));
 
             this.set({
                 x: x,
                 index: index
             }).nextTick(() => {
                 setTimeout(() => {
-                    $(self.refs.content).removeClass('t_3')[0].clientHeight;
+                    reflow($(self.refs.content).removeClass('t_3'));
 
                     bounceBack && this.attributes.onBounceBack && this.attributes.onBounceBack(bounceBack);
 
