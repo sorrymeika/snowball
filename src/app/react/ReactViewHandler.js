@@ -65,9 +65,16 @@ export default class ReactViewHandler {
         const data = this.model.attributes;
         if (data !== this.lastData) {
             this.lastData = data;
-            this.componentInstance.setState({
-                data
-            }, cb);
+            if (this.activity.animationTask) {
+                this.componentInstance.setState(() => ({
+                    data
+                }));
+                cb && cb();
+            } else {
+                this.componentInstance.setState({
+                    data
+                }, cb);
+            }
         } else {
             cb && cb();
         }

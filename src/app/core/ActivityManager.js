@@ -323,39 +323,42 @@ export default class ActivityManager implements IActivityManager {
             }
         });
 
-        var next;
-        var replacingTask = new Promise((resolve) => {
-            var initialCount = 2;
+        let resolveTransition;
+        let transitionTask = new Promise((resolve) => {
+            resolveTransition = resolve;
+        });
 
-            next = () => {
-                initialCount--;
-                if (initialCount === 0) {
-                    activity.setTransitionTask(null);
-                    resolve();
-                } else {
-                    if (application.isStarting) {
-                        console.timeEnd("Start React App spend");
-                        application.isStarting = false;
-                    }
-                    console.log('%copen:%c ' + activity.location.path + ' %c total time', 'border-radius:2px;padding:0 2px;background:green;color:#fff', 'color:#000', 'color:green', Date.now() - application.now + 'ms');
+        let resolveRender;
+        let renderTask = new Promise((resolve) => {
+            resolveRender = () => {
+                if (application.isStarting) {
+                    console.timeEnd("Start React App spend");
+                    application.isStarting = false;
                 }
+                console.log('%copen:%c ' + activity.location.path + ' %c total time', 'border-radius:2px;padding:0 2px;background:green;color:#fff', 'color:#000', 'color:green', Date.now() - application.now + 'ms');
+                resolve();
             };
         });
 
+        const replacingTask = Promise.all([transitionTask, renderTask])
+            .then(() => {
+                activity.setTransitionTask(null);
+            });
+
         activity
-            .setTransitionTask(replacingTask)
+            .setTransitionTask(transitionTask)
             .setProps({
                 location: activity.location,
                 ...intentProps
-            }, next);
+            }, resolveRender);
 
         if (prevActivity && prevActivity.location.path === activity.location.path) {
-            next();
+            resolveTransition();
             return replacingTask;
         }
 
         if (prevActivity && withTransition) {
-            replaceActivityWithTransition(this, prevActivity, activity, isForward, next);
+            replaceActivityWithTransition(this, prevActivity, activity, isForward, resolveTransition);
         } else {
             activity.$el.css({
                 opacity: 1,
@@ -364,12 +367,12 @@ export default class ActivityManager implements IActivityManager {
             });
 
             activity.show(!prevActivity
-                ? next
+                ? resolveTransition
                 : () => {
                     prevActivity.$el.removeClass('app-view-actived');
                     prevActivity.$el.css({ zIndex: '' });
                     disposeUselessActivities(this, prevActivity, activity);
-                    next();
+                    resolveTransition();
                 });
         }
 

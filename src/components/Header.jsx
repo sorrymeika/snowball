@@ -73,7 +73,7 @@ export default function Header({
                                         : goBack
                                 }
                             >
-                                <button className="iconfont icon-back fs_22 bg_0000 h_full pl_s pr_s"></button>
+                                <button className="iconfont icon-back bg_0000 h_full pl_s pr_s"></button>
                                 {backText || ''}
                             </div>
                         }
