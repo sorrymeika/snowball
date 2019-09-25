@@ -1,5 +1,5 @@
 import { IPage, PageLifecycleDelegate } from '../types';
-import { Model, Emitter, observable } from '../../vm';
+import { Model, observable } from '../../vm';
 import { store } from '../../utils';
 import { EventEmitter } from '../../core/event';
 
@@ -9,16 +9,7 @@ const defaultTitle = document.title;
 
 function createPageCtx(page, ctx) {
     const messageChannel = new EventEmitter();
-    const toDiscriptor = (props) => {
-        return Object.keys(props)
-            .reduce((res, key) => {
-                res[key] = {
-                    writable: false,
-                    value: props[key]
-                };
-                return res;
-            }, {});
-    };
+
     const pageCtx = Object.create(ctx, {
         location: {
             get() {
@@ -30,18 +21,23 @@ function createPageCtx(page, ctx) {
                 return page;
             }
         },
-        ...toDiscriptor({
-            on: (type, fn) => {
-                const cb = (e) => fn(e);
-                cb._cb = fn;
-                messageChannel.on(type, cb);
+        on: {
+            writable: false,
+            value: (type, fn) => {
+                messageChannel.on(type, fn);
                 return pageCtx;
-            },
-            off: (...args) => {
+            }
+        },
+        off: {
+            writable: false,
+            value: (...args) => {
                 messageChannel.off(...args);
                 return pageCtx;
-            },
-            once: (type, callback) => {
+            }
+        },
+        once: {
+            writable: false,
+            value: (type, callback) => {
                 function once(e) {
                     messageChannel.off(name, once);
                     return callback.call(pageCtx, e);
@@ -49,34 +45,58 @@ function createPageCtx(page, ctx) {
                 once._cb = callback;
                 messageChannel.on(type, once);
                 return pageCtx;
-            },
-            emit: (state) => {
+            }
+        },
+        emit: {
+            writable: false,
+            value: (state) => {
                 if (!state.type) throw new Error('emit must has a `type`!');
                 messageChannel.trigger(state);
-            },
-            createEvent: () => {
-                const emitter = new Emitter();
-                const emitWrapper = (fn) => emitter.observe(fn);
-                emitWrapper.emit = (data) => {
-                    emitter.set(data);
-                };
-                emitWrapper.once = (fn) => {
-                    let dispose;
-                    const cb = (data, e) => {
-                        dispose();
+            }
+        },
+        createEvent: {
+            writable: false,
+            value: () => {
+                const event = new EventEmitter();
+                const type = 'do';
+
+                page.on('destroy', () => event.destroy());
+
+                const emitter = (fn) => {
+                    const cb = (e, data) => {
                         fn(data, e);
                     };
-                    dispose = emitter.observe(cb);
+                    event.on(type, cb);
+                    return () => {
+                        event.off(type, cb);
+                    };
                 };
-                page.on('destroy', () => emitter.destroy());
-                return emitWrapper;
-            },
-            useObservable: (value) => {
+
+                emitter.emit = (data) => {
+                    event.trigger(type, data);
+                };
+
+                emitter.once = (fn) => {
+                    const cb = (e, data) => {
+                        fn(data, e);
+                    };
+                    event.one(type, cb);
+                    return () => {
+                        event.off(type, cb);
+                    };
+                };
+
+                return emitter;
+            }
+        },
+        useObservable: {
+            writable: false,
+            value: (value) => {
                 const observer = observable(value);
                 page.on('destroy', () => observer.destroy());
                 return observer;
             }
-        })
+        }
     });
 
     page.on('destroy', () => {
