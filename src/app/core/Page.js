@@ -60,7 +60,7 @@ function createPageCtx(page, ctx) {
                 const event = new EventEmitter();
                 const type = 'do';
 
-                page.on('destroy', () => event.destroy());
+                page.on('destroy', () => event.off());
 
                 const emitter = (fn) => {
                     const cb = (e, data) => {

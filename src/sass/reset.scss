@@ -9,4 +9,5 @@ input[type=button],button{ padding: 0; border: 0; border-radius: 0; }
 input::-webkit-input-placeholder{ color: #999; }
 button[disabled] { opacity: .5; }
 textarea { resize: none; }
-img:not([src]),img[src=""] { background-color: rgba(71, 71, 71, 0.5); }
+img:not([src]),img[src=""] { background-color: rgba(200, 200, 200, 0.5); }
+button { background-color: transparent; }

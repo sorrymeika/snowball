@@ -51,11 +51,11 @@
     > :first-child[app-fixed-onscroll="hidden"],> :first-child[app-fixed-clone="hidden"] { position: static; opacity: 1 !important; pointer-events: auto; }
 }
 
-.app-footer { z-index: 1000; }
+.app-footer { z-index: 1000; height: 50px; position: absolute; bottom: 0; width: 100%; }
 
 .app-header~.app-main,.app-header~.app-main-iframe { top: 44px; }
 
-.app-footer~.app-main,.app-footer~.app-main-iframe { bottom: 44px; }
+.app-footer~.app-main,.app-footer~.app-main-iframe { bottom: 50px; }
 .app-main-iframe { width: 100%; }
 .app-main-iframe iframe { width: 100%; height: 100%; margin-bottom: -10px; }
 
@@ -114,6 +114,7 @@
 .app-photoviewer-indicator { position: relative; bottom: 50px; width: 100%; }
 
 /* 弹框 */
+.app-modal { display: none; }
 .app-popup-mask { position: absolute; z-index: 2000; top: 0px; left: 0px; right: 0px; bottom: 0px; opacity: 0; display: none; transition: all 300ms ease-out 0ms; background: rgba(0,0,0,.5); }
 .app-popup-mask.show { display: block; opacity: 1; }
 .app-popup-container { position: absolute; z-index: 2001; }
@@ -129,7 +130,7 @@
 .app-popup-style-dropdown.show { opacity: 1; transform: scale(1); }
 .app-popup-style-dropdown+.app-popup-mask{ background: rgba(0,0,0,0); }
 
-.app-popup-container-up { border-radius: 0px; padding-top: 10px; min-height: 50px; background: #fff; opacity: 0; transition: all 300ms ease-out 0ms; transform-origin: 0% 0%; transform: translate(0%,100%) translateZ(0); }
+.app-popup-container-up { border-radius: 0px; min-height: 50px; background: #fff; opacity: 0; transition: all 300ms ease-out 0ms; transform-origin: 0% 0%; transform: translate(0%,100%) translateZ(0); }
 .app-popup-container.show .app-popup-container-up { opacity: 1; transform: translate(0%,0%) translateZ(0); }
 
 .app-popup-title { text-align: center; margin: 0 20px 0 20px; font-weight: bold; }
@@ -150,6 +151,16 @@
 .app-tab-head .curr .app-tab-title { color: $color; }
 .app-tab-body { top: 46px; }
 .app-tab-body-inner > div { -webkit-box-flex: 1; flex: 1; height: 100%; width: 0px; }
+
+/* 开关 */
+.app-switch { height: 24px; width: 44px; border-radius: 13px; background: #eee; transition: background 100ms ease-in 0ms; }
+.app-switch::before { position: absolute; top: 0; left: 0; content: ''; display: inline-block; height: 38px; width: 38px; border: 1px solid #ddd; border-radius: 44px; margin: 2px; background: #fff; transform: scale(.5); transform-origin: 0% 0%; transition: left 100ms ease-out 0ms; }
+.app-switch::after { content: ''; display: inline-block; position: absolute; top: 0; left: 0; right: -100%; bottom: -100%; border: 1px solid #ddd; border-radius: 48px; transform: scale(.5); transform-origin: 0% 0%; }
+.app-switch-checked { background: #0079FF; }
+.app-switch-checked::before { border: 0; height: 40px; width: 40px; left: 20px; }
+.app-switch-checked::after { display: none; }
+.app-switch-disabled { opacity: .5; background-color: #f1f1f1; }
+.app-switch-disabled::before { background-color: #eee; }
 
 .app-loader { top: 50%; left: 50%; margin: -16px 0 0 -16px; position: absolute; width: 32px; height: 32px; text-indent: -10000px; background: url(./images/loading@2x.png) center center no-repeat; background-size: 80% 80%; animation-duration: 1s; animation-iteration-count: infinite; animation-timing-function: step-start; z-index: 10000; opacity: 0; transition: opacity 300ms ease-out 0ms; pointer-events: none; border-radius: 50%; animation-name: app-loading-anim; -webkit-animation-duration: 1s; -webkit-animation-iteration-count: infinite; -webkit-animation-timing-function: step-start; }
 .app-loader.show { opacity: 1; }
