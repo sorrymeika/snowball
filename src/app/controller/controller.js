@@ -25,8 +25,12 @@ function createController(ControllerClass, props, ctx, callback) {
     isCreating = true;
     currentCtx = ctx;
 
+    ControllerClass.prototype._ctx = ctx;
+
     const target = new ControllerClass(props, ctx);
     target._ctx = ctx;
+
+    ControllerClass.prototype._ctx = null;
 
     callback(target);
 

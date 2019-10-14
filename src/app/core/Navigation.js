@@ -38,7 +38,6 @@ class History {
     }
 
     add(url, withTransition = true) {
-        console.log(url, withTransition);
         this.data.push({
             url,
             withTransition
