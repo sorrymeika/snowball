@@ -1,7 +1,7 @@
 export function debounce(fn, threshhold) {
     var timer;
 
-    return function () {
+    var method = function () {
         var context = this;
         var args = arguments;
 
@@ -11,4 +11,10 @@ export function debounce(fn, threshhold) {
             fn.apply(context, args);
         }, threshhold);
     };
+
+    method.clear = function () {
+        if (timer) clearTimeout(timer);
+    };
+
+    return method;
 }
