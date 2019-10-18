@@ -3,6 +3,7 @@ import ActivityManager from './ActivityManager';
 import Router from './Router';
 import Navigation from './Navigation';
 import Application from './Application';
+import { EventEmitter } from '../../core/event';
 
 // 当前启动的应用的实例
 let application;
@@ -75,7 +76,8 @@ export function createApplication({
         registerRoutes: application.registerRoutes.bind(application),
         get current() {
             return application.currentActivity.page.ctx;
-        }
+        },
+        app: new EventEmitter()
     };
 
     if (extend) {

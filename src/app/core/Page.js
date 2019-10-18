@@ -96,6 +96,13 @@ function createPageCtx(page, ctx) {
                 page.on('destroy', () => observer.destroy());
                 return observer;
             }
+        },
+        autoDispose: {
+            writable: false,
+            value: (fn) => {
+                page.on('destroy', fn);
+                return fn;
+            }
         }
     });
 

@@ -208,19 +208,35 @@ export class Emitter extends Observer {
     static create() {
         const emitter = new this();
         const emitWrapper = (fn) => emitter.observe(fn);
-        emitWrapper.emit = (data) => {
-            emitter.set(data);
-        };
-        emitWrapper.event = emitter;
-        emitWrapper.once = (fn) => {
-            let dispose;
-            const cb = (data, e) => {
-                dispose();
-                fn(data, e);
-            };
-            dispose = emitter.observe(cb);
-        };
-        return emitWrapper;
+
+        return Object.defineProperties(emitWrapper, {
+            state: {
+                get() {
+                    return emitter.get();
+                }
+            },
+            event: {
+                writable: false,
+                value: emitter,
+            },
+            emit: {
+                writable: false,
+                value: (data) => {
+                    emitter.set(data);
+                }
+            },
+            once: {
+                writable: false,
+                value: (fn) => {
+                    let dispose;
+                    const cb = (data, e) => {
+                        dispose();
+                        fn(data, e);
+                    };
+                    dispose = emitter.observe(cb);
+                }
+            }
+        });
     }
 
     set(data) {
