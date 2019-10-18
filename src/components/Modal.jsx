@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { util, $ } from 'snowball';
 
 
-export default function Modal({ visible, children, animate = 'scale' }) {
+export default function Modal({ visible, children, animate = 'scale', onCancel }) {
     const maskRef = useRef();
     const wrapperRef = useRef();
 
@@ -53,7 +53,7 @@ export default function Modal({ visible, children, animate = 'scale' }) {
                     {children}
                 </div>
             </div>
-            <div ref={maskRef} className="app-popup-mask"></div>
+            <div ref={maskRef} className="app-popup-mask" onClick={onCancel}></div>
         </>,
         document.body
     );
