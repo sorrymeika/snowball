@@ -1,5 +1,15 @@
 import { pad } from "./format";
 
+let offsetTime = 0;
+
+export function setServerTime(serverTime) {
+    offsetTime = Date.now() - serverTime;
+}
+
+export function getCurrentTime() {
+    return Date.now() - offsetTime;
+}
+
 /**
  * 简单时间处理方法
  */

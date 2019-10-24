@@ -1,5 +1,6 @@
 import React from 'react';
 import { splitTime, isFunction } from '../utils';
+import { util } from '../snowball';
 
 type Props = {
     endTime: number,
@@ -50,7 +51,6 @@ function stopCountDown(fn) {
 class CountDown extends React.Component<Props, any> {
     static defaultProps = {
         endTime: 0,
-        offsetTime: 0,
         onCountDownEnd: () => { }
     }
 
@@ -84,8 +84,8 @@ class CountDown extends React.Component<Props, any> {
 
     generateCountDown = (props) => {
         return () => {
-            const { endTime, offsetTime, onCountDownEnd } = props || this.props;
-            let duration = endTime - (Date.now() + offsetTime);
+            const { endTime, onCountDownEnd } = props || this.props;
+            let duration = endTime - util.getCurrentTime();
             if (duration <= 0) {
                 duration = 0;
                 this.stop();
@@ -100,9 +100,9 @@ class CountDown extends React.Component<Props, any> {
     }
 
     startCountDown = (props) => {
-        const { endTime, offsetTime } = props || this.props;
+        const { endTime } = props || this.props;
 
-        if (endTime <= Date.now() + offsetTime) {
+        if (endTime <= util.getCurrentTime()) {
             return;
         }
 
