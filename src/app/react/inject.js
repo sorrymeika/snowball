@@ -44,7 +44,6 @@ function makeStatelessComponentReacitve(statelessComponentClass) {
         });
         return element;
     };
-    componentClass.injectorName = statelessComponentClass.injectorName || statelessComponentClass.name;
     return componentClass;
 }
 
@@ -69,7 +68,7 @@ function createStoreInjector(grabStoresFn, componentClass, makeReactive) {
         render() {
             const { forwardRef, ...props } = this.props;
 
-            const additionalProps = grabStoresFn(this.context || {}, props, componentClass.injectorName || componentClass.name, this) || {};
+            const additionalProps = grabStoresFn(this.context || {}, props, this) || {};
             for (let key in additionalProps) {
                 props[key] = additionalProps[key];
             }
@@ -92,24 +91,32 @@ function createStoreInjector(grabStoresFn, componentClass, makeReactive) {
 }
 
 function compose(grabStoresFns) {
-    return function (stores, nextProps) {
+    return function (stores, nextProps, injector) {
+        pageContext = stores.ctx;
         const newProps = {};
-        grabStoresFns.forEach(function (grabStoresFn) {
-            const additionalProps = grabStoresFn(stores, nextProps);
-            for (let key in additionalProps) {
-                if (key in nextProps)
-                    continue;
-                newProps[key] = additionalProps[key];
+        grabStoresFns.forEach(function (grabStoresFn, i) {
+            let additionalProps = (injector['REDUCER_' + i] || grabStoresFn)(stores, nextProps);
+            if (typeof additionalProps === 'function') {
+                injector['REDUCER_' + i] = additionalProps;
+                additionalProps = additionalProps(stores, nextProps);
+            }
+            if (additionalProps) {
+                for (let key in additionalProps) {
+                    if (key in nextProps)
+                        continue;
+                    newProps[key] = additionalProps[key];
+                }
             }
         });
+        pageContext = null;
         return newProps;
     };
 }
 
 function grabStoresByName(storeNames) {
-    return function (baseStores, nextProps, injectorName, injector) {
+    return function (baseStores, nextProps, injector) {
         storeNames.forEach(function (storeName) {
-            mapStoreToProps(baseStores, nextProps, injectorName, injector, storeName);
+            mapStoreToProps(baseStores, nextProps, injector, storeName);
         });
         return nextProps;
     };
@@ -117,30 +124,18 @@ function grabStoresByName(storeNames) {
 
 function renameProps(mapper) {
     const keys = Object.keys(mapper);
-    return function (baseStores, nextProps, injectorName, injector) {
+    return function (baseStores, nextProps, injector) {
         keys.forEach(function (storeName) {
-            mapStoreToProps(baseStores, nextProps, injectorName, injector, storeName, mapper[storeName]);
+            mapStoreToProps(baseStores, nextProps, injector, storeName, mapper[storeName]);
         });
         return nextProps;
     };
 }
 
-function mapStoreToProps(baseStores, nextProps, injectorName, injector, storeName, mapName = storeName) {
+function mapStoreToProps(baseStores, nextProps, injector, storeName, mapName = storeName) {
     // prefer props over stores
     if (mapName in nextProps)
         return;
-
-    if (injectorName) {
-        const nameWithPrefix = injectorName.replace(/^[A-Z]/, (c) => c.toLowerCase()) + storeName.replace(/^[a-z]/, (c) => c.toUpperCase());
-        if (nameWithPrefix in baseStores) {
-            nextProps[mapName] = baseStores[nameWithPrefix];
-            return;
-        }
-
-        if (injectFactoryInstance(baseStores, nextProps, injector, nameWithPrefix + 'Factory', mapName)) {
-            return;
-        }
-    }
 
     if (injectFactoryInstance(baseStores, nextProps, injector, storeName + 'Factory', mapName)) {
         return;
@@ -202,10 +197,10 @@ export function inject(deps, injection) {
             throw new Error('injection must be function!!');
         }
         makeReactive = true;
-        grabStoresFn = (baseStores, nextProps, injectorName, injector) => {
+        grabStoresFn = (baseStores, nextProps, injector) => {
             const depProps = { ...nextProps };
             deps.forEach(function (storeName, i) {
-                mapStoreToProps(baseStores, depProps, injectorName, injector, storeName);
+                mapStoreToProps(baseStores, depProps, injector, storeName);
             });
             return injection(depProps);
         };
