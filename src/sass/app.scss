@@ -150,7 +150,7 @@
 .app-tab-head > ul { height: 100%; }
 .app-tab-head .curr .app-tab-title { color: $color; }
 .app-tab-body { top: 46px; }
-.app-tab-body-inner > div { -webkit-box-flex: 1; flex: 1; height: 100%; width: 0px; }
+.app-tab-body-inner .app-tab-pane { -webkit-box-flex: 1; flex: 1; height: 100%; width: 0px; position: relative; }
 
 /* 开关 */
 .app-switch { height: 24px; width: 44px; border-radius: 13px; background: #eee; transition: background 100ms ease-in 0ms; }

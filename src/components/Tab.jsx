@@ -2,20 +2,21 @@ import React, { Component, ReactNode } from "react";
 import ReactDOM from "react-dom";
 
 import { $, reflow } from '../utils';
+import ScrollView from "./ScrollView";
 
-type TabItem = {
+type TabPaneProps = {
     title: string,
     titleClassName: string,
     titlePrefix: ReactNode,
-    titleProps: any,
-    content: ReactNode
+    titleProps: any
 }
 
 type TabProps = {
-    items: TabItem[],
     className: string,
     onTabChange: () => never
 }
+
+const TabContext = React.createContext();
 
 export default class Tab extends Component<TabProps, { index: number }> {
     constructor(props) {
@@ -85,7 +86,7 @@ export default class Tab extends Component<TabProps, { index: number }> {
         this.moveX = this.startPageX = e.touches[0].pageX;
         this.startPageY = e.touches[0].pageY;
         this.startX = this.x || 0;
-        this.minX = (this.props.items.length - 1) * this.wrapWidth * -1;
+        this.minX = (React.Children.count(this.props.children) - 1) * this.wrapWidth * -1;
         reflow($(this.body).removeClass('t_3'));
     }
 
@@ -128,7 +129,7 @@ export default class Tab extends Component<TabProps, { index: number }> {
 
             var index = Math.floor(this.startX * -1 / this.wrapWidth);
             index = this.x < this.startX ? index + 1 : (index - 1);
-            index = Math.max(0, Math.min(this.props.items.length - 1, index));
+            index = Math.max(0, Math.min(React.Children.count(this.props.children) - 1, index));
 
             $(this.body).addClass('t_3');
 
@@ -160,21 +161,22 @@ export default class Tab extends Component<TabProps, { index: number }> {
     }
 
     render() {
-        let { items, className } = this.props;
+        let { children, className } = this.props;
 
         return (
             <div className={className + " app-tab-wrap ps_r"}>
                 <div className="app-tab-head bd_b ps_r ta_c bg_fff">
                     <ul className="flex">
                         {
-                            items.map((item, i) => {
+                            React.Children.map(children, (item, i) => {
+                                const itemProps = item.props;
                                 return (
                                     <li
-                                        {...item.titleProps}
-                                        key={i}
+                                        {...itemProps.titleProps}
+                                        key={itemProps.title}
                                         onClick={this.onTabTitleClick.bind(this, i)}
-                                        className={(this.state.index === i ? 'curr ' : '') + "flexitem " + (item.titleClassName || '')}
-                                    >{item.titlePrefix}<span class="app-tab-title">{item.title}</span></li>
+                                        className={(this.state.index === i ? 'curr ' : '') + "flexitem " + (itemProps.titleClassName || '')}
+                                    >{itemProps.titlePrefix}<span class="app-tab-title">{itemProps.title}</span></li>
                                 );
                             })
                         }
@@ -189,17 +191,56 @@ export default class Tab extends Component<TabProps, { index: number }> {
                         onTouchEnd={this.onBodyTouchEnd}
                         className="dock app-tab-body-inner dp_f t_3"
                         style={{
-                            width: items.length * 100 + '%',
+                            width: React.Children.count(children) * 100 + '%',
                             transform: 'translate(' + this.x + 'px,0px)',
                             webkitTransform: 'translate(' + this.x + 'px,0px)'
                         }}
                     >
-                        {
-                            items.map((item) => item.content)
-                        }
+                        <TabContext.Provider
+                            value={{
+                                current: this.state.index
+                            }}
+                        >
+                            {
+                                React.Children.map(children, (child, index) => {
+                                    return React.cloneElement(child, {
+                                        index
+                                    });
+                                })
+                            }
+                        </TabContext.Provider>
                     </div>
                 </div>
             </div >
         );
     }
 }
+
+Tab.Pane = class Pane extends Component<TabPaneProps> {
+    shown = false;
+
+    render() {
+        const { props } = this;
+
+        return (
+            <TabContext.Consumer>
+                {
+                    ({ current }) => {
+                        const { className, children, index, ...containerProps } = props;
+                        const visible = index == current;
+                        if (visible && !this.shown) {
+                            this.shown = true;
+                        }
+
+                        return (
+                            <ScrollView
+                                {...containerProps}
+                                className={"app-tab-pane" + (className ? ' ' + className : '')}
+                            >{this.shown ? children : null}</ScrollView>
+                        );
+                    }
+                }
+            </TabContext.Consumer>
+        );
+    }
+};

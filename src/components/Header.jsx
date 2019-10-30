@@ -66,15 +66,16 @@ export default function Header({
                         {
                             back &&
                             <div
-                                className="app-header-back"
+                                className="app-header-back flex"
                                 onClick={
                                     typeof back == 'function'
                                         ? back
                                         : goBack
                                 }
                             >
-                                <button className="iconfont icon-back bg_0000 h_full pl_s pr_s"></button>
-                                {backText || ''}
+                                {backText
+                                    ? <button className="w_1x h_1x ta_c">{backText}</button>
+                                    : <button className="iconfont icon-back bg_0000 h_full pl_s pr_s"></button>}
                             </div>
                         }
                     </div>

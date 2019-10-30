@@ -9,7 +9,7 @@ export { default as Slider } from './Slider';
 export { default as Tab } from './Tab';
 export { default as PhotoViewer } from './PhotoViewer';
 export { default as Header } from './Header';
-export { ImageUploader } from './ImageUploader';
+export { ImageUpload } from './ImageUpload';
 export { default as ItemSwiper } from './ItemSwiper';
 export { default as NumberModifier } from './NumberModifier';
 export { default as SmallText } from './SmallText';

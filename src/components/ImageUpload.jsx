@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 
-export class ImageUploader extends Component {
+export class ImageUpload extends Component {
     onFileInputClick = e => {
         const {
             onClick,
