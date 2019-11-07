@@ -86,6 +86,7 @@ class CountDown extends React.Component<Props, any> {
         return () => {
             const { endTime, onCountDownEnd } = props || this.props;
             let duration = endTime - util.getCurrentTime();
+
             if (duration <= 0) {
                 duration = 0;
                 this.stop();

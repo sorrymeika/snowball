@@ -39,6 +39,7 @@ function HtmlPreRenderWebpackPlugin(options) {
     config.skeletonConfig = options.skeleton;
     config.appSrc = options.appSrc;
     config.preloader = options.preloader;
+    config.mobile = options.mobile !== false;
 }
 
 HtmlPreRenderWebpackPlugin.debugPreloader = function () {

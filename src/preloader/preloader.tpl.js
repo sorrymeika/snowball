@@ -45,7 +45,7 @@ window.preloader = (function (window, document, preloadOptions, undefined) {
             function refreshRem() {
                 var docEl = document.documentElement;
                 var screenWidth = Math.min(screen.width, window.innerWidth, docEl.getBoundingClientRect().width);
-                var rem = Math.min(screenWidth, 414) * 100 / 375 || 100;
+                var rem = preloadOptions.mobile ? Math.min(screenWidth, 414) * 100 / 375 || 100 : 100;
                 window.pixelWidth = screenWidth * window.devicePixelRatio;
 
                 docEl.style.fontSize = rem + 'px';

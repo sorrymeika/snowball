@@ -1,7 +1,7 @@
 import { IPage, PageLifecycleDelegate } from '../types';
 import { Model, observable } from '../../vm';
 import { store } from '../../utils';
-import { EventEmitter } from '../../core/event';
+import { EventEmitter, createAsyncEmitter, createEmitter } from '../../core/event';
 
 const extentions = [];
 
@@ -57,36 +57,17 @@ function createPageCtx(page, ctx) {
         createEvent: {
             writable: false,
             value: () => {
-                const event = new EventEmitter();
-                const type = 'do';
-
-                page.on('destroy', () => event.off());
-
-                const emitter = (fn) => {
-                    const cb = (e, data) => {
-                        fn(data, e);
-                    };
-                    event.on(type, cb);
-                    return () => {
-                        event.off(type, cb);
-                    };
-                };
-
-                emitter.emit = (data) => {
-                    event.trigger(type, data);
-                };
-
-                emitter.once = (fn) => {
-                    const cb = (e, data) => {
-                        fn(data, e);
-                    };
-                    event.one(type, cb);
-                    return () => {
-                        event.off(type, cb);
-                    };
-                };
-
-                return emitter;
+                const event = createEmitter();
+                page.on('destroy', event.destroy);
+                return event;
+            }
+        },
+        createAsyncEvent: {
+            writable: false,
+            value: () => {
+                const event = createAsyncEmitter();
+                page.on('destroy', event.destroy);
+                return event;
             }
         },
         useObservable: {
@@ -126,6 +107,14 @@ export class Page extends EventEmitter implements IPage {
         },
         mixin: (props) => {
             Object.defineProperties(Page.prototype, Object.getOwnPropertyDescriptors(props));
+        },
+        react({ Provider }) {
+            Object.defineProperty(Page.prototype, 'react', {
+                value: {
+                    Provider
+                },
+                writable: false
+            });
         }
     }
 

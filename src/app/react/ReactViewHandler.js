@@ -24,6 +24,17 @@ export default class ReactViewHandler {
         const reactiveView = viewFactory.$$isInjector === true ? viewFactory : makeComponentReacitve(viewFactory);
 
         class PageProvider extends Component {
+            constructor() {
+                super();
+
+                if (page.react && page.react.Provider) {
+                    const render = this.render;
+                    this.render = () => {
+                        return React.createElement(page.react.Provider, null, render.call(this));
+                    };
+                }
+            }
+
             shouldComponentUpdate() {
                 if (viewHandler.activity.animationTask) {
                     viewHandler.activity.animationTask.then(() => {
