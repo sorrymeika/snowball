@@ -10,7 +10,11 @@ export class Service {
     }
 
     get ctx() {
-        return this._ctx || getApplicationCtx();
+        return this._ctx;
+    }
+
+    get app() {
+        return getApplicationCtx();
     }
 }
 

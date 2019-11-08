@@ -14,7 +14,7 @@ export function internal_getApplication() {
 }
 
 export function getApplicationCtx() {
-    return application.ctx;
+    return ctx;
 }
 
 export function internal_beforeStartApplication(fn) {
@@ -27,6 +27,13 @@ function beforeAppStart() {
     });
     actionsBeforeAppStart = null;
 }
+
+export const ctx = {
+    get current() {
+        return application.currentActivity.page.ctx;
+    },
+    event: new EventEmitter()
+};
 
 /**
  * 创建应用
@@ -64,7 +71,7 @@ export function createApplication({
     application.setNavigation(navigation)
         .setActivityManager(new ActivityManager(application, options));
 
-    const ctx = {
+    Object.assign(ctx, {
         navigation: ['forward', 'back', 'replace', 'transitionTo', 'home'].reduce((nav, prop) => {
             const method = navigation[prop];
             nav[prop] = (...args) => {
@@ -73,11 +80,7 @@ export function createApplication({
             return nav;
         }, {}),
         registerRoutes: application.registerRoutes.bind(application),
-        get current() {
-            return application.currentActivity.page.ctx;
-        },
-        app: new EventEmitter()
-    };
+    });
 
     if (extend) {
         const descriptors = Object.getOwnPropertyDescriptors(extend(ctx));
@@ -94,7 +97,7 @@ export function createApplication({
                         writable: false,
                         value: Object.defineProperties({}, Object.keys(services).reduce((classes, key) => {
                             const serviceClass = services[key];
-                            Object.defineProperty(serviceClass.prototype, 'ctx', {
+                            Object.defineProperty(serviceClass.prototype, 'app', {
                                 get() {
                                     return ctx;
                                 }

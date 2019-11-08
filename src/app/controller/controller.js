@@ -1,11 +1,11 @@
 import { isFunction } from "../../utils";
 import { Reaction } from "../../vm";
+import { getApplicationCtx } from "../core/createApplication";
 import { registerRoutes } from "../core/registerRoutes";
 import Activity from "../core/Activity";
 import { ACTIVITY_CREATOR } from "../core/ActivityManager";
 import { IS_CONTROLLER, INJECTABLE_PROPS } from "./symbols";
 import { getCurrentContext } from "../react/inject";
-
 
 let isCreating = false;
 let currentCtx = null;
@@ -73,6 +73,11 @@ export function controller(route, componentClass, options) {
         Object.defineProperty(Target.prototype, 'ctx', {
             get() {
                 return this._ctx;
+            }
+        });
+        Object.defineProperty(Target.prototype, 'app', {
+            get() {
+                return getApplicationCtx();
             }
         });
         Target.prototype[IS_CONTROLLER] = true;

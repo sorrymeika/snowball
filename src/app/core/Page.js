@@ -11,7 +11,22 @@ const pageCtxExtentions = [];
 function createPageCtx(page, ctx) {
     const messageChannel = new EventEmitter();
 
-    const pageCtx = Object.create(ctx, {
+    const pageCtx = Object.create({}, {
+        app: {
+            get() {
+                return ctx;
+            }
+        },
+        navigation: {
+            get() {
+                return ctx.navigation;
+            }
+        },
+        service: {
+            get() {
+                return ctx.service;
+            }
+        },
         location: {
             get() {
                 return page.location;
