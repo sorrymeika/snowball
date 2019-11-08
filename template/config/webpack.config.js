@@ -145,6 +145,7 @@ module.exports = function (webpackEnv) {
       isEnvDevelopment &&
       require.resolve('react-dev-utils/webpackHotDevClient'),
       require.resolve('./polyfills'),
+      require.resolve('snowball'),
       // Finally, this is your app's code:
       paths.appIndexJs,
       // We include the app code last so that if there is a runtime error during
@@ -323,17 +324,6 @@ module.exports = function (webpackEnv) {
             },
           ],
           include: paths.appSrc,
-        },
-        {
-          test: /\.(js|mjs|jsx|ts|tsx)$/,
-          include: paths.appSrc,
-          loader: require.resolve('snowball/webpack-extentions/snowball-loader'),
-          options: {
-            modules: {
-              // 'your-module': 'window.YourModlue',
-            },
-            excludes: ['src/index.dev.js']
-          },
         },
         {
           // "oneOf" will traverse all following loaders until one will
@@ -519,6 +509,17 @@ module.exports = function (webpackEnv) {
             // ** STOP ** Are you adding a new loader?
             // Make sure to add the new loader(s) before the "file" loader.
           ],
+        },
+        {
+          test: /\.(js|mjs|jsx|ts|tsx)$/,
+          include: paths.appSrc,
+          loader: require.resolve('snowball/webpack-extentions/snowball-loader'),
+          options: {
+            modules: {
+              // 'your-module': 'window.YourModlue',
+            },
+            excludes: ['src/index.dev.js']
+          },
         },
       ],
     },
