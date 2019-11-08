@@ -3,9 +3,10 @@ import { Model, observable } from '../../vm';
 import { store } from '../../utils';
 import { EventEmitter, createAsyncEmitter, createEmitter } from '../../core/event';
 
-const extentions = [];
-
 const defaultTitle = document.title;
+
+const extentions = [];
+const pageCtxExtentions = [];
 
 function createPageCtx(page, ctx) {
     const messageChannel = new EventEmitter();
@@ -87,6 +88,8 @@ function createPageCtx(page, ctx) {
         }
     });
 
+    Object.defineProperties(pageCtx, pageCtxExtentions.reduce((res, fn) => Object.assign(res, fn(page, pageCtx)), {}));
+
     page.on('destroy', () => {
         messageChannel.off();
     });
@@ -115,6 +118,9 @@ export class Page extends EventEmitter implements IPage {
                 },
                 writable: false
             });
+        },
+        ctx(func) {
+            pageCtxExtentions.push(func);
         }
     }
 

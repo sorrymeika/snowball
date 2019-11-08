@@ -7,7 +7,6 @@ import { EventEmitter } from '../../core/event';
 
 // 当前启动的应用的实例
 let application;
-let applicationCtx;
 let actionsBeforeAppStart = [];
 
 export function internal_getApplication() {
@@ -15,7 +14,7 @@ export function internal_getApplication() {
 }
 
 export function getApplicationCtx() {
-    return applicationCtx;
+    return application.ctx;
 }
 
 export function internal_beforeStartApplication(fn) {
