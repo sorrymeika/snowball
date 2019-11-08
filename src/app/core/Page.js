@@ -103,7 +103,7 @@ function createPageCtx(page, ctx) {
         }
     });
 
-    Object.defineProperties(pageCtx, pageCtxExtentions.reduce((res, fn) => Object.assign(res, fn(page, pageCtx)), {}));
+    Object.defineProperties(pageCtx, Object.getOwnPropertyDescriptors(pageCtxExtentions.reduce((res, fn) => Object.assign(res, fn(page, pageCtx)), {})));
 
     page.on('destroy', () => {
         messageChannel.off();
