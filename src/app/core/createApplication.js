@@ -107,6 +107,7 @@ export function createApplication({
                                     return ctx;
                                 }
                             });
+                            serviceClass.prototype.__is_app_service__ = true;
                             serviceClasses[key] = serviceClass;
                             classes[key] = {
                                 get() {

@@ -2,16 +2,11 @@
 /* eslint-disable react-hooks/rules-of-hooks */
 import React, { Component, createElement, useMemo, useState, useEffect } from 'react';
 import { isString, isArray, isFunction } from '../../utils';
-import { observer } from './observer';
 import { Reaction } from '../../vm';
-
-let pageContext;
+import { setCurrentCtx } from '../controller/controller';
+import { observer } from './observer';
 
 export const PageContext = React.createContext();
-
-export const getCurrentContext = () => {
-    return pageContext;
-};
 
 function isStateless(component) {
     // `function() {}` has prototype, but `() => {}` doesn't
@@ -92,7 +87,7 @@ function createStoreInjector(grabStoresFn, componentClass, makeReactive) {
 
 function compose(grabStoresFns) {
     return function (stores, nextProps, injector) {
-        pageContext = stores.ctx;
+        setCurrentCtx(stores.ctx);
         const newProps = {};
         grabStoresFns.forEach(function (grabStoresFn, i) {
             let additionalProps = (injector['REDUCER_' + i] || grabStoresFn)(stores, nextProps);
@@ -108,7 +103,7 @@ function compose(grabStoresFns) {
                 }
             }
         });
-        pageContext = null;
+        setCurrentCtx(null);
         return newProps;
     };
 }
@@ -157,9 +152,9 @@ function injectFactoryInstance(baseStores, nextProps, injector, factoryName, map
         return true;
     }
     if (isFunction(factory)) {
-        pageContext = baseStores.ctx;
+        setCurrentCtx(baseStores.ctx);
         injector[factoryName] = nextProps[mapName] = factory(nextProps);
-        pageContext = null;
+        setCurrentCtx(null);
         return true;
     }
     return false;

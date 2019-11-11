@@ -4,9 +4,11 @@ import { getApplicationCtx } from "../core/createApplication";
 
 export class Service {
     constructor() {
-        initWithContext((ctx) => {
-            this._ctx = ctx;
-        });
+        if (!this.__is_app_service__) {
+            initWithContext((ctx) => {
+                this._ctx = ctx;
+            });
+        }
     }
 
     get ctx() {

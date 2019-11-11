@@ -5,13 +5,16 @@ import { registerRoutes } from "../core/registerRoutes";
 import Activity from "../core/Activity";
 import { ACTIVITY_CREATOR } from "../core/ActivityManager";
 import { IS_CONTROLLER, INJECTABLE_PROPS } from "./symbols";
-import { getCurrentContext } from "../react/inject";
 
 let isCreating = false;
 let currentCtx = null;
 
+export function setCurrentCtx(ctx) {
+    currentCtx = ctx;
+}
+
 export function initWithContext(fn) {
-    const ctx = currentCtx || getCurrentContext();
+    const ctx = currentCtx;
     if (!ctx) {
         console.error('ctx 不能为空!');
     }
