@@ -221,7 +221,7 @@ const TypeSelect = inject(({ typeUIService }) => (
         onTypeChange: typeUIService.onTypeChange.emit,
         onInit: typeUIService.onInit.emit
     }
-    : {}
+    : null
 ))((props) => {
     const { type, subTypes, onInit, onTypeChange } = props;
 

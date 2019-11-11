@@ -97,8 +97,8 @@ function compose(grabStoresFns) {
             }
             if (additionalProps) {
                 for (let key in additionalProps) {
-                    if (key in nextProps)
-                        continue;
+                    // if (key in nextProps)
+                    //     continue;
                     newProps[key] = additionalProps[key];
                 }
             }
@@ -162,7 +162,6 @@ function injectFactoryInstance(baseStores, nextProps, injector, factoryName, map
 
 /**
  * 注入组件的props
- * nextProps优先级高与stores
  *
  * @example
  * // 将 `storeName1` 和 `storeName2` 注入到 props 中
