@@ -46,6 +46,7 @@
 2. `immutable`，数据变更后对比非常方便
 3. 使用观察者模式并且提供多种操作函数，轻松监听数据的变化
 
+
 ## 开发
 
 ### Use Snowball
@@ -63,6 +64,24 @@
 * run `npm run build` to build the production bundle.
 * run `npm run sprity` to build sprity images.
 * to see the built project, please visit `http://localhost:3000/dist/#/`
+
+## 安装常见问题
+
+**if you get some error about `canvas`**
+
+* run `brew install pkgconfig` if show "**pkg-config: command not found**"
+* run `brew install cairo` if show "**No package 'cairo' found**"
+* if you don't have **brew** command in your computer, see the [brew installation](https://brew.sh/)
+* install the [XQuartz](https://www.xquartz.org/)
+
+**or**
+
+* see the [Installation OSX](https://github.com/Automattic/node-canvas/wiki/Installation---OSX) to install without **brew** command
+
+**or**
+
+* just remove the `canvas` module from `package.json`
+
 
 ## 打包
 ```
@@ -91,7 +110,7 @@ snowball-project
 │   └── home <!-- 业务文件夹 -->
 │       ├── controllers 
 │       ├── services <!-- 业务服务 -->
-│       ├── css 
+│       ├── scss 
 │       ├── containers 
 │       └── components
 ├── shared
@@ -425,6 +444,53 @@ export default class HomeController extends mix(ControllerBase)
 }
 ```
 
+<br>
+
+-------
+
+<br>
+
+
+
+### 服务层 `services`
+
+* 领域服务层，可依赖`apis`,`models`,`methods`，主要作用为调用服务端接口，处理数据相关的业务逻辑，必须写interface。不要放到本层的业务：UI状态、页面跳转、打点、native交互等
+* 应用服务层，主要作用为调用领域层，存储UI状态，处理UI逻辑。应用services间可互相调用。必须写interface.
+
+```js
+import UserModel from "../models/UserModel";
+
+
+export default class UserService implements IUserService {
+
+    constructor() {
+        this._userModel = new UserModel();
+    }
+
+    userModel() {
+        return this._userModel;
+    }
+
+    // 从服务端请求数据，命名规范为 request[Something](args)
+    async request() {
+        return await unicorn.getUserInfo();
+    }
+
+    // 从服务端请求数据并保存到本地model，命名规范为 fetch[Something](args)
+    async fetch() {
+        var res = await this.request();
+        this.userModel.set(res.data);
+        return res;
+    }
+
+    // 更新本地/远程数据，命名规范为 update[Something](args)
+    update() {
+        this.userModel.set({
+            title: 'afsdfas'
+        })
+    }
+}
+```
 <br>
 
 -------
@@ -800,27 +866,8 @@ setTimeout(() => {
 
 ```
 
-## 常见问题
 
-**if you get some error about `canvas`**
-
-* run `brew install pkgconfig` if show "**pkg-config: command not found**"
-* run `brew install cairo` if show "**No package 'cairo' found**"
-* if you don't have **brew** command in your computer, see the [brew installation](https://brew.sh/)
-* install the [XQuartz](https://www.xquartz.org/)
-
-**or**
-
-* see the [Installation OSX](https://github.com/Automattic/node-canvas/wiki/Installation---OSX) to install without **brew** command
-
-**or**
-
-* just remove the `canvas` module from `package.json`
-
-
-## api文档
-
-### vm
+## vm
 
 * vm是一个MVVM框架，内置模版引擎和多种数据类型
 
@@ -1446,51 +1493,6 @@ for (var key in user) {
 // userName
 ```
 
-<br>
-
--------
-
-<br>
-
-### 服务层 `services`
-
-* 领域服务层，可依赖`apis`,`models`,`methods`，主要作用为调用服务端接口，处理数据相关的业务逻辑，必须写interface。不要放到本层的业务：UI状态、页面跳转、打点、native交互等
-* 应用服务层，主要作用为调用领域层，存储UI状态，处理UI逻辑。应用services间可互相调用。必须写interface.
-
-```js
-import UserModel from "../models/UserModel";
-
-
-export default class UserService implements IUserService {
-
-    constructor() {
-        this._userModel = new UserModel();
-    }
-
-    userModel() {
-        return this._userModel;
-    }
-
-    // 从服务端请求数据，命名规范为 request[Something](args)
-    async request() {
-        return await unicorn.getUserInfo();
-    }
-
-    // 从服务端请求数据并保存到本地model，命名规范为 fetch[Something](args)
-    async fetch() {
-        var res = await this.request();
-        this.userModel.set(res.data);
-        return res;
-    }
-
-    // 更新本地/远程数据，命名规范为 update[Something](args)
-    update() {
-        this.userModel.set({
-            title: 'afsdfas'
-        })
-    }
-}
-```
 
 <br>
 
