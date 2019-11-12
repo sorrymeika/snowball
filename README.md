@@ -588,6 +588,44 @@ class UserService extends Service {
 
 ### `ctx.createEvent` 
 
+* 创建页面级事件
+
+```js
+
+this.onClick = this.ctx.createEvent();
+
+this.onClick((data, event) => {
+    console.log(data);
+    event.stopPropagation();
+})
+
+this.onClick((data, event) => {
+    console.log('propagation stopped');
+});
+
+this.onClick.emit({ name: 'on no!' });
+```
+
+
+### `ctx.page` 属性
+
+* 页面信息
+
+```js
+// 当前页面是否活跃
+ctx.page.isActive();
+
+// 当前页面是否已被销毁
+ctx.page.isDestroyed();
+
+// 页面标题
+ctx.page.title;
+
+// 获取dom节点
+ctx.page.findNode(selector);
+ctx.page.findNodeAll(selector);
+```
+
 
 ### `ctx.navigation` 页面跳转，同`app.navigation`
 
