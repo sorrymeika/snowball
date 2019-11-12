@@ -268,6 +268,443 @@ class TypeUIService extends Service {
 }
 ```
 
+
+### 控制层 `controllers`
+
+* 控制层，可依赖`shared`,`components`,`models`,`services`，主要用来处理UI状态、整合service并暴露给UI等，本层一般只做整合，是页面/组件和应用层service的中介。
+
+#### `@controller` 方法
+
+* 关联页面/组件跟Controller类的方法，一般使用修饰符模式
+
+#### `@injectable` 方法
+
+* 将Controller类的属性或方法传递给 `@controller` 关联的页面 (注入到props里)
+
+#### 例
+
+```js
+import { controller } from "snowball";
+import Home from "../containers/Home";
+
+/**
+ * Controller类生命周期
+ *     onInit: 页面第一次打开，且动画开始前触发
+ *     onShow: 页面显示，动画结束时触发
+ *     onCreate: 页面第一次打开，且动画结束后触发
+ *     onResume: 页面从后台进入前台，且动画结束时触发
+ *     onPause: 页面从前台进入后台，且动画结束时触发
+ *     onDestroy: 页面被销毁后触发
+ * Controller方法、属性排序
+ *     constructor
+ *     页面生命周期
+ *     属性 (get, set)
+ *     expose给Container的事件
+ *     方法
+ */
+@controller(Home)
+export default class HomeController {
+
+    constructor(props, ctx) {
+        // 框架会自动带入路由参数到 props 中
+        // props.location.params 为路由 `/product/:type/:id ` 中的配置
+        // props.location.query 为hash链接`?`后面的参数
+        const id = ctx.location.params.id;
+        const type = ctx.location.params.type;
+
+        // /home?source=wap&id=1
+        // 此时 props.location.query 为 { source: 'wap',id: 1 }
+        console.log(ctx.location.query);
+
+        // 页面信息
+        // 页面是否是激活状态
+        // console.log(page.isActive());
+        // 页面是否是销毁
+        // console.log(page.isDestroyed());
+
+        this.userService = new UserService();
+    }
+
+    // 页面初始化事件，数据请求不要放到 `constructor` 里，而是放在 `onInit` 里
+    async onInit() {
+        await this.userService.fetch();
+
+        // 缓存页面数据到localStorage
+        this.ctx.page.setCache({
+            user: this.user
+        });
+    }
+
+    onPause() {
+    }
+
+    onResume() {
+    }
+
+    onDestroy() {
+    }
+
+    // `user` 把注入给 `Home` 组件
+    @injectable
+    get user() {
+        return this.userService.getModel();
+    }
+
+    // 把 `handleTitleClick` 注入到 `Home` 组件
+    // 使用 `@injectable` 后不要使用箭头函数
+    @injectable
+    handleTitleClick() {
+        this.userService.update();
+    }
+}
+```
+
+#### `controller` 层业务逻辑拆分
+
+* 业务逻辑过多时需要将业务逻辑拆分，推荐使用多个`service`组合，`不推荐`使用 `mixin`
+* 下面是一个使用 `mixin` 的示例
+
+```js
+// types.js
+export interface IControllerBase {
+    // TODO: your properties
+}
+
+export interface IHomeController extends IControllerBase {
+    // TODO: your properties
+}
+
+// ControllerBase.js
+import { IControllerBase } from "../constants/types";
+
+export default class ControllerBase implements IControllerBase {
+    constructor(service, page) {
+        this.service = service;
+    }
+
+    // 页面初始化事件，数据请求不要放到 `constructor` 里，而是放在 `onInit` 里
+    onInit(page) {
+        this.service.fetch();
+    }
+}
+
+// `globalAddressMixin.js`
+import { controller } from "snowball";
+import { IControllerBase } from "../constants/types";
+
+export default function globalAddressMixin(ControllerBase: IControllerBase) {
+    return class extends ControllerBase {
+        constructor(service, page) {
+            super(service, page);
+
+            this.globalAddressService = GlobalAddressService.getInstance();
+        }
+
+        onInit() {
+            super.onInit();
+
+            this.globalAddressService.fetch();
+        }
+    }
+}
+
+// HomeController.js
+import { controller, mix } from "snowball";
+import Home from "../containers/Home";
+import { IHomeController } from "../constants/types";
+import globalAddressMixin from "./globalAddressMixin";
+
+export default class HomeController extends mix(ControllerBase)
+        .with(globalAddressMixin) implements IHomeController  {
+    constructor(props, page) {
+        const homeService = new HomeService();
+        super(homeService, page);
+
+        this.type = location.params.type;
+    }
+}
+```
+
+<br>
+
+-------
+
+<br>
+
+### 页面层（containers）
+
+* 存放页面级组件，只负责展示和整合components，一般使用无状态组件，事件和业务逻辑操作统一交给`controllers`来处理。可依赖`components`
+
+```js
+var User = function (props) {
+    // 被映射的数据
+    console.log(props.user);
+
+    return <div onClick={controller.onClick}>{props.user.name}</div>;
+}
+```
+
+### `provide` 方法
+
+* 创建数据提供者
+
+```js
+class Component {
+}
+
+// 尽量把逻辑放在 `controller` 里，除非逻辑非常独立
+provide((props)=>{
+    return {
+        child:'xxx'
+    }
+})(Component)
+```
+
+### `inject` 方法
+
+* 可将`controller`里`injectable`的和`provide`方法返回的属性和方法，通过inject方法跨组件注入到子组件的props中
+
+```js
+import { inject } from 'snowball';
+
+// 尽量使用修饰符和字符串参数，保证传 `props` 时能够覆盖 `context`
+@inject('home', 'child')
+class SomeComponent extends Component {
+}
+
+// `return`的属性会覆盖`props`的属性
+inject(({ user, data }, props)=>{
+    return {
+        user,
+        data
+    }
+})(Component)
+```
+
+<br>
+
+-------
+
+<br>
+
+### 应用和路由
+
+#### `createApplication` 方法
+
+* 启动应用
+
+```js
+import { createApplication } from 'snowball';
+import HomeController from 'controller/HomeController';
+
+// 子应用根路由注册
+const projects = {
+    "^/trade(?=/|)": "https://project.com/asset-manifest.json"
+};
+// 主应用路由注册，不可和子应用根路由重合
+// 尽量把路由收敛到 `routes.js` 中
+const routes = {
+    '/': HomeController,
+    '/product': import('controllers/ProductController')
+};
+// 启动应用
+const app = createApplication({
+    projects,
+    routes,
+    options: {
+        // 禁用跳转切换动画
+        disableTrasition: true
+    }
+}, document.getElementById('root'), callback);
+```
+
+#### `registerRoutes` 方法
+
+* 注册路由
+
+```js
+import { registerRoutes } from 'snowball';
+
+/**
+ * 路由列表格式为: 
+ * {
+ *   [key]: require('module')
+ * }
+ * 其中key为路由规则，可完全匹配、模糊匹配和正则匹配，示例：
+ */
+var routes = {
+    // 完全匹配
+    '/cart': require('bundle?lazy&name=cart!controllers/CartController')
+    // 完全匹配
+    "/medical": require('someComponent')
+    // 模糊匹配
+    "/market/:id": require('someComponent')
+    // 正则匹配
+    "/o2omarket/\\d+:id": require('someComponent'),
+    // 正则匹配多路由
+    "/proxy/home(?:/\\d+:logicId)?": require('someComponent')
+    // 懒加载
+    "/shop": require('bundle?lazy&name=ur-package-name!someComponent')
+};
+// 注册新路由
+registerRoutes(routes);
+```
+
+<br>
+
+-------
+
+<br>
+
+
+### app 和 ctx 应用上下文
+
+* 可在`Controller`和`Service`中使用`app`和`ctx`属性
+* `app`是应用级的，`ctx`是页面级的。`createApplication`时通过`extend`扩展的属性都会挂到`app`上面。
+
+```js
+import { controller } from 'snowball/app';
+import User from './components/User';
+
+@controller(User)
+class UserController {
+    constructor(props, ctx) {
+        this.userId = ctx.location.params.id;
+    }
+
+    transitionToFav() {
+        this.ctx.navigation.forward('/fav', {
+            platform: this.app.env.PLATFORM
+        })
+    }
+}
+
+class UserService extends Service {
+    transitionToOrder() {
+        this.ctx.navigation.forward('/order')
+    }
+}
+```
+
+### `ctx.createEvent` 
+
+
+### `ctx.navigation` 页面跳转，同`app.navigation`
+
+#### `ctx.navigation.forward` 方法
+
+* 跳转页面，带前进动画
+
+```js
+
+// 跳转到商品页
+ctx.navigation.forward('/item/1')
+
+// 跳转并传入 props
+ctx.navigation.forward('/item/2', {
+    action: 'dofast'
+})
+```
+
+#### `ctx.navigation.back` 方法
+
+* 跳转页面，带返回动画
+
+```js
+// 返回到首页
+ctx.navigation.back('/')
+
+// 返回到首页并传入 props
+ctx.navigation.back('/', {
+    action: 'dofast'
+})
+```
+
+#### `ctx.navigation.transitionTo` 方法
+
+* 跳转页面
+
+```js
+/**
+ * @param {string} [url] 跳转连接
+ * @param {boolean} [isForward] 是否带前进动画，前进动画:true，后退动画:false，不填无动画
+ * @param {object} [props] 传给下个页面的props 
+ */
+
+// 不带动画跳转返回到首页并动画跳转到商品页，这样使用history records才不会错乱
+ctx.navigation.transitionTo('/')
+    .forward('/product/5');
+
+// 不带动画跳转
+ctx.navigation.transitionTo('/product/4');
+```
+
+#### `ctx.navigation.replace` 方法
+
+* 替换当前链接，覆盖最后一条历史
+
+```js
+ctx.navigation.replace('/error/notfound?error=店铺状态异常');
+```
+
+
+#### `ctx.navigation.home` 方法
+
+* 返回到首页
+
+```js
+ctx.navigation.home()
+```
+
+#### `ctx.app`
+
+* 同等于 `app`
+
+#### `ctx.service`
+
+* 同等于 `app.service`
+
+
+## 扩展页面页面和`ctx`
+
+```js
+import { Page } from 'snowball/app';
+
+// 生命周期
+Page.extentions.lifecycle({
+    initialize() {
+        this.sharer = new Sharer();
+    }
+
+    onShow() {
+        this.sharer.sync();
+    }
+});
+
+// 扩展页面属性
+Page.extentions.minxin({
+    // console.log(this.ctx.page.newProp());
+    newProp() {
+        return 'newProp' + Date.now();
+    }
+});
+
+// 扩展`ctx`
+Page.extentions.ctx((page, ctx) => {
+    const logger = {
+        error: (message) => {
+            console.error(ctx.location.url, ":", message);
+        }
+    }
+
+    return {
+        get logger(){
+            return logger;
+        }
+    }
+});
+```
+
 ## Model
 
 * `models/UserModel.js`
@@ -323,25 +760,6 @@ setTimeout(() => {
     reaction.destroy();
 }, 1000);
 
-```
-
-# 扩展页面ctx
-
-```js
-import { Page } from 'snowball/app';
-
-Page.extentions.lifecycle({
-    initialize() {
-        // this.ctx.logger.error('some error!');
-        Object.defineProperty(this.ctx, 'logger', {
-            value: {
-                error: (message) => {
-                    console.error(this.location.url, ":", message);
-                }
-            }
-        })
-    }
-});
 ```
 
 ## 常见问题
@@ -1034,390 +1452,6 @@ export default class UserService implements IUserService {
         })
     }
 }
-```
-
-### 控制层 `controllers`
-
-* 控制层，可依赖`domain`,`components`,`models`,`services`，主要用来处理UI状态、整合service并expose给UI等，本层一般只做整合，是页面/组件和应用层service的中介。若UI逻辑不可复用，则可省略应用服务层。
-
-#### `@controller` 方法
-
-* 关联页面/组件跟Controller类的方法，一般使用修饰符模式
-
-#### `@injectable` 方法
-
-* 将Controller类的属性或方法传递给 `@controller` 关联的页面 (注入到props里)
-
-#### 例
-
-```js
-import { controller } from "snowball";
-import Home from "../containers/Home";
-
-/**
- * Controller类生命周期
- *     onInit: 页面第一次打开，且动画开始前触发
- *     onShow: 页面显示，动画结束时触发
- *     onCreate: 页面第一次打开，且动画结束后触发
- *     onResume: 页面从后台进入前台，且动画结束时触发
- *     onPause: 页面从前台进入后台，且动画结束时触发
- *     onDestroy: 页面被销毁后触发
- * Controller方法、属性排序
- *     constructor
- *     页面生命周期
- *     属性 (get, set)
- *     expose给Container的事件
- *     方法
- */
-@controller(Home)
-export default class HomeController {
-
-    constructor(props, ctx) {
-        // 框架会自动带入路由参数到 props 中
-        // props.location.params 为路由 `/product/:type/:id ` 中的配置
-        // props.location.query 为hash链接`?`后面的参数
-        const id = ctx.location.params.id;
-        const type = ctx.location.params.type;
-
-        // /home?source=wap&id=1
-        // 此时 props.location.query 为 { source: 'wap',id: 1 }
-        console.log(ctx.location.query);
-
-        // 页面信息
-        // 页面是否是激活状态
-        // console.log(page.isActive());
-        // 页面是否是销毁
-        // console.log(page.isDestroyed());
-
-        this.userService = new UserService();
-    }
-
-    // 页面初始化事件，数据请求不要放到 `constructor` 里，而是放在 `onInit` 里
-    async onInit(page) {
-        await this.userService.fetch();
-
-        // 缓存页面数据到localStorage
-        this.page.setCache({
-            user: this.user
-        });
-    }
-
-    onPause(page) {
-    }
-
-    onResume(page) {
-    }
-
-    onDestroy(page) {
-    }
-
-    // `user` 把注入给 `Home` 组件
-    @injectable
-    get user() {
-        return this.service.getModel();
-    }
-
-    // 把 `handleTitleClick` 注入到 `Home` 组件
-    // 使用 `@injectable` 后不要使用箭头函数
-    @injectable
-    handleTitleClick() {
-        this.service.update();
-    }
-}
-```
-
-#### `controller` 层业务逻辑拆分
-
-* 业务逻辑过多时需要将业务逻辑拆分，推荐使用多个`service`组合，不推荐使用 `mixin`
-* 下面是一个使用 `mixin` 的示例
-
-```js
-// types.js
-export interface IControllerBase {
-    // TODO: your properties
-}
-
-export interface IHomeController extends IControllerBase {
-    // TODO: your properties
-}
-
-// ControllerBase.js
-import { IControllerBase } from "../constants/types";
-
-export default class ControllerBase implements IControllerBase {
-    constructor(service, page) {
-        this.service = service;
-    }
-
-    // 页面初始化事件，数据请求不要放到 `constructor` 里，而是放在 `onInit` 里
-    onInit(page) {
-        this.service.fetch();
-    }
-}
-
-// globalAddressMixin.js
-import { controller } from "snowball";
-import { IControllerBase } from "../constants/types";
-
-export default function globalAddressMixin(ControllerBase: IControllerBase) {
-    return class extends ControllerBase {
-        constructor(service, page) {
-            super(service, page);
-
-            this.globalAddressService = GlobalAddressService.getInstance();
-        }
-
-        onInit() {
-            super.onInit();
-
-            this.globalAddressService.fetch();
-        }
-    }
-}
-
-// HomeController.js
-import { controller, mix } from "snowball";
-import Home from "../containers/Home";
-import { IHomeController } from "../constants/types";
-import globalAddressMixin from "./globalAddressMixin";
-
-export default class HomeController extends mix(ControllerBase)
-        .with(globalAddressMixin) implements IHomeController  {
-    constructor(props, page) {
-        const homeService = new HomeService();
-        super(homeService, page);
-
-        this.type = location.params.type;
-    }
-}
-```
-
-<br>
-
--------
-
-<br>
-
-### 页面层（containers）
-
-* 存放页面级组件，只负责展示和整合components，一般使用无状态组件，事件和业务逻辑操作统一交给`controllers`来处理。可依赖`components`
-
-```js
-var User = function (props) {
-    // 被映射的数据
-    console.log(props.user);
-
-    return <div onClick={controller.onClick}>{props.user.name}</div>;
-}
-```
-
-### `provide` 方法
-
-* 创建数据提供者
-
-```js
-class Component {
-}
-
-// 尽量把逻辑放在 `controller` 里，除非逻辑非常独立
-provide((props)=>{
-    return {
-        child:'xxx'
-    }
-})(Component)
-```
-
-### `inject` 方法
-
-* 可将`controller`里`injectable`的和`provide`方法返回的属性和方法，通过inject方法跨组件注入到子组件的props中
-
-```js
-import { inject } from 'snowball';
-
-// 尽量使用修饰符和字符串参数，保证传 `props` 时能够覆盖 `context`
-@inject('home', 'child')
-class SomeComponent extends Component {
-}
-
-// `nextProps` 的优先级更高
-inject(({ user, data }, nextProps)=>{
-    return {
-        user,
-        data
-    }
-})(Component)
-```
-
-<br>
-
--------
-
-<br>
-
-### 应用和路由
-
-#### `createApplication` 方法
-
-* 启动应用
-
-```js
-import { createApplication } from 'snowball';
-import HomeController from 'controller/HomeController';
-
-// 子应用根路由注册
-const projects = {
-    "^/trade(?=/|)": "https://project.com/asset-manifest.json"
-};
-// 主应用路由注册，不可和子应用根路由重合
-// 尽量把路由收敛到 `routes.js` 中
-const routes = {
-    '/': HomeController,
-    '/product': import('controllers/ProductController')
-};
-// 启动应用
-const app = createApplication({
-    projects,
-    routes,
-    options: {
-        // 禁用跳转切换动画
-        disableTrasition: true
-    }
-}, document.getElementById('root'), callback);
-```
-
-#### `registerRoutes` 方法
-
-* 注册路由
-
-```js
-import { registerRoutes } from 'snowball';
-
-/**
- * 路由列表格式为: 
- * {
- *   [key]: require('module')
- * }
- * 其中key为路由规则，可完全匹配、模糊匹配和正则匹配，示例：
- */
-var routes = {
-    // 完全匹配
-    '/cart': require('bundle?lazy&name=cart!controllers/CartController')
-    // 完全匹配
-    "/medical": require('someComponent')
-    // 模糊匹配
-    "/market/:id": require('someComponent')
-    // 正则匹配
-    "/o2omarket/\\d+:id": require('someComponent'),
-    // 正则匹配多路由
-    "/proxy/home(?:/\\d+:logicId)?": require('someComponent')
-    // 懒加载
-    "/shop": require('bundle?lazy&name=ur-package-name!someComponent')
-};
-// 注册新路由
-registerRoutes(routes);
-```
-
-<br>
-
--------
-
-<br>
-
-
-### app 和 ctx 应用上下文
-
-* 可在`Controller`和`Service`中使用`app`和`ctx`属性
-
-```js
-import { controller } from 'snowball/app';
-import User from './components/User';
-
-@controller(User)
-class UserController {
-    constructor(props, ctx) {
-        this.userId = ctx.location.params.id;
-    }
-
-    transitionToFav() {
-        this.ctx.navigation.forward('/fav', {
-            platform: this.app.env.PLATFORM
-        })
-    }
-}
-
-class UserService extends Service {
-    transitionToOrder() {
-        this.ctx.navigation.forward('/order')
-    }
-}
-```
-
-
-### 页面跳转
-
-#### `ctx.navigation.forward` 方法
-
-* 跳转页面，带前进动画
-
-```js
-
-// 跳转到商品页
-ctx.navigation.forward('/item/1')
-
-// 跳转并传入 props
-ctx.navigation.forward('/item/2', {
-    action: 'dofast'
-})
-```
-
-#### `ctx.navigation.back` 方法
-
-* 跳转页面，带返回动画
-
-```js
-// 返回到首页
-ctx.navigation.back('/')
-
-// 返回到首页并传入 props
-ctx.navigation.back('/', {
-    action: 'dofast'
-})
-```
-
-#### `ctx.navigation.transitionTo` 方法
-
-* 跳转页面
-
-```js
-/**
- * @param {string} [url] 跳转连接
- * @param {boolean} [isForward] 是否带前进动画，前进动画:true，后退动画:false，不填无动画
- * @param {object} [props] 传给下个页面的props 
- */
-
-// 不带动画跳转返回到首页并动画跳转到商品页，这样使用history records才不会错乱
-ctx.navigation.transitionTo('/')
-    .forward('/product/5');
-
-// 不带动画跳转
-ctx.navigation.transitionTo('/product/4');
-```
-
-#### `ctx.navigation.replace` 方法
-
-* 替换当前链接，覆盖最后一条历史
-
-```js
-ctx.navigation.replace('/error/notfound?error=店铺状态异常');
-```
-
-
-#### `ctx.navigation.home` 方法
-
-* 返回到首页
-
-```js
-ctx.navigation.home()
 ```
 
 <br>
