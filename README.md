@@ -238,7 +238,7 @@ const TypeSelect = inject(({ typeUIService }) => (
     const { type, subTypes, onInit, onTypeChange } = props;
 
     useEffect(() => {
-        return onInit();
+        onInit();
     }, [onInit])
 
     return (
