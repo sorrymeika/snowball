@@ -331,9 +331,9 @@ export default class HomeController {
 
         // 页面信息
         // 页面是否是激活状态
-        // console.log(page.isActive());
+        // console.log(ctx.page.isActive());
         // 页面是否是销毁
-        // console.log(page.isDestroyed());
+        // console.log(ctx.page.isDestroyed());
 
         this.userService = new UserService();
     }
@@ -357,7 +357,7 @@ export default class HomeController {
     onDestroy() {
     }
 
-    // `user` 把注入给 `Home` 组件
+    // 可以通过`inject`方法把 `user` 注入到组件`props`中
     @injectable
     get user() {
         return this.userService.getModel();
@@ -448,8 +448,7 @@ export default class HomeController extends mix(ControllerBase)
 
 ### 服务层 `services`
 
-* 领域服务层，可依赖`apis`,`models`,`methods`，主要作用为调用服务端接口，处理数据相关的业务逻辑，必须写interface。不要放到本层的业务：UI状态、页面跳转、打点、native交互等
-* 应用服务层，主要作用为调用领域层，存储UI状态，处理UI逻辑。应用services间可互相调用。必须写interface.
+* 服务层，主要作用为调用服务端接口，存储UI状态，处理业务逻辑。应用services间可互相调用。必须写interface.
 
 ```js
 import UserModel from "../models/UserModel";
@@ -470,8 +469,8 @@ export default class UserService implements IUserService {
         return await unicorn.getUserInfo();
     }
 
-    // 从服务端请求数据并保存到本地model，命名规范为 fetch[Something](args)
-    async fetch() {
+    // 从服务端请求数据并保存到本地model，命名规范为 pull[Something](args)
+    async pull() {
         var res = await this.request();
         this.userModel.set(res.data);
         return res;
@@ -493,7 +492,7 @@ export default class UserService implements IUserService {
 
 ### 页面层（containers）
 
-* 存放页面级组件，只负责展示和整合components，一般使用无状态组件，事件和业务逻辑操作统一交给`controllers`来处理。可依赖`components`
+* 存放页面级组件，只负责展示和整合components，一般使用无状态组件，事件和业务逻辑操作统一交给`controllers`或`services`来处理。可依赖`components`
 
 ```js
 var User = function (props) {
@@ -522,7 +521,7 @@ provide((props)=>{
 
 ### `inject` 方法
 
-* 可将`controller`里`injectable`的和`provide`方法返回的属性和方法，通过inject方法跨组件注入到子组件的props中
+* `controller`里`injectable`的属性和方法以及`provide`提供的属性和方法，可通过inject方法跨组件注入到子组件的props中
 
 ```js
 import { inject } from 'snowball';
