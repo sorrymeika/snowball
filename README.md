@@ -94,9 +94,9 @@ snowball-project
 │       ├── css 
 │       ├── containers 
 │       └── components
-├── domain
-│   ├── models <!-- 领域模型 -->
-│   └── services <!-- 领域服务 -->
+├── shared
+│   ├── models <!-- 公共模型 -->
+│   └── services <!-- 公共服务 -->
 ```
 
 ## 启动应用
@@ -121,8 +121,8 @@ const app = createApplication({
         // 禁用跳转切换动画
         disableTrasition: true
     },
-    // 对ctx进行扩展
-    extends() {
+    // 对app进行扩展
+    extend() {
         return {
             env: {
                 api: 'https://**'
@@ -135,8 +135,8 @@ const app = createApplication({
                 }
                 return this[SymbolServer];
             },
-            // 注册服务，注册的服务可通过 ctx.service.xxx获取单例，如:
-            //      this.ctx.service.user.getUser()
+            // 注册服务到`app`中，注册的服务可通过 `this.app.service.xxx` 或 `this.ctx.service.xxx` 获取服务单例，如:
+            //      this.app.service.user.getUser()
             //          .then((res) => {
             //              this.user = res.data;
             //          })
@@ -157,11 +157,10 @@ interface IUserService {
     getUser(): Promise<IUser>;
 }
 
-// 挂在ctx.service下，无需继承 Service
 class UserService implements IUserService {
     getUser() {
-        // Service 和 Controller 都可直接使用 ctx
-        return this.ctx.server.post('/getUser');
+        // Service 和 Controller 都可直接使用 app
+        return this.app.server.post('/getUser');
     }
 }
 ```
@@ -260,11 +259,11 @@ class TypeUIService extends Service {
     }
 
     init() {
-        this.types = await this.ctx.server.post('/getTypes');
+        this.types = await this.app.server.post('/getTypes');
     }
 
     changeType(typeId) {
-        this.subTypes = await this.ctx.server.post('/getSubTypes', typeId);
+        this.subTypes = await this.app.server.post('/getSubTypes', typeId);
     }
 }
 ```
@@ -1324,9 +1323,10 @@ registerRoutes(routes);
 
 <br>
 
-### ctx 应用上下文
 
-* 可在`Controller`和`Service`中使用`ctx`属性
+### app 和 ctx 应用上下文
+
+* 可在`Controller`和`Service`中使用`app`和`ctx`属性
 
 ```js
 import { controller } from 'snowball/app';
@@ -1339,7 +1339,9 @@ class UserController {
     }
 
     transitionToFav() {
-        this.ctx.navigation.forward('/fav')
+        this.ctx.navigation.forward('/fav', {
+            platform: this.app.env.PLATFORM
+        })
     }
 }
 
