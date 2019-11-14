@@ -1,0 +1,11 @@
+{
+    "buildCommands": [
+        "npm install"
+    ],
+    "autoConfig": [
+        {
+            "template": "package.json.vm",
+            "destFile": "./package.json"
+        }
+    ]
+}
