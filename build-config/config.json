@@ -1,6 +1,11 @@
 {
     "buildCommands": [
-        "npm install --save"
+        "sudo npm install"
     ],
-    "autoConfig": []
+    "autoConfig": [
+        {
+            "template": "package.json.vm",
+            "destFile": "./package.json"
+        }
+    ]
 }
