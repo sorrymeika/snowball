@@ -2,10 +2,5 @@
     "buildCommands": [
         "npm install --save"
     ],
-    "autoConfig": [
-        {
-            "template": "package.json.vm",
-            "destFile": "./package.json"
-        }
-    ]
+    "autoConfig": []
 }
