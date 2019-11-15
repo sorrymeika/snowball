@@ -1,6 +1,6 @@
 {
     "buildCommands": [
-        "sudo npm install"
+        "npm install"
     ],
     "autoConfig": [
         {
