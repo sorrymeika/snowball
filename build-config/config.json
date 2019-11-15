@@ -1,6 +1,6 @@
 {
     "buildCommands": [
-        "npm install -D"
+        "npm install"
     ],
     "autoConfig": [
         {
