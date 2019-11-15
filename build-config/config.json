@@ -1,8 +1,6 @@
 {
     "buildCommands": [
-        "npm uninstall",
-        "npm install --save",
-        "ls -a"
+        "npm install --save"
     ],
     "autoConfig": [
         {
