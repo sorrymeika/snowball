@@ -1,5 +1,6 @@
 {
     "buildCommands": [
+        "npm uninstall",
         "npm install --save",
         "ls -a"
     ],
