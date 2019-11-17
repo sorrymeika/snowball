@@ -6,6 +6,7 @@ export async function loadProject(projectUrl) {
     let mainJS;
     let vendorsJS;
     let bundleJS;
+    let runtimeJS;
     let mainCSS;
 
     if (/asset-manifest\.json$/.test(projectUrl)) {
@@ -23,6 +24,8 @@ export async function loadProject(projectUrl) {
                     mainCSS = manifest.files[key];
                 } else if (/^vendors[~\w.]*\.js$/.test(key)) {
                     vendorsJS = manifest.files[key];
+                } else if (/^runtime[~\w.]*\.js$/.test(key)) {
+                    runtimeJS = manifest.files[key];
                 }
             });
     } else {
@@ -50,6 +53,7 @@ export async function loadProject(projectUrl) {
     bundleJS && await loadJs(joinPath(mainUrl, bundleJS));
     vendorsJS && await loadJs(joinPath(mainUrl, vendorsJS));
     await loadJs(joinPath(mainUrl, mainJS));
+    runtimeJS && await loadJs(joinPath(mainUrl, runtimeJS));
 }
 
 export async function loadJSON(src: string) {
