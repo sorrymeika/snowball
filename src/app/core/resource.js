@@ -16,10 +16,15 @@ export async function loadProject(projectUrl) {
         mainUrl = projectUrl.slice(0, projectUrl.lastIndexOf('/') + 1);
 
         Object.keys(manifest.files)
-            .forEach((key, path) => {
+            .forEach((key) => {
+                if (/^main[\w.]*\.js$/.test(key)) {
+                    mainJS = manifest.files[key];
+                } else if (/^main[\w./]*\.css$/.test(key)) {
+                    mainCSS = manifest.files[key];
+                } else if (/^vendors[~\w.]*\.js$/.test(key)) {
+                    vendorsJS = manifest.files[key];
+                }
             });
-        mainJS = manifest['main.js'];
-        mainCSS = manifest['main.css'];
     } else {
         const result = await fetch(
             projectUrl,
