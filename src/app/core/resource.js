@@ -1,6 +1,13 @@
 import preloader from '../../preloader';
 import { isString, loadJs, joinPath } from '../../utils';
 
+function resolveUrl(mainUrl, path) {
+    if (/^(https?:)?\/\//.test(path)) {
+        return path;
+    }
+    return joinPath(mainUrl, path);
+}
+
 export async function loadProject(projectUrl) {
     let mainUrl;
     let mainJS;
@@ -49,11 +56,11 @@ export async function loadProject(projectUrl) {
         mainJS = result.match(/<script[^>]+?src="[^"]*(static\/js\/main[\w.]*\.js)"/)[1];
     }
 
-    mainCSS && loadCss(joinPath(mainUrl, mainCSS));
-    bundleJS && await loadJs(joinPath(mainUrl, bundleJS));
-    vendorsJS && await loadJs(joinPath(mainUrl, vendorsJS));
-    await loadJs(joinPath(mainUrl, mainJS));
-    runtimeJS && await loadJs(joinPath(mainUrl, runtimeJS));
+    mainCSS && loadCss(resolveUrl(mainUrl, mainCSS));
+    bundleJS && await loadJs(resolveUrl(mainUrl, bundleJS));
+    vendorsJS && await loadJs(resolveUrl(mainUrl, vendorsJS));
+    await loadJs(resolveUrl(mainUrl, mainJS));
+    runtimeJS && await loadJs(resolveUrl(mainUrl, runtimeJS));
 }
 
 export async function loadJSON(src: string) {
