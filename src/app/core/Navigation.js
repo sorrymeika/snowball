@@ -101,7 +101,6 @@ export default class Navigation implements INavigation {
                 $window.trigger(navigateEvent);
                 if (navigateEvent.isDefaultPrevented()) return;
 
-
                 const historyRecords = this.history;
                 const url = location.hash.replace(/^#/, '') || '/';
                 const prev = historyRecords.get(historyRecords.length - 2);
@@ -261,12 +260,15 @@ export default class Navigation implements INavigation {
                 isForward,
                 withTransition,
                 beforeNavigate: () => {
-                    this.ignoreHashChangeCount++;
                     if (isReplace) {
                         this.history.set(this.history.length - 1, url, withTransition);
+                        if ('#' + url != location.hash) {
+                            this.ignoreHashChangeCount++;
+                        }
                         location.replace('#' + url);
                     } else if (!isForward && index !== -1) {
                         this.history.length = index + 1;
+                        this.ignoreHashChangeCount++;
                         history.go(index - currIndex);
                     } else {
                         this.history.length = currIndex + 1;
@@ -274,6 +276,9 @@ export default class Navigation implements INavigation {
                             this.history.add(currentUrl, withTransition);
                         this.history.add(url, withTransition);
 
+                        if ('#' + url != location.hash) {
+                            this.ignoreHashChangeCount++;
+                        }
                         if (Date.now() - application.hashChangeTime < 500) {
                             // 两次hashchange间隔小于500ms容易不记录到history中，原理不明
                             return new Promise((resolve) => {
