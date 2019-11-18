@@ -5,7 +5,6 @@ html { font-size: 100px; }
 body { font-size: 16px; }
 a { text-decoration: none; }
 input,button,textarea { -webkit-appearance: none; outline: none; box-sizing: border-box; line-height: normal; vertical-align: middle; }
-input,textarea { user-select: all; -webkit-touch-callout: default; }
 input[type=button],button{ padding: 0; border: 0; border-radius: 0; }
 input::-webkit-input-placeholder{ color: #999; }
 button[disabled] { opacity: .5; }
