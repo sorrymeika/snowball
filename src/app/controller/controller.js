@@ -44,7 +44,7 @@ function createController(ControllerClass, props, ctx, callback) {
 }
 
 function bindMethod(method, instance) {
-    if (typeof method === 'function') {
+    if (typeof method === 'function' && method.$$typeof !== 'EventEmitter') {
         const fn = (...args) => method.apply(instance, args);
         fn._cb = method;
         return fn;
@@ -119,7 +119,7 @@ export function controller(route, componentClass, options) {
                                 const old = store[injectorName];
                                 let newProp = target[injectableProps[injectorName]];
                                 if (old !== newProp) {
-                                    if (typeof newProp === 'function') {
+                                    if (typeof newProp === 'function' && newProp.$$typeof !== 'EventEmitter') {
                                         if (old && old._cb === newProp) {
                                             return;
                                         } else {

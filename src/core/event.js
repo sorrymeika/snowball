@@ -165,6 +165,8 @@ export function createEmitter() {
         };
     };
 
+    emitter.$$typeof = 'EventEmitter';
+
     emitter.emit = (state) => {
         const event = new Event('emit');
 
@@ -243,6 +245,8 @@ export function createAsyncEmitter() {
             }
         };
     };
+
+    emitter.$$typeof = 'EventEmitter';
 
     emitter.emit = async (state) => {
         const event = new Event('emit');
