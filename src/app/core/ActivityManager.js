@@ -368,12 +368,14 @@ export default class ActivityManager implements IActivityManager {
                 display: 'block',
                 '-webkit-transform': 'translate3d(0%,0%,0)'
             });
-
+            activity.page.trigger('beforeshow');
             activity.show(!prevActivity
                 ? resolveTransition
                 : () => {
+                    prevActivity.page.trigger('beforehide');
                     prevActivity.$el.removeClass('app-view-actived');
                     prevActivity.$el.css({ zIndex: '' });
+                    prevActivity.page.trigger('hide');
                     disposeUselessActivities(this, prevActivity, activity);
                     resolveTransition();
                 });
