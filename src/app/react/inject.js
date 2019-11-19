@@ -5,6 +5,7 @@ import { isString, isArray, isFunction } from '../../utils';
 import { Reaction } from '../../vm';
 import { setCurrentCtx } from '../controller/controller';
 import { observer } from './observer';
+import { ctx } from '../core/createApplication';
 
 export const PageContext = React.createContext();
 
@@ -63,7 +64,7 @@ function createStoreInjector(grabStoresFn, componentClass, makeReactive) {
         render() {
             const { forwardRef, ...props } = this.props;
 
-            const additionalProps = grabStoresFn(this.context || {}, props, this) || {};
+            const additionalProps = grabStoresFn(this.context || { app: ctx }, props, this) || {};
             for (let key in additionalProps) {
                 props[key] = additionalProps[key];
             }

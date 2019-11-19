@@ -101,8 +101,10 @@ function replaceActivityWithTransition(activityManager, prevActivity, activity, 
     const outAnimTask = new Promise((resolve, reject) => {
         const $prevElement = $(prevActivity.el).css(castStyle(exitFromStyle));
         if (exitFromClassName) $prevElement.addClass(exitFromClassName);
+        prevActivity.page.trigger('beforehide');
         $prevElement.animate(castStyle(exitToStyle), duration, ease, () => {
             prevActivity.el.style.zIndex = '';
+            prevActivity.page.trigger('hide');
             if (!isForward) {
                 disposeUselessActivities(activityManager, prevActivity, activity);
             } else {
@@ -126,6 +128,7 @@ function replaceActivityWithTransition(activityManager, prevActivity, activity, 
     const inAnimTask = new Promise((resolve, reject) => {
         const $currentElement = $(activity.el).css(castStyle(enterFromStyle));
         if (enterFromClassName) $currentElement.addClass(enterFromClassName);
+        activity.page.trigger('beforeshow');
         $currentElement.animate(castStyle(enterToStyle), duration, ease, () => {
             activity.el.style.zIndex = '';
             outAnimTask.then(() => {

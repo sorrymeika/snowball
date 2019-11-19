@@ -11,11 +11,12 @@ export default class ReactViewHandler {
         this.page = page;
         this.activity = activity;
         this.model = new Model({
+            app: page.ctx.app,
             ctx: page.ctx,
             location
         });
         this.state = {};
-        this._defineProps(['ctx', 'location']);
+        this._defineProps(['app', 'ctx', 'location']);
         this.isReady = false;
         this.readyActions = [];
         this.mapStoreToProps = mapStoreToProps;

@@ -3,7 +3,7 @@ import ActivityManager from './ActivityManager';
 import Router from './Router';
 import Navigation from './Navigation';
 import Application from './Application';
-import { EventEmitter } from '../../core/event';
+import { EventEmitter, createEmitter, createAsyncEmitter } from '../../core/event';
 
 // 当前启动的应用的实例
 let application;
@@ -28,12 +28,22 @@ function beforeAppStart() {
     actionsBeforeAppStart = null;
 }
 
-export const ctx = {
-    get current() {
-        return application.currentActivity.page.ctx;
+export const ctx = Object.create(EventEmitter.prototype, {
+    current: {
+        value: () => {
+            return application.currentActivity.page.ctx;
+        },
+        writable: false
     },
-    event: new EventEmitter()
-};
+    createEvent: {
+        value: createEmitter,
+        writable: false
+    },
+    createAsyncEvent: {
+        value: createAsyncEmitter,
+        writable: false
+    },
+});
 
 function extendCtx(extendFn) {
     const descriptors = Object.getOwnPropertyDescriptors(extendFn(ctx));
