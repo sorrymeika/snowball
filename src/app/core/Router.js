@@ -64,7 +64,9 @@ class Project {
 
         loader.showLoader();
 
-        await loadProject(projectUrl);
+        await loadProject(projectUrl).catch(e => {
+            console.error('项目 `' + projectUrl + '` 加载失败！');
+        });
 
         loader.hideLoader();
 
