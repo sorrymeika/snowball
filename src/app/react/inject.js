@@ -61,16 +61,37 @@ function createStoreInjector(grabStoresFn, componentClass, makeReactive) {
     class Injector extends Component {
         static contextType = PageContext;
 
+        constructor(props, context) {
+            super(props, context);
+
+            this.injects = null;
+
+            this.hooks = {
+                useInject: (injects) => {
+                    this.injects = Object.assign(this.injects || {}, injects);
+                }
+            };
+        }
+
         render() {
             const { forwardRef, ...props } = this.props;
+            const context = this.context || { app: ctx };
 
-            const additionalProps = grabStoresFn(this.context || { app: ctx }, props, this) || {};
+            const additionalProps = grabStoresFn(context, props, this) || {};
             for (let key in additionalProps) {
                 props[key] = additionalProps[key];
             }
             if (!_isStateless) {
                 props.ref = forwardRef;
             }
+
+            if (this.injects) {
+                Object.setPrototypeOf(this.injects, context);
+                return createElement(PageContext.Provider, {
+                    value: this.injects
+                }, createElement(componentClass, props));
+            }
+
             return createElement(componentClass, props);
         }
     }
@@ -91,7 +112,7 @@ function compose(grabStoresFns) {
         setCurrentCtx(stores.ctx);
         const newProps = {};
         grabStoresFns.forEach(function (grabStoresFn, i) {
-            let additionalProps = (injector['REDUCER_' + i] || grabStoresFn)(stores, nextProps);
+            let additionalProps = (injector['REDUCER_' + i] || grabStoresFn)(stores, nextProps, injector.hooks);
             if (typeof additionalProps === 'function') {
                 injector['REDUCER_' + i] = additionalProps;
                 additionalProps = additionalProps(stores, nextProps);
