@@ -49,7 +49,7 @@ export function makeComponentReacitve(componentClass) {
         : observer(componentClass);
 }
 
-function createStoreInjector(grabStoresFn, componentClass, makeReactive) {
+function createDepsInjector(grabDepsFn, componentClass, makeReactive) {
     const _isStateless = isStateless(componentClass);
     if (_isStateless) {
         makeReactive = true;
@@ -66,6 +66,7 @@ function createStoreInjector(grabStoresFn, componentClass, makeReactive) {
 
             this.deps = null;
 
+            this.factoryInstances = {};
             this.hooks = {
                 withDeps: (deps) => {
                     this.deps = Object.assign(this.deps || {}, deps);
@@ -78,7 +79,7 @@ function createStoreInjector(grabStoresFn, componentClass, makeReactive) {
             const { forwardRef, ...props } = this.props;
             const context = this.context || { app: ctx };
 
-            const additionalProps = grabStoresFn(context, props, this) || {};
+            const additionalProps = grabDepsFn(context, props, this) || {};
             for (let key in additionalProps) {
                 props[key] = additionalProps[key];
             }
@@ -108,15 +109,15 @@ function createStoreInjector(grabStoresFn, componentClass, makeReactive) {
     return InjectHocRef;
 }
 
-function compose(grabStoresFns) {
-    return function (stores, nextProps, injector) {
-        setCurrentCtx(stores.ctx);
+function compose(grabDepsFns) {
+    return function (dependencies, nextProps, injector) {
+        setCurrentCtx(dependencies.ctx);
         const newProps = {};
-        grabStoresFns.forEach(function (grabStoresFn, i) {
-            let additionalProps = (injector['REDUCER_' + i] || grabStoresFn)(stores, nextProps, injector.hooks);
+        grabDepsFns.forEach(function (grabDepsFn, i) {
+            let additionalProps = (injector['REDUCER_' + i] || grabDepsFn)(dependencies, nextProps, injector.hooks);
             if (typeof additionalProps === 'function') {
                 injector['REDUCER_' + i] = additionalProps;
-                additionalProps = additionalProps(stores, nextProps);
+                additionalProps = additionalProps(dependencies, nextProps);
             }
             if (additionalProps) {
                 for (let key in additionalProps) {
@@ -131,10 +132,10 @@ function compose(grabStoresFns) {
     };
 }
 
-function grabStoresByName(storeNames) {
-    return function (baseStores, nextProps, injector) {
-        storeNames.forEach(function (storeName) {
-            mapStoreToProps(baseStores, nextProps, injector, storeName);
+function grabDepsByName(depNames) {
+    return function (dependencies, nextProps, injector) {
+        depNames.forEach(function (depName) {
+            mapDepsToProps(dependencies, nextProps, injector, depName);
         });
         return nextProps;
     };
@@ -142,41 +143,42 @@ function grabStoresByName(storeNames) {
 
 function renameProps(mapper) {
     const keys = Object.keys(mapper);
-    return function (baseStores, nextProps, injector) {
-        keys.forEach(function (storeName) {
-            mapStoreToProps(baseStores, nextProps, injector, storeName, mapper[storeName]);
+    return function (dependencies, nextProps, injector) {
+        keys.forEach(function (depName) {
+            mapDepsToProps(dependencies, nextProps, injector, depName, mapper[depName]);
         });
         return nextProps;
     };
 }
 
-function mapStoreToProps(baseStores, nextProps, injector, storeName, mapName = storeName) {
+function mapDepsToProps(dependencies, nextProps, injector, depName, mapName = depName) {
     // prefer props over stores
     if (mapName in nextProps)
         return;
 
-    if (injectFactoryInstance(baseStores, nextProps, injector, storeName + 'Factory', mapName)) {
+    if (injectFactoryInstance(dependencies, nextProps, injector, depName + 'Factory', mapName)) {
         return;
     }
 
-    if (!(storeName in baseStores))
+    if (!(depName in dependencies))
         throw new Error(
-            "Snowball injector: Store '" +
-            storeName +
-            "' is not available! Make sure it is provided by some Provider"
+            "Snowball injector: Dependency '" +
+            depName +
+            "' is not available! Make sure it is provided by Controller or some Provider"
         );
-    nextProps[mapName] = baseStores[storeName];
+    nextProps[mapName] = dependencies[depName];
 }
 
-function injectFactoryInstance(baseStores, nextProps, injector, factoryName, mapName) {
-    const factory = baseStores[factoryName];
-    if (injector[factoryName]) {
-        nextProps[mapName] = injector[factoryName];
+function injectFactoryInstance(dependencies, nextProps, injector, factoryName, mapName) {
+    const factory = dependencies[factoryName];
+    const { factoryInstances } = injector;
+    if (factoryInstances[factoryName]) {
+        nextProps[mapName] = factoryInstances[factoryName];
         return true;
     }
     if (isFunction(factory)) {
-        setCurrentCtx(baseStores.ctx);
-        injector[factoryName] = nextProps[mapName] = factory(nextProps);
+        setCurrentCtx(dependencies.ctx);
+        factoryInstances[factoryName] = nextProps[mapName] = factory(nextProps);
         setCurrentCtx(null);
         return true;
     }
@@ -187,11 +189,11 @@ function injectFactoryInstance(baseStores, nextProps, injector, factoryName, map
  * 注入组件的props
  *
  * @example
- * // 将 `storeName1` 和 `storeName2` 注入到 props 中
- * inject('storeName1', 'storeName2')(componentClass)
+ * // 将 `depName1` 和 `depName2` 注入到 props 中
+ * inject('depName1', 'depName2')(componentClass)
  *
- * inject((stores, nextProps) => ({
- *   storeName1: stores.storeName1
+ * inject((deps, nextProps) => ({
+ *   depName1: deps.depName1
  * }))(componentClass)
  *
  * // 不会将 `foo` 和 `bar` 注入到 props 中
@@ -201,31 +203,31 @@ function injectFactoryInstance(baseStores, nextProps, injector, factoryName, map
  * }))(componentClass)
  */
 export function inject(deps, injection) {
-    let grabStoresFn;
+    let grabDepsFn;
     let makeReactive = false;
 
     if (typeof deps === "function") {
         makeReactive = true;
-        grabStoresFn = compose([].slice.call(arguments));
+        grabDepsFn = compose([].slice.call(arguments));
     } else if (isString(deps)) {
-        grabStoresFn = grabStoresByName([].slice.call(arguments));
+        grabDepsFn = grabDepsByName([].slice.call(arguments));
     } else if (isArray(deps)) {
         if (typeof injection !== 'function') {
             throw new Error('injection must be function!!');
         }
         makeReactive = true;
-        grabStoresFn = (baseStores, nextProps, injector) => {
+        grabDepsFn = (dependencies, nextProps, injector) => {
             const depProps = { ...nextProps };
-            deps.forEach(function (storeName, i) {
-                mapStoreToProps(baseStores, depProps, injector, storeName);
+            deps.forEach(function (depName, i) {
+                mapDepsToProps(dependencies, depProps, injector, depName);
             });
             return injection(depProps);
         };
     } else {
-        grabStoresFn = renameProps(deps);
+        grabDepsFn = renameProps(deps);
     }
 
     return function (componentClass) {
-        return createStoreInjector(grabStoresFn, componentClass, makeReactive);
+        return createDepsInjector(grabDepsFn, componentClass, makeReactive);
     };
 }
