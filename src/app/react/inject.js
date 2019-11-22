@@ -64,13 +64,14 @@ function createStoreInjector(grabStoresFn, componentClass, makeReactive) {
         constructor(props, context) {
             super(props, context);
 
-            this.injects = null;
+            this.deps = null;
 
             this.hooks = {
-                useInject: (injects) => {
-                    this.injects = Object.assign(this.injects || {}, injects);
+                withDeps: (deps) => {
+                    this.deps = Object.assign(this.deps || {}, deps);
                 }
             };
+            this.hooks.withDependencies = this.hooks.withDeps;
         }
 
         render() {
@@ -85,10 +86,10 @@ function createStoreInjector(grabStoresFn, componentClass, makeReactive) {
                 props.ref = forwardRef;
             }
 
-            if (this.injects) {
-                Object.setPrototypeOf(this.injects, context);
+            if (this.deps) {
+                Object.setPrototypeOf(this.deps, context);
                 return createElement(PageContext.Provider, {
-                    value: this.injects
+                    value: this.deps
                 }, createElement(componentClass, props));
             }
 
