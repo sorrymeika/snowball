@@ -6,6 +6,7 @@ function createPreloaderJS(options) {
 
     preloader = preloader
         .replace('`preloadOptions`', JSON.stringify({
+            mobile: options.mobile,
             bundles: options.bundles,
             bundleLevel: options.bundleLevel,
             projects: options.projects
