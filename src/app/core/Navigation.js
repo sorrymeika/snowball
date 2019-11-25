@@ -144,8 +144,12 @@ export default class Navigation implements INavigation {
      * @param {string} url 跳转连接
      * @param {object} [props] 传给下个页面的props
      */
-    forward(url, props) {
-        this.transitionTo(url, NavigateType.Forward, props);
+    forward(url, props?, withTransition?) {
+        if (typeof props === 'boolean') {
+            withTransition = props;
+            props = {};
+        }
+        this.transitionTo(url, NavigateType.Forward, props, withTransition);
         return this;
     }
 

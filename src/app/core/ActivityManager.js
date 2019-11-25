@@ -360,7 +360,9 @@ export default class ActivityManager implements IActivityManager {
             return replacingTask;
         }
 
-        if (prevActivity && withTransition) {
+        const { disableTransition = false } = this.options;
+
+        if (prevActivity && withTransition && !disableTransition) {
             replaceActivityWithTransition(this, prevActivity, activity, isForward, resolveTransition);
         } else {
             activity.$el.css({
@@ -376,7 +378,9 @@ export default class ActivityManager implements IActivityManager {
                     prevActivity.$el.removeClass('app-view-actived');
                     prevActivity.$el.css({ zIndex: '' });
                     prevActivity.page.trigger('hide');
-                    disposeUselessActivities(this, prevActivity, activity);
+                    if (disableTransition || !isForward) {
+                        disposeUselessActivities(this, prevActivity, activity);
+                    }
                     resolveTransition();
                 });
         }
