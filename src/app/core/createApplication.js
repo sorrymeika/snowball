@@ -28,13 +28,16 @@ function beforeAppStart() {
     actionsBeforeAppStart = null;
 }
 
-export const ctx = Object.create(EventEmitter.prototype, {
-    current: {
-        value: () => {
-            return application.currentActivity.page.ctx;
-        },
-        writable: false
+const currentCtxProperty = {
+    value: () => {
+        return application.currentActivity.page.ctx;
     },
+    writable: false
+};
+
+export const ctx = Object.create(EventEmitter.prototype, {
+    currentCtx: currentCtxProperty,
+    current: currentCtxProperty,
     createEvent: {
         value: createEmitter,
         writable: false
