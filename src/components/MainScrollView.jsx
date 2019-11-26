@@ -8,29 +8,34 @@ import { IS_LTE_ANDROID_4_3 } from '../env';
 
 let USE_DOM_SCROLL = !IS_LTE_ANDROID_4_3;
 
-export default function MainScrollView(props) {
-    const { scrollViewRef } = props;
+function MainScrollView({ handler, ...props }, ref) {
     if (process.env.NODE_ENV === 'PRELOAD' || USE_DOM_SCROLL) {
         return (
             <ScrollView
                 {...props}
+                onScrollViewInit={handler && handler.onInit.emit}
+                onScrollViewDestroy={handler && handler.onDestroy.emit}
                 className={(props.className || '') + ' app-main'}
-                ref={scrollViewRef}
+                ref={ref}
             ></ScrollView>
         );
     }
 
-    const { className, children, loadMoreStatus, onScrollViewInit, onScrollViewDestroy, ...moreProps } = props;
+    const { className, children, loadMoreStatus, ...moreProps } = props;
     return (
         <VScrollView
             {...moreProps}
             className={(className || '') + ' app-main'}
-            ref={(ref) => {
-                scrollViewRef && scrollViewRef(ref);
-                if (ref) {
-                    onScrollViewInit && onScrollViewInit(ref);
+            ref={(scrollRef) => {
+                if (typeof ref === 'function') {
+                    ref(scrollRef);
+                } else if (ref) {
+                    ref.current = scrollRef;
+                }
+                if (scrollRef) {
+                    handler && handler.onInit.emit(scrollRef);
                 } else {
-                    onScrollViewDestroy && onScrollViewDestroy();
+                    handler && handler.onDestroy.emit();
                 }
             }}
         >
@@ -44,13 +49,4 @@ export default function MainScrollView(props) {
     );
 }
 
-export const MainScrollViewWithHandler = inject(({ mainScrollViewHandler }) => {
-    return (
-        mainScrollViewHandler
-            ? {
-                onScrollViewInit: mainScrollViewHandler.onInit.emit,
-                onScrollViewDestroy: mainScrollViewHandler.onDestroy.emit
-            }
-            : {}
-    );
-})(MainScrollView);
+export default React.forwardRef(MainScrollView);

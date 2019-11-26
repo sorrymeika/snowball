@@ -78,9 +78,9 @@
 .app-fix-statusbar .app-header ~ .app-underhead { top: 64px; }
 .app-android .app-header ~ .app-underhead { top: 48px; }
 
-.app-header_transparent { background-color: transparent; border-bottom: 0; }
-.app-header_transparent ~ .app-main,.app-fix-statusbar .app-header_transparent~.app-main,.app-android .app-header_transparent~.app-main { top: 0; }
-.app-header_transparent:after { display: none; }
+.app-header-transparent { background-color: transparent; border-bottom: 0; }
+.app-header-transparent ~ .app-main,.app-fix-statusbar .app-header-transparent~.app-main,.app-android .app-header-transparent~.app-main { top: 0; }
+.app-header-transparent:after { display: none; }
 
 .app-load-more {
     height: 34px; font-size: 12px; margin: 0px 15px 0 15px;

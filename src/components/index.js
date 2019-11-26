@@ -3,7 +3,7 @@ export { default as LoadingStatusBar } from './LoadingStatusBar';
 export { default as ScrollView } from './ScrollView';
 export { default as VScrollView } from './VScrollView';
 export { default as NavigationView } from './NavigationView';
-export { MainScrollViewWithHandler as MainScrollView } from './MainScrollView';
+export { default as MainScrollView } from './MainScrollView';
 export { default as TextCarousel } from './TextCarousel';
 export { default as Slider } from './Slider';
 export { default as Tab } from './Tab';

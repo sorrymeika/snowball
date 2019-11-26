@@ -1500,7 +1500,7 @@ for (var key in user) {
 * 带滚动条和自动加载数据功能的组件
 
 ```js
-import { ScrollView, MainScrollView } from 'snowball/components';
+import { ScrollView, MainScrollView, scrollUtils } from 'snowball/components';
 
 /**
  * @param {function} [onScrollViewInit] 初始化事件
@@ -1508,10 +1508,16 @@ import { ScrollView, MainScrollView } from 'snowball/components';
  * @param {function} [onScrollToBottom] 滚动到底部事件
  * @param {string|PagiationStatus} [loadMoreStatus] 加载更多状态
 */
+const mainScrollViewHandler = scrollUtils.createScrollHandler();
+mainScrollViewHandler.addOnScrollListener((e)=>{
+    console.log(e, e.target, e.x, e.y);
+});
+
 <MainScrollView
     loadMoreStatus={PagiationStatus}
     onScrollToBottom={autoLoadMore}
     pullToRefresh={()=>{  }}
+    handler={mainScrollViewHandler}
 >
 </MainScrollView>
 
@@ -1519,46 +1525,6 @@ import { ScrollView, MainScrollView } from 'snowball/components';
 <div>content</div>
 </ScrollView>
 ```
-
-
-#### MainScrollViewWithHandler|scrollUtils
-
-* `controller`中提供`mainScrollViewHandler`后，该组件初始化时会自动掉用`mainScrollViewHandler.svOnInit `
-
-```js
-import { createPage, inject } from 'snowball';
-import { MainScrollViewWithHandler, scrollUtils } from 'snowball/components';
-
-@inject('mainScrollViewHandler')
-class BottomBar extends Component {
-    constuctor(props) {
-        super(props);
-        props.mainScrollViewHandler.addOnScrollListener((e)=>{
-            console.log(e, e.target, e.x, e.y);
-        });
-    }
-
-    render() {
-        return <div></div>
-    }
-}
-
-const UserPage = ()=> {
-    return (
-        <MainScrollViewWithHandler>
-            <BottomBar></BottomBar>
-        </MainScrollViewWithHandler>
-    );
-}
-
-const UserPageProvider =  provide(()=>({ 
-    mainScrollViewHandler: scrollUtils.createScrollHandler() 
-}))(UserPage);
-
-ReactDOM.render(<UserPageProvider></UserPageProvider>)
-
-```
-
 
 #### Header
 
