@@ -212,6 +212,13 @@ export class Model extends Observer {
         const observableProps = state.observableProps;
 
         for (let attr in attrs) {
+            if (attr === 'constructor' && typeof attrs[attr] === 'function') {
+                continue;
+            }
+            if (attr === '__proto__') {
+                continue;
+            }
+
             const origin = observableProps[attr] || attributes[attr];
             let value = attrs[attr];
             if (value && value[SymbolObserver] && value['[[ConnectModel]]'] !== false) {

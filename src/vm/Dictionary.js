@@ -73,6 +73,13 @@ export class Dictionary extends Observer {
         }
 
         for (let key in data) {
+            if (key === 'constructor' && typeof data[key] === 'function') {
+                continue;
+            }
+            if (key === '__proto__') {
+                continue;
+            }
+
             const value = data[key];
             const originValue = oldAttributes[key];
 
@@ -100,6 +107,12 @@ export class Dictionary extends Observer {
         const changes = [];
 
         for (let key in data) {
+            if (key === 'constructor' && typeof data[key] === 'function') {
+                continue;
+            }
+            if (key === '__proto__') {
+                continue;
+            }
             if (hasOwnProperty.call(data, key)) {
                 const value = data[key];
                 const originValue = attributes[key];

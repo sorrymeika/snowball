@@ -11,6 +11,10 @@ export function blindSet(model, renew, keys, val) {
     var index;
     var defaultData;
 
+    if (keys.indexOf('__proto__') !== -1) {
+        throw new Error('不可设置`__proto__`');
+    }
+
     for (var i = 0, len = keys.length; i < len; i++) {
         key = keys[i];
         nextKey = keys[i + 1];
