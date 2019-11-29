@@ -110,7 +110,10 @@ export default class Navigation implements INavigation {
                     $window.trigger(beforeBackEvent);
                     if (beforeBackEvent.isDefaultPrevented()) {
                         this.ignoreHashChangeCount++;
-                        history.forward();
+                        // 避免两次hashchange过于接近产生未知问题
+                        setTimeout(() => {
+                            history.forward();
+                        }, 500);
                         return;
                     }
                 }
