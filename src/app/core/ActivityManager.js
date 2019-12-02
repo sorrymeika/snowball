@@ -380,6 +380,8 @@ export default class ActivityManager implements IActivityManager {
                     prevActivity.page.trigger('hide');
                     if (disableTransition || !isForward) {
                         disposeUselessActivities(this, prevActivity, activity);
+                    } else {
+                        prevActivity.pause();
                     }
                     resolveTransition();
                 });
