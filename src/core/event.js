@@ -152,48 +152,50 @@ export function eventMixin(fn, ext) {
 }
 
 function createEmitterFn(extend) {
-    let middlewares = [];
-    let funcs = [];
+    return () => {
+        let middlewares = [];
+        let funcs = [];
 
-    const emitter = (fn) => {
-        funcs.push(fn);
-        return () => {
-            const index = funcs.indexOf(fn);
-            if (index !== -1) {
-                funcs.splice(index, 1);
-            }
+        const emitter = (fn) => {
+            funcs.push(fn);
+            return () => {
+                const index = funcs.indexOf(fn);
+                if (index !== -1) {
+                    funcs.splice(index, 1);
+                }
+            };
         };
-    };
 
-    emitter.$$typeof = 'EventEmitter';
+        emitter.$$typeof = 'EventEmitter';
 
-    const props = extend(middlewares, funcs);
-    Object.assign(emitter, props);
+        const props = extend(middlewares, funcs);
+        Object.assign(emitter, props);
 
-    emitter.middleware = (fn) => {
-        middlewares.push(fn);
-        return () => {
-            const index = middlewares.indexOf(fn);
-            if (index !== -1) {
-                middlewares.splice(index, 1);
-            }
+        emitter.middleware = (fn) => {
+            middlewares.push(fn);
+            return () => {
+                const index = middlewares.indexOf(fn);
+                if (index !== -1) {
+                    middlewares.splice(index, 1);
+                }
+            };
         };
-    };
 
-    emitter.once = (fn) => {
-        const once = (state) => {
-            dispose();
-            fn(state);
+        emitter.once = (fn) => {
+            const once = (state) => {
+                dispose();
+                fn(state);
+            };
+            const dispose = emitter(once);
+            return dispose;
         };
-        const dispose = emitter(once);
-        return dispose;
-    };
 
-    emitter.off = () => {
-        middlewares = funcs = null;
-    };
+        emitter.off = () => {
+            middlewares = funcs = null;
+        };
 
-    return emitter;
+        return emitter;
+    };
 }
 
 export const createEmitter = createEmitterFn((middlewares, funcs) => {
