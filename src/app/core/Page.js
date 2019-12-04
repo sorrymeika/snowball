@@ -74,7 +74,7 @@ function createPageCtx(page, ctx) {
             writable: false,
             value: () => {
                 const event = createEmitter();
-                page.on('destroy', event.destroy);
+                page.on('destroy', event.off);
                 return event;
             }
         },
@@ -82,7 +82,7 @@ function createPageCtx(page, ctx) {
             writable: false,
             value: () => {
                 const event = createAsyncEmitter();
-                page.on('destroy', event.destroy);
+                page.on('destroy', event.off);
                 return event;
             }
         },

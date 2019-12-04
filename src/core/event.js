@@ -151,9 +151,9 @@ export function eventMixin(fn, ext) {
     return fn;
 }
 
-export function createEmitter() {
-    let funcs = [];
+function createEmitterFn(extend) {
     let middlewares = [];
+    let funcs = [];
 
     const emitter = (fn) => {
         funcs.push(fn);
@@ -167,44 +167,8 @@ export function createEmitter() {
 
     emitter.$$typeof = 'EventEmitter';
 
-    emitter.emit = (state) => {
-        const event = new Event('emit');
-
-        if (middlewares.length == 0) {
-            funcs.every(nextFunc => {
-                nextFunc(state, event);
-                return !event.isPropagationStopped();
-            });
-        } else {
-            let i = middlewares.length - 1;
-
-            const next = (newState) => {
-                if (i >= 0 && !event.isDefaultPrevented()) {
-                    let fn = middlewares[i];
-                    let called = false;
-                    i--;
-
-                    fn(newState, event, (nextState = newState) => {
-                        if (called) throw new Error('next方法不可重复调用！');
-                        called = true;
-                        next(nextState);
-                    });
-
-                    if (!called) {
-                        throw new Error('必须调用next方法!');
-                    }
-                } else {
-                    funcs.every(nextFunc => {
-                        nextFunc(newState, event);
-                        return !event.isPropagationStopped();
-                    });
-                }
-            };
-            next(state);
-        }
-
-        return event;
-    };
+    const props = extend(middlewares, funcs);
+    Object.assign(emitter, props);
 
     emitter.middleware = (fn) => {
         middlewares.push(fn);
@@ -225,91 +189,105 @@ export function createEmitter() {
         return dispose;
     };
 
-    emitter.destroy = () => {
+    emitter.off = () => {
         middlewares = funcs = null;
     };
 
     return emitter;
 }
 
-export function createAsyncEmitter() {
-    let middlewares = [];
-    let funcs = [];
+export const createEmitter = createEmitterFn((middlewares, funcs) => {
+    return {
+        emit(state) {
+            const event = new Event('emit');
 
-    const emitter = (fn) => {
-        funcs.push(fn);
-        return () => {
-            const index = funcs.indexOf(fn);
-            if (index !== -1) {
-                funcs.splice(index, 1);
-            }
-        };
-    };
+            if (middlewares.length == 0) {
+                funcs.every(nextFunc => {
+                    nextFunc(state, event);
+                    return !event.isPropagationStopped();
+                });
+            } else {
+                let i = middlewares.length - 1;
 
-    emitter.$$typeof = 'EventEmitter';
+                const next = (newState) => {
+                    if (i >= 0 && !event.isDefaultPrevented()) {
+                        let fn = middlewares[i];
+                        let called = false;
+                        i--;
 
-    emitter.emit = async (state) => {
-        const event = new Event('emit');
+                        fn(newState, event, (nextState = newState) => {
+                            if (called) throw new Error('next方法不可重复调用！');
+                            called = true;
+                            next(nextState);
+                        });
 
-        if (middlewares.length == 0) {
-            for (let i = 0; i < funcs.length; i++) {
-                await funcs[i](state, event);
-                if (event.isPropagationStopped()) {
-                    break;
-                }
-            }
-        } else {
-            let i = middlewares.length - 1;
-
-            const next = async (newState) => {
-                if (i >= 0 && !event.isDefaultPrevented()) {
-                    let fn = middlewares[i];
-                    let called = 0;
-                    i--;
-
-                    await fn(newState, event, async (nextState = newState) => {
-                        if (called) throw new Error('next方法不可重复调用！');
-                        called = 1;
-                        await next(nextState);
-                        called = 2;
-                    });
-
-                    if (!called) {
-                        throw new Error('必须调用`next`方法!');
-                    } else if (called == 1) {
-                        throw new Error('必须使用`await next();`调用`next`方法!');
+                        if (!called) {
+                            throw new Error('必须调用next方法!');
+                        }
+                    } else {
+                        funcs.every(nextFunc => {
+                            nextFunc(newState, event);
+                            return !event.isPropagationStopped();
+                        });
                     }
-                } else {
-                    for (let j = 0; j < funcs.length; j++) {
-                        await funcs[j](state, event);
-                        if (event.isPropagationStopped()) {
-                            break;
+                };
+                next(state);
+            }
+
+            return event;
+        }
+    };
+});
+
+export const createAsyncEmitter = createEmitterFn((middlewares, funcs) => {
+    return {
+        emit: async (state) => {
+            const event = new Event('emit');
+
+            if (middlewares.length == 0) {
+                for (let i = 0; i < funcs.length; i++) {
+                    await funcs[i](state, event);
+                    if (event.isPropagationStopped()) {
+                        break;
+                    }
+                }
+            } else {
+                let i = middlewares.length - 1;
+
+                const next = async (newState) => {
+                    if (i >= 0 && !event.isDefaultPrevented()) {
+                        let fn = middlewares[i];
+                        let called = 0;
+                        i--;
+
+                        await fn(newState, event, async (nextState = newState) => {
+                            if (called) throw new Error('next方法不可重复调用！');
+                            called = 1;
+                            await next(nextState);
+                            called = 2;
+                        });
+
+                        if (!called) {
+                            throw new Error('必须调用`next`方法!');
+                        } else if (called == 1) {
+                            throw new Error('必须使用`await next();`调用`next`方法!');
+                        }
+                    } else {
+                        for (let j = 0; j < funcs.length; j++) {
+                            await funcs[j](state, event);
+                            if (event.isPropagationStopped()) {
+                                break;
+                            }
                         }
                     }
-                }
-            };
-            await next(state);
-        }
-
-        return event;
-    };
-
-    emitter.middleware = (fn) => {
-        middlewares.push(fn);
-        return () => {
-            const index = middlewares.indexOf(fn);
-            if (index !== -1) {
-                middlewares.splice(index, 1);
+                };
+                await next(state);
             }
-        };
-    };
 
-    emitter.destroy = () => {
-        middlewares = funcs = null;
+            return event;
+        }
     };
-
-    return emitter;
-}
+});
 
 export default Event;
 

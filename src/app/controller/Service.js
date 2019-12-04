@@ -12,7 +12,7 @@ export class Service {
     }
 
     get ctx() {
-        return this._ctx;
+        return this._ctx || this.app;
     }
 
     get app() {

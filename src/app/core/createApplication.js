@@ -47,6 +47,7 @@ export const ctx = Object.create(EventEmitter.prototype, {
         writable: false
     },
 });
+ctx.emit = ctx.trigger.bind(ctx);
 
 function extendCtx(extendFn) {
     const descriptors = Object.getOwnPropertyDescriptors(extendFn(ctx));
