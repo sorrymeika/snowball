@@ -1,6 +1,7 @@
 
 import { $ } from '../../utils';
 import { ViewModel } from '../../vm';
+import { ActivityOptions } from '../types';
 import ReactViewHandler from '../react/ReactViewHandler';
 import SnowballViewHandler from './SnowballViewHandler';
 import { Page } from './Page';
@@ -20,7 +21,7 @@ const ACTIVITY_STATUS_DESTROY = 4;
  */
 export class Activity {
 
-    constructor(viewFactory, location, application, mapStoreToProps, options) {
+    constructor(viewFactory, location, application, mapStoreToProps, options?: ActivityOptions) {
         this.application = application;
         this.isActive = true;
         this.status = ACTIVITY_STATUS_INIT;
@@ -61,18 +62,18 @@ export class Activity {
         });
     }
 
-    setTransitionTask(animationTask) {
-        this.animationTask = animationTask;
+    setTransitionTask(transitionTask) {
+        this.transitionTask = transitionTask;
         return this;
     }
 
-    waitAnimation(fn) {
-        if (!this.animationTask) {
+    whenNotInTransition(fn) {
+        if (!this.transitionTask) {
             console.error('call `setTransitionTask` first!');
             fn();
             return;
         }
-        this.animationTask.then(fn);
+        this.transitionTask.then(fn);
         return this;
     }
 

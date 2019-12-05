@@ -37,8 +37,8 @@ export default class ReactViewHandler {
             }
 
             shouldComponentUpdate() {
-                if (viewHandler.activity.animationTask) {
-                    viewHandler.activity.animationTask.then(() => {
+                if (viewHandler.activity.transitionTask) {
+                    viewHandler.activity.transitionTask.then(() => {
                         this.forceUpdate();
                     });
                     return false;
@@ -77,7 +77,7 @@ export default class ReactViewHandler {
         const data = this.model.attributes;
         if (data !== this.lastData) {
             this.lastData = data;
-            if (this.activity.animationTask) {
+            if (this.activity.transitionTask) {
                 this.componentInstance.setState(() => ({
                     data
                 }));

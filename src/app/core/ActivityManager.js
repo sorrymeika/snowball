@@ -6,7 +6,7 @@ import { IApplication, IActivityManager, ToggleOptions } from '../types';
 
 import Activity from './Activity';
 
-export const ACTIVITY_CREATOR = Symbol('ACTIVITY_CREATOR');
+export const ACTIVITY_FACTORY = Symbol('ACTIVITY_FACTORY');
 
 const DEFAULT_TRANSITION = {
     openEnterZIndex: 2,
@@ -169,8 +169,8 @@ function createActivity(route, location, application) {
 function createActivityFromModule(viewFactory, location, application) {
     viewFactory = viewFactory.default || viewFactory;
 
-    return viewFactory[ACTIVITY_CREATOR]
-        ? viewFactory[ACTIVITY_CREATOR](location, application)
+    return viewFactory[ACTIVITY_FACTORY]
+        ? viewFactory[ACTIVITY_FACTORY](location, application)
         : new Activity(viewFactory, location, application);
 }
 
@@ -248,7 +248,7 @@ export default class ActivityManager implements IActivityManager {
                             touch.triggerGestureEnd = null;
                         };
                     });
-                    application.whenIdle(() => gestureEnd);
+                    application.whenNotNavigating(() => gestureEnd);
                 } else {
                     touch.swiper = null;
                 }
@@ -393,7 +393,7 @@ export default class ActivityManager implements IActivityManager {
 
 export const renderActivity = function (controllerClass, props, container, cb) {
     const location = (props && props.location) || {};
-    const activity = controllerClass[ACTIVITY_CREATOR](location, {
+    const activity = controllerClass[ACTIVITY_FACTORY](location, {
         rootElement: container
     })
         .setTransitionTask(Promise.resolve())

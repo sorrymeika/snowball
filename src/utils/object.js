@@ -79,6 +79,27 @@ function copyProperties(target = {}, source = {}) {
         });
 }
 
+export function getPropertyDescriptor(target, propertyName) {
+    let proto = target;
+    let descriptor;
+
+    while (1) {
+        descriptor = Object.getOwnPropertyDescriptor(proto, propertyName);
+        if (descriptor) {
+            break;
+        }
+
+        const parent = Object.getPrototypeOf(proto);
+        if (parent === proto || parent === Object.prototype) {
+            break;
+        } else {
+            proto = parent;
+        }
+    }
+
+    return descriptor;
+}
+
 class MixinBuilder {
 
     constructor(superclass) {

@@ -49,7 +49,7 @@ export function makeComponentReacitve(componentClass) {
         : observer(componentClass);
 }
 
-function createDepsInjector(grabDepsFn, componentClass, makeReactive) {
+function createInjector(grabDepsFn, componentClass, makeReactive) {
     const _isStateless = isStateless(componentClass);
     if (_isStateless) {
         makeReactive = true;
@@ -228,6 +228,6 @@ export function inject(deps, injection) {
     }
 
     return function (componentClass) {
-        return createDepsInjector(grabDepsFn, componentClass, makeReactive);
+        return createInjector(grabDepsFn, componentClass, makeReactive);
     };
 }

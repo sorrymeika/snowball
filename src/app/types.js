@@ -88,6 +88,19 @@ export interface IActivity {
     page: IPage,
 }
 
+export type ActivityOptions = {
+    transition?: {
+        openEnterAnimationFrom: any,
+        openEnterAnimationTo: any,
+        openExitAnimationFrom: any,
+        openExitAnimationTo: any,
+        closeEnterAnimationTo: any,
+        closeEnterAnimationFrom: any,
+        closeExitAnimationFrom: any,
+        closeExitAnimationTo: any
+    }
+}
+
 export interface INavigation {
     history: string[],
     forward: (url: string) => any;
