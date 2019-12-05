@@ -88,7 +88,6 @@ export default class Navigation implements INavigation {
         isNavigateListenerStart = true;
 
         const $window = $(window);
-        const createEvent = $.Event;
         let historyLength = history.length;
 
         $window.on('hashchange', () => {
@@ -97,8 +96,7 @@ export default class Navigation implements INavigation {
             historyLength = history.length;
 
             if (this.ignoreHashChangeCount <= 0) {
-                const navigateEvent = createEvent('beforenavigate');
-                $window.trigger(navigateEvent);
+                const navigateEvent = this.emitBeforeNavigate();
                 if (navigateEvent.isDefaultPrevented()) return;
 
                 const historyRecords = this.history;
@@ -106,8 +104,7 @@ export default class Navigation implements INavigation {
                 const prev = historyRecords.get(historyRecords.length - 2);
                 const isBack = prev && prev.url === url;
                 if (isBack || mayBeBack) {
-                    var beforeBackEvent = createEvent('beforeback');
-                    $window.trigger(beforeBackEvent);
+                    var beforeBackEvent = this.emitBeforeBack();
                     if (beforeBackEvent.isDefaultPrevented()) {
                         this.ignoreHashChangeCount++;
                         // 避免两次hashchange过于接近产生未知问题
@@ -139,6 +136,20 @@ export default class Navigation implements INavigation {
             this.ignoreHashChangeCount++;
             location.hash = '/';
         }
+    }
+
+    emitBeforeNavigate() {
+        const createEvent = $.Event;
+        const navigateEvent = createEvent('beforenavigate');
+        $(window).trigger(navigateEvent);
+        return navigateEvent;
+    }
+
+    emitBeforeBack() {
+        const createEvent = $.Event;
+        const beforeBackEvent = createEvent('beforeback');
+        $(window).trigger(beforeBackEvent);
+        return beforeBackEvent;
     }
 
     /**
@@ -261,6 +272,16 @@ export default class Navigation implements INavigation {
             if (isForward && index !== -1) {
                 url = appendQueryString(url, { _rid: ++this.id });
                 session('SNOWBALL_NAVIGATION_ID', this.id);
+            }
+
+            const navigateEvent = this.emitBeforeNavigate();
+            if (navigateEvent.isDefaultPrevented()) return;
+
+            if (!isForward && !isReplace) {
+                var beforeBackEvent = this.emitBeforeBack();
+                if (beforeBackEvent.isDefaultPrevented()) {
+                    return;
+                }
             }
 
             const navigateSuccess = await application.navigate(url, {
