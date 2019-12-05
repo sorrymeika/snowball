@@ -6,11 +6,11 @@ export default function batch(observers, calc, initialValue) {
     const getArgs = () => observers.map((item) => item.get());
 
     let state = initialValue;
-    let olds = getArgs();
+    let oldVals = getArgs();
     const compute = () => {
-        const args = getArgs();
-        state = calc(state, args, olds, next);
-        olds = args;
+        const currentVals = getArgs();
+        state = calc(state, currentVals, oldVals, next);
+        oldVals = currentVals;
     };
     observers.forEach((item) => item.observe(compute));
     observer.on('destroy', () =>
