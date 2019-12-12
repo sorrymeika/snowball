@@ -65,9 +65,8 @@ function createPageCtx(page, ctx) {
         },
         emit: {
             writable: false,
-            value: (state) => {
-                if (!state.type) throw new Error('emit must has a `type`!');
-                messageChannel.trigger(state);
+            value: (...args) => {
+                messageChannel.trigger(...args);
             }
         },
         createEvent: {

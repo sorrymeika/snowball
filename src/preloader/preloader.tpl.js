@@ -87,7 +87,7 @@ window.preloader = (function (window, document, preloadOptions, undefined) {
                 newStyle(
                     'cssHack',
                     '.app-screen-width,.w_100vw{width:' + window.innerWidth + 'px}' +
-                    '.app-screen-height,h_100vh{height:' + window.innerHeight + 'px}' +
+                    '.app-screen-height,.h_100vh{height:' + window.innerHeight + 'px}' +
                     '.mh_100vh{min-height:' + window.innerHeight + 'px}'
                 );
             }

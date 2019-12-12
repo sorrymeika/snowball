@@ -60,7 +60,7 @@ export default function Header({
             : (
                 <header
                     style={style}
-                    className={"app-header " + (className || '') + (backgroundColor ? " app-header-with-bg" : '') + (back ? ' app-header-has-back' : '')}
+                    className={"app-header " + (className || '') + (backgroundColor ? " app-header-with-bg" : '') + (back ? ' app-header-has-back' : ' app-header-no-back')}
                 >
                     <div className="app-header-left">
                         {
