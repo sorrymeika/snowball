@@ -34,19 +34,24 @@ export default class ReactViewHandler {
                         return React.createElement(page.react.Provider, null, render.call(this));
                     };
                 }
+                this.isRenderingPending = false;
             }
 
             shouldComponentUpdate() {
                 if (viewHandler.activity.transitionTask) {
-                    viewHandler.activity.transitionTask.then(() => {
-                        this.forceUpdate();
-                    });
+                    if (!this.isRenderingPending) {
+                        this.isRenderingPending = true;
+                        viewHandler.activity.transitionTask.then(() => {
+                            this.forceUpdate();
+                        });
+                    }
                     return false;
                 }
                 return true;
             }
 
             render() {
+                this.isRenderingPending = false;
                 return (
                     <PageContext.Provider
                         value={viewHandler.state}

@@ -1,11 +1,10 @@
-import { Observer, Emitter, readonlyObserver } from "./Observer";
+import { Observer, readonlyObserver } from "./Observer";
 import { isObservable } from "./predicates";
 import { isPlainObject, isFunction, isString } from "../utils";
 import { Model } from "./Model";
 import { Collection } from "./Collection";
 import State from "./State";
 import { reactTo } from "./Reaction";
-import { SymbolFrom } from "./symbols";
 
 const propertyKey = Symbol('propertyKey');
 const reactiveProps = Symbol('reactiveProps');
@@ -130,11 +129,8 @@ export const observable = (initalValue, execute, descriptor) => {
         execute(observer, set);
         return observer;
     }
-    if (initalValue && initalValue[SymbolFrom]) {
-        return initalValue[SymbolFrom].compute((data) => data);
-    }
     if (isObservable(initalValue)) {
-        return initalValue.compute((data) => data);
+        initalValue = initalValue.get();
     }
     if (isPlainObject(initalValue)) {
         return new Model(initalValue);
@@ -144,35 +140,6 @@ export const observable = (initalValue, execute, descriptor) => {
         return new Observer(initalValue);
     }
 };
-
-observable.interval = (msec) => () => observable(new Emitter(0), (countObserver, set) => {
-    const id = setInterval(() => {
-        set(countObserver + 1);
-    }, msec);
-    countObserver.on('destroy', () => {
-        clearInterval(id);
-    });
-});
-
-observable.delay = observable.timer = (msec) => () => observable(new Emitter(), (timerObserver, set) => {
-    let id;
-    const clearTimer = () => {
-        clearTimeout(id);
-    };
-    id = setTimeout(() => {
-        timerObserver
-            .off('destroy', clearTimer);
-        set(id);
-        id = null;
-    }, msec);
-    timerObserver.on('destroy', clearTimer);
-});
-
-observable.fromPromise = (promise) => () => observable(new Emitter(), (observer, set) => {
-    promise.then((res) => {
-        set(res);
-    });
-});
 
 export default observable;
 

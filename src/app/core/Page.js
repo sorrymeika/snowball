@@ -1,5 +1,5 @@
 import { IPage, PageLifecycleDelegate } from '../types';
-import { Model, observable } from '../../vm';
+import { Model, observable, autorun } from '../../vm';
 import { store } from '../../utils';
 import { EventEmitter, createAsyncEmitter, createEmitter } from '../../core/event';
 
@@ -83,6 +83,13 @@ function createPageCtx(page, ctx) {
                 const event = createAsyncEmitter();
                 page.on('destroy', event.off);
                 return event;
+            }
+        },
+        autorun: {
+            writable: false,
+            value: (fn) => {
+                page.on('destroy', autorun(fn));
+                return fn;
             }
         },
         useObservable: {
