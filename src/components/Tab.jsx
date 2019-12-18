@@ -161,27 +161,32 @@ export default class Tab extends Component<TabProps, { index: number }> {
     }
 
     render() {
-        let { children, className } = this.props;
+        let { children, className, headerStyle } = this.props;
 
         return (
             <div className={className + " app-tab-wrap ps_r"}>
-                <div className="app-tab-head bd_b ps_r ta_c bg_fff">
-                    <ul className="flex">
-                        {
-                            React.Children.map(children, (item, i) => {
-                                const itemProps = item.props;
-                                return (
-                                    <li
-                                        {...itemProps.titleProps}
-                                        key={itemProps.title}
-                                        onClick={this.onTabTitleClick.bind(this, i)}
-                                        className={(this.state.index === i ? 'curr ' : '') + "flexitem " + (itemProps.titleClassName || '')}
-                                    >{itemProps.titlePrefix}<span class="app-tab-title">{itemProps.title}</span></li>
-                                );
-                            })
-                        }
-                    </ul>
-                    <div className="app-tab-head-cursor ps_a" ref={this.setCursorRef}></div>
+                <div className="app-tab-head-wrap">
+                    <div
+                        className="app-tab-head bd_b ps_r ta_c"
+                        style={headerStyle}
+                    >
+                        <ul className="flex">
+                            {
+                                React.Children.map(children, (item, i) => {
+                                    const itemProps = item.props;
+                                    return (
+                                        <li
+                                            {...itemProps.titleProps}
+                                            key={itemProps.title}
+                                            onClick={this.onTabTitleClick.bind(this, i)}
+                                            className={(this.state.index === i ? 'curr ' : '') + "flexitem " + (itemProps.titleClassName || '')}
+                                        >{itemProps.titlePrefix}<span class="app-tab-title">{itemProps.title}</span></li>
+                                    );
+                                })
+                            }
+                        </ul>
+                        <div className="app-tab-head-cursor ps_a" ref={this.setCursorRef}></div>
+                    </div>
                 </div>
                 <div className="dock app-tab-body bg_fff flex fd_c w_1x">
                     <div

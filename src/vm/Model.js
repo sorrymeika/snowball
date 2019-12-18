@@ -200,7 +200,7 @@ export class Model extends Observer {
             for (let name in oldAttributes) {
                 attributes[name] = oldAttributes[name];
                 if (renew && attrs[name] === undefined) {
-                    attrs[name] = null;
+                    attrs[name] = undefined;
                 }
             }
         }

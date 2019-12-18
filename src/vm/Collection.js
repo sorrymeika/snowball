@@ -42,7 +42,7 @@ function collectionWillUpdate(collection) {
         state.setting = 1;
         state.changed = false;
         state.backup = state.data;
-        state.data = state.data.slice();
+        state.data = [...state.data];
     } else {
         state.setting++;
     }

@@ -145,6 +145,7 @@
 .app-popup-action .btn:last-child { border-bottom-right-radius: 6px; }
 
 /* 选项卡 */
+.app-tab-head-wrap { background-color: #fff; }
 .app-tab-head { height: 46px; }
 .app-tab-head-cursor { position: absolute; height: 2px; background: $color; bottom: 0; left: 0px; width: 50px; }
 .app-tab-head > ul { height: 100%; }
