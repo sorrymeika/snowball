@@ -62,9 +62,7 @@ export class Dictionary extends Observer {
         const attributes = this.state.data = {};
         const changes = [];
 
-        data = {
-            ...data
-        };
+        data = Object.assign({}, data);
 
         for (let key in oldAttributes) {
             if (!hasOwnProperty.call(data, key)) {
@@ -101,9 +99,7 @@ export class Dictionary extends Observer {
 
     set(data) {
         const { state } = this;
-        const attributes = this.state.data = {
-            ...state.data
-        };
+        const attributes = this.state.data = Object.assign({}, state.data);
         const changes = [];
 
         for (let key in data) {

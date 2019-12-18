@@ -15,7 +15,7 @@ import { connect, disconnect, freezeObject } from './methods/connect';
 import { observable } from './observable';
 import { observeProp, unobserveProp } from './methods/observeProp';
 import compute from './operators/compute';
-import { SymbolObserver } from './symbols';
+import { SymbolObserver, SymbolFrom } from './symbols';
 
 const toString = Object.prototype.toString;
 const RE_QUERY = /(?:^|\.)([_a-zA-Z0-9]+)(\[(?:'(?:\\'|[^'])*'|"(?:\\"|[^"])*"|[^\]])+\](?:\[[+-]?\d*\])?)?/g;
@@ -171,7 +171,7 @@ export class Model extends Observer {
             }
             return this;
         } else if (keyIsObject) {
-            attrs = { ...key };
+            attrs = key;
         } else {
             keys = keyType === '[object Array]' ? key : key.replace(/\[(\d+)\]/g, '.[$1]')
                 .split('.')
@@ -192,6 +192,7 @@ export class Model extends Observer {
 
         const oldAttributes = state.data;
         const attributes = {};
+        const removeKeys = [];
         let isChange = false;
 
         if (oldAttributes === null || !isPlainObject(oldAttributes)) {
@@ -200,7 +201,7 @@ export class Model extends Observer {
             for (let name in oldAttributes) {
                 attributes[name] = oldAttributes[name];
                 if (renew && attrs[name] === undefined) {
-                    attrs[name] = undefined;
+                    removeKeys.push(name);
                 }
             }
         }
@@ -210,15 +211,7 @@ export class Model extends Observer {
 
         const changes = [];
         const observableProps = state.observableProps;
-
-        for (let attr in attrs) {
-            if (attr === 'constructor' && typeof attrs[attr] === 'function') {
-                continue;
-            }
-            if (attr === '__proto__') {
-                continue;
-            }
-
+        const setAttr = (attr) => {
             const origin = observableProps[attr] || attributes[attr];
             let value = attrs[attr];
             if (value && value[SymbolObserver] && value['[[ConnectModel]]'] !== false) {
@@ -287,6 +280,20 @@ export class Model extends Observer {
                     isChange = true;
                 }
             }
+        };
+
+        for (let attr in attrs) {
+            if (attr === 'constructor' && typeof attrs[attr] === 'function') {
+                continue;
+            }
+            if (attr === '__proto__' || attr === 'withMutations' || attr === SymbolFrom) {
+                continue;
+            }
+            setAttr(attr);
+        }
+
+        for (let i = 0; i < removeKeys.length; i++) {
+            setAttr(removeKeys[i]);
         }
 
         if (isChange) {

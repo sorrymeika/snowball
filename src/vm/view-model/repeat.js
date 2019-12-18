@@ -109,21 +109,13 @@ function updateRepeatView(template, nodeData) {
         }
 
         if (!elem) {
-            snData = Object.create(parentSNData, {
-                [repeatCompiler.alias]: {
-                    get() {
-                        return model.get();
-                    }
-                },
-                ['__alias__' + repeatCompiler.alias + '__']: {
-                    get() {
-                        return model;
-                    }
-                }
-            });
+            snData = Object.create(parentSNData);
         } else {
-            snData = Object.setPrototypeOf(elem.snData, parentSNData);
+            snData = Object.assign(Object.create(parentSNData), elem.snData);
         }
+
+        snData[repeatCompiler.alias] = model.get();
+        snData['__alias__' + repeatCompiler.alias + '__'] = model;
 
         var pass = !repeatCompiler.filter || repeatCompiler.filter.call(viewModel, getFunctionArg(elem, snData));
         if (pass) {

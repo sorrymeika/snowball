@@ -34,10 +34,12 @@ function bubbleUpdate(parent, model, key, value) {
                 }
             } else {
                 if (!parentState.setting) {
-                    parentState.data = {
-                        ...parentState.data,
-                        [key]: value
-                    };
+                    const newData = {};
+                    for (let name in parentState.data) {
+                        newData[name] = parentState.data[name];
+                    }
+                    newData[key] = value;
+                    parentState.data = newData;
                     freezeObject(parentState.data, parent);
                     updateRefs(parent);
                     return;

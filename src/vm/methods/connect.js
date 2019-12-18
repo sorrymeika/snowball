@@ -52,7 +52,5 @@ export function freezeObject(data, observer) {
         }
     });
 
-    if (process.env.NODE_ENV === 'development') {
-        Object.freeze(data);
-    }
+    Object.freeze(data);
 }

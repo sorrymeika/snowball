@@ -88,9 +88,8 @@ function createInjector(grabDepsFn, componentClass, makeReactive) {
             }
 
             if (this.deps) {
-                Object.setPrototypeOf(this.deps, context);
                 return createElement(PageContext.Provider, {
-                    value: this.deps
+                    value: Object.assign(Object.create(context), this.deps)
                 }, createElement(componentClass, props));
             }
 
