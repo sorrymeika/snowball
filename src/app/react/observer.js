@@ -1,5 +1,6 @@
 import { Component } from "react";
 import { Reaction } from "../../vm";
+import { _getApplication } from '../core/createApplication';
 
 const ReactionProperty = Symbol('ReactionProperty');
 const IsObserverComponent = Symbol('IsObserverComponent');
@@ -29,7 +30,14 @@ export function observer(componentClass) {
         const reaction = new Reaction(() => {
             if (!isRenderingPending) {
                 isRenderingPending = true;
-                Component.prototype.forceUpdate.call(this);
+                const app = _getApplication();
+                if (app.currentActivity.transitionTask) {
+                    app.currentActivity.transitionTask.then(() => {
+                        Component.prototype.forceUpdate.call(this);
+                    });
+                } else {
+                    Component.prototype.forceUpdate.call(this);
+                }
             }
         }, true);
 

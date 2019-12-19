@@ -1,14 +1,14 @@
 import React from 'react';
 import { $ } from '../utils';
 import * as appsdk from '../native-sdk';
-import { internal_getApplication } from '../app/core/createApplication';
+import { _getApplication } from '../app/core/createApplication';
 
 let closeWebViewTimer;
 function goBack() {
     if (closeWebViewTimer) clearTimeout(closeWebViewTimer);
     closeWebViewTimer = setTimeout(() => {
         try {
-            internal_getApplication()
+            _getApplication()
                 .currentActivity
                 .destroy();
         } catch (e) {

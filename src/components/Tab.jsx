@@ -32,12 +32,20 @@ export default class Tab extends Component<TabProps, { index: number }> {
     componentDidMount() {
         this.wrapWidth = ReactDOM.findDOMNode(this).clientWidth || window.innerWidth;
         this.x = this.wrapWidth * this.state.index * -1;
-        this.adjustCursorPosition();
+        this.adjustCursorPosition(false);
 
         !this.wrapWidth && setTimeout(() => {
             this.wrapWidth = ReactDOM.findDOMNode(this).clientWidth || window.innerWidth;
         }, 0);
         ReactDOM.findDOMNode(this).addEventListener('scroll', this._scroll, true);
+    }
+
+    componentDidUpdate() {
+        if (this.props.index !== undefined) {
+            if (this.state.index != this.props.index) {
+                this.setTab(this.props.index, false);
+            }
+        }
     }
 
     componentWillUnmount() {
@@ -49,20 +57,24 @@ export default class Tab extends Component<TabProps, { index: number }> {
     }
 
     onTabTitleClick(index) {
+        this.setTab(index);
+    }
+
+    setTab(index, withTransition) {
         reflow($(this.body).removeClass('t_3'));
 
         this.onTabChange(index, () => {
             $(this.body).addClass('t_3');
-        });
+        }, withTransition);
     }
 
-    onTabChange(index, cb) {
+    onTabChange(index, cb, withTransition) {
         if (this.state.index === index) return;
         this.x = this.wrapWidth * index * -1;
         this.setState({
             index
         }, () => {
-            this.adjustCursorPosition();
+            this.adjustCursorPosition(withTransition);
             cb && cb();
         });
         this.props.onTabChange && this.props.onTabChange(index);
@@ -143,9 +155,11 @@ export default class Tab extends Component<TabProps, { index: number }> {
         }
     }
 
-    adjustCursorPosition() {
+    adjustCursorPosition(withTransition = true) {
         var $title = $(ReactDOM.findDOMNode(this)).find('.app-tab-head .curr .app-tab-title');
-        $(this.cursor).addClass('t_3');
+        withTransition
+            ? $(this.cursor).addClass('t_3')
+            : $(this.cursor).removeClass('t_3');
 
         var title = $title[0];
         var left = title.offsetLeft;

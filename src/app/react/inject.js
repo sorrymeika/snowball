@@ -5,7 +5,7 @@ import { isString, isArray, isFunction } from '../../utils';
 import { Reaction } from '../../vm';
 import { setCurrentCtx } from '../controller/controller';
 import { observer } from './observer';
-import { ctx } from '../core/createApplication';
+import { ctx, _getApplication } from '../core/createApplication';
 
 export const PageContext = React.createContext();
 
@@ -25,7 +25,14 @@ function makeStatelessComponentReacitve(statelessComponentClass) {
                 ver++;
                 if (!reaction.isRenderingPending) {
                     reaction.isRenderingPending = true;
-                    setRendering(ver);
+                    const app = _getApplication();
+                    if (app.currentActivity.transitionTask) {
+                        app.currentActivity.transitionTask.then(() => {
+                            setRendering(ver);
+                        });
+                    } else {
+                        setRendering(ver);
+                    }
                 }
             }, true);
             return reaction;

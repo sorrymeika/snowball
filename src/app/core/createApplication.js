@@ -9,7 +9,7 @@ import { EventEmitter, createEmitter, createAsyncEmitter } from '../../core/even
 let application;
 let actionsBeforeAppStart = [];
 
-export function internal_getApplication() {
+export function _getApplication() {
     return application;
 }
 
