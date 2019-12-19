@@ -5,9 +5,13 @@ import { ViewModel, component, Model, attributes, autorun } from './vm';
 @component({
     tagName: 'Test',
     template: `
-    <ul @click={a=1}>
+    test:
+    <ul @click={a=Date.now(),console.log($event)}>
     {a}
     <li sn-repeat="item,i in data">a:{i},{item.name}</li>
+    </ul>
+    <ul sn-if={Date.now()%2}>
+        <li sn-repeat="item,i in data">b:{i},{item.name}</li>
     </ul>
     <Test1 data={data} />`
 })
@@ -16,7 +20,7 @@ class Test extends Model {
 
 component({
     tagName: 'Test1',
-    template: `<div>asfd:{data.length}
+    template: `test1:<div>asfd:{data.length}
     <ul>
     <li sn-repeat="item,i in data">{i},{item.name}</li>
     </ul>

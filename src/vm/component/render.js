@@ -13,6 +13,12 @@ import {
     setAttribute
 } from './element';
 
+const UNPROPAGATIVE_EVENTS = ['scroll', 'scrollstop'];
+
+export function isPropagativeEvents(eventName) {
+    return UNPROPAGATIVE_EVENTS.indexOf(eventName) === -1;
+}
+
 export function render(element: IElement, state, data) {
     const { vnode } = element;
 
@@ -42,6 +48,9 @@ export function render(element: IElement, state, data) {
     }
 
     if (vnode.repeatProps && element.type !== 'repeat-item') {
+        if (element.parent.vnode.type === 'root') {
+            throw new Error('repeat element must has a parentElement!');
+        }
         return renderRepeat(element);
     }
 
@@ -81,9 +90,16 @@ export function render(element: IElement, state, data) {
             element.bindEvent = true;
             for (let i = 0; i < events.length; i += 2) {
                 const fid = events[i + 1];
-                element.node.addEventListener(events[i], () => {
-                    return invoke(element, element.data, fid, $setter);
-                });
+                const eventName = events[i];
+                element.node.setAttribute('sn' + state.state.id + '-on' + eventName, fid);
+                if (!isPropagativeEvents(events[i])) {
+                    element.node.addEventListener(events[i], (e) => {
+                        return invokeEvent(element, element.data, fid, e);
+                    });
+                } else {
+                    element.node.vElement = element;
+                    element.root.events[eventName] = true;
+                }
             }
         }
     }
@@ -319,6 +335,10 @@ function renderRepeatItem(element: IElement, state, data) {
 
 function invoke(element, data, fid, arg1, arg2) {
     return element.root.vnode.fns[fid](data, arg1, arg2);
+}
+
+export function invokeEvent(element, data, fid, $event) {
+    return element.root.vnode.fns[fid](data, $setter, $event);
 }
 
 function autoSet(element, name, fid) {

@@ -26,6 +26,7 @@ const GLOBAL_VARS = {
     'Function': true,
     '$': true,
     '$data': true,
+    '$event': true,
     '$setter': true,
     'Object': true,
     'Array': true,
@@ -37,6 +38,7 @@ const GLOBAL_VARS = {
     'Math': true,
     'Date': true,
     'parseInt': true,
+    'console': true,
     'parseFloat': true,
     'encodeURIComponent': true,
     'decodeURIComponent': true,
@@ -103,7 +105,7 @@ export function readExpression(input, cursor) {
 
     code += 'return \'\';}';
 
-    functions += 'function($data,$setter){' + code + '},';
+    functions += 'function($data,$setter,$event){' + code + '},';
 
     const vars = variables;
     variables = null;

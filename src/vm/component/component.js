@@ -1,6 +1,6 @@
 import { compile } from "./compile";
 import { createElement, syncRootChildElements, removeElement } from "./element";
-import { render } from "./render";
+import { render, invokeEvent } from "./render";
 import { $, isFunction } from "../../utils";
 import { nextTick } from "../methods/enqueueUpdate";
 
@@ -23,7 +23,30 @@ export function component({
             const { rootElement } = this.state.component;
             const events = rootElement.events = {};
             render(rootElement, this, data);
-            console.log(events);
+            const nodes = [];
+
+            rootElement.childElements.forEach((elem) => {
+                if (elem.vnode.type == 'node') {
+                    nodes.push(elem.node);
+                }
+            });
+
+            Object.keys(events)
+                .forEach((eventName) => {
+                    nodes.forEach((el) => {
+                        if (!(el.bindEvents || (el.bindEvents = {}))[eventName]) {
+                            el.bindEvents[eventName] = true;
+                            const eventId = 'sn' + this.state.id + '-on' + eventName;
+                            const eventSelector = '[' + eventId + ']';
+                            const handleEvent = (e) => {
+                                invokeEvent(e.currentTarget.vElement, e.currentTarget.vElement.data, Number(e.currentTarget.getAttribute(eventId)), e);
+                            };
+                            $(el).on(eventName, eventSelector, handleEvent)
+                                .filter(eventSelector)
+                                .on(eventName, handleEvent);
+                        }
+                    });
+                });
             this.state.renderedVersion = this.state.version;
             return this.state.component;
         };
@@ -58,6 +81,7 @@ export function component({
                 const rootElement = this.rootElement = createElement(rootVNode);
                 rootElement.id = this.state.state.id;
                 rootElement.components = [];
+                rootElement.bindEvents = {};
 
                 this.state.on('destroy', () => {
                     this.remove();
