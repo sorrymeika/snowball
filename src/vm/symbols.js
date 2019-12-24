@@ -1,2 +1,2 @@
-export const SymbolObserver = Symbol('Observer');
+export const SymbolRelObserver = Symbol('RelObserver');
 export const SymbolFrom = Symbol('From');

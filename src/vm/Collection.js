@@ -11,7 +11,7 @@ import { updateRefs } from './methods/updateRefs';
 import { connect, setMapper, disconnect, freezeObject } from './methods/connect';
 import { observeProp, unobserveProp } from './methods/observeProp';
 import compute from './operators/compute';
-import { SymbolObserver } from './symbols';
+import { getRelObserverOrSelf } from './methods/getRelObserver';
 
 const RE_COLL_QUERY = /\[((?:'(?:\\'|[^'])*'|"(?:\\"|[^"])*"|[^\]])+)\](?:\[([+-]?)(\d+)?\])?(?:\.(.*))?/;
 
@@ -27,8 +27,9 @@ function createItem(collection, index, data) {
     return collection.constructor.createItem(collection, index, data);
 }
 
-function connectItem(collection, item, index) {
-    if (item && ((item[SymbolObserver] && (item = item[SymbolObserver])) || isObservable(item))) {
+function connectItem(collection, data, index) {
+    const item = getRelObserverOrSelf(data);
+    if (isObservable(item)) {
         connect(collection, item, index);
         return item;
     } else {
@@ -371,9 +372,9 @@ export class Collection extends Observer {
             var isChange = false;
 
             this.each(function (model) {
-                var item = array[i];
+                const item = getRelObserverOrSelf(array[i]);
 
-                if (item && ((item[SymbolObserver] && (item = item[SymbolObserver])) || isObservable(item))) {
+                if (isObservable(item)) {
                     if (item != model) {
                         isChange = true;
                         disconnect(this, model);

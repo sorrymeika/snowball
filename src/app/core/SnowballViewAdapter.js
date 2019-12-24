@@ -1,15 +1,19 @@
-export default class SnowballViewHandler {
+import { IViewAdapter } from "../types";
 
-    constructor(props) {
-        const ViewClass = props.viewFactory;
+export default class SnowballViewAdapter implements IViewAdapter {
 
-        this.props = props;
+    constructor({ el, page, activity, location, viewFactory, mapStoreToProps }) {
+        const ViewClass = viewFactory;
+
         this.model = new ViewClass({
-            page: props.page,
-            location: props.location
+            app: page.ctx.app,
+            ctx: page.ctx,
+            location
         });
+        this.activity = activity;
         this.isReady = false;
         this.readyActions = [];
+        this.mapStoreToProps = mapStoreToProps;
     }
 
     ready(fn) {
@@ -29,10 +33,10 @@ export default class SnowballViewHandler {
                 const data = this.mapStoreToProps(this.model.attributes, this.page);
                 if (typeof data === 'function') {
                     data((newData) => {
-                        this.setState(newData);
+                        this.model.set(newData);
                     });
                 } else {
-                    this.setState(data);
+                    this.model.set(data);
                 }
                 this.mapStoreToProps = null;
             }

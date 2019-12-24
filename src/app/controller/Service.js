@@ -1,6 +1,7 @@
 
 import { initWithContext } from "./controller";
 import { getApplicationCtx } from "../core/createApplication";
+import { PageCtx } from "../types";
 
 export class Service {
     constructor() {
@@ -11,7 +12,7 @@ export class Service {
         }
     }
 
-    get ctx() {
+    get ctx(): PageCtx {
         return this._ctx;
     }
 

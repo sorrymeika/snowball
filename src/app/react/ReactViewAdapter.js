@@ -1,11 +1,12 @@
 
 import React, { Component, createElement } from 'react';
 import ReactDOM from 'react-dom';
+import { IViewAdapter } from "../types";
 import { Model } from '../../vm';
 import { SymbolFrom } from '../../vm/symbols';
 import { PageContext, makeComponentReacitve } from './inject';
 
-export default class ReactViewHandler {
+export default class ReactViewAdapter implements IViewAdapter {
     constructor({ el, page, activity, location, viewFactory, mapStoreToProps }) {
         this.el = el;
         this.page = page;

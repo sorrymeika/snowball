@@ -88,8 +88,9 @@ function createPageCtx(page, ctx) {
         autorun: {
             writable: false,
             value: (fn) => {
-                page.on('destroy', autorun(fn));
-                return fn;
+                const dispose = autorun(fn);
+                page.on('destroy', dispose);
+                return dispose;
             }
         },
         useObservable: {

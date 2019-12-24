@@ -1,5 +1,5 @@
 import { Model } from "../Model";
-import { SymbolObserver } from "../symbols";
+import { SymbolRelObserver } from "../symbols";
 import { isObservable } from "../predicates";
 
 const reactiveProps = Symbol('reactiveProps');
@@ -11,11 +11,11 @@ function getSource(obj, constructor) {
         if (!obj instanceof constructor) {
             throw new Error('obj must instanceof' + constructor);
         }
-        if (!isObservable(obj[SymbolObserver])) {
+        if (!isObservable(obj[SymbolRelObserver])) {
             throw new Error('unavailable object!');
         }
     }
-    return obj[SymbolObserver];
+    return obj[SymbolRelObserver];
 }
 
 function _init(obj, data) {
@@ -58,11 +58,11 @@ export default function initializer(obj, name, descriptor) {
             enumerable: false,
             configurable: false,
             value: function () {
-                return this[SymbolObserver];
+                return this[SymbolRelObserver];
             }
         });
 
-        Object.defineProperty(obj, SymbolObserver, {
+        Object.defineProperty(obj, SymbolRelObserver, {
             configurable: true,
             get() {
                 const proto = this.constructor.prototype;
@@ -97,7 +97,7 @@ export default function initializer(obj, name, descriptor) {
 
                 instanceStore.add(this);
 
-                Object.defineProperty(this, SymbolObserver, {
+                Object.defineProperty(this, SymbolRelObserver, {
                     get() {
                         return model;
                     }

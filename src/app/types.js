@@ -1,3 +1,5 @@
+import Event from "../core/event";
+import { IObservable } from "../vm/Observer";
 
 export type Location = {
     path: string,
@@ -80,6 +82,12 @@ export interface IPage {
     previousPage: IPage | null;
 }
 
+export interface IViewAdapter {
+    ready(callback: () => never): any;
+    update(attributes: any, callback: () => never): any;
+    destroy(): any
+}
+
 export interface IActivity {
     _prev: IActivity,
     _next: IActivity,
@@ -151,4 +159,22 @@ export interface IApplication {
     rootElement: HTMLElement;
     navigate: (url: string, options: NavigateOptions, props?: any) => Promise<boolean>;
     start: (cb: () => never) => IApplication;
+}
+
+type IEmitter = { once(): () => void, off(): never, middleware(): never };
+
+export type Emitter = Function & { emit(): Event } & IEmitter;
+export type AsyncEmitter = Function & { emit(): Promise<Event> } & IEmitter;
+
+export type PageCtx = {
+    location: Location,
+    page: IPage,
+    on(): PageCtx,
+    off(): PageCtx,
+    emit(): any,
+    createEvent(): Emitter,
+    createAsyncEvent(): AsyncEmitter,
+    autorun(): () => any,
+    useObservable(fn: Function): IObservable,
+    autoDispose(fn: Function): () => any,
 }

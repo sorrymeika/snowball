@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useLayoutEffect } from 'react';
 import ReactDOM from 'react-dom';
-import { util, $ } from 'snowball';
+import { util, $ } from '../snowball';
 
 
 export default function Modal({ visible, children, animate = 'scale', onCancel }) {

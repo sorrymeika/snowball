@@ -15,7 +15,8 @@ import { connect, disconnect, freezeObject } from './methods/connect';
 import { observable } from './observable';
 import { observeProp, unobserveProp } from './methods/observeProp';
 import compute from './operators/compute';
-import { SymbolObserver, SymbolFrom } from './symbols';
+import { SymbolFrom } from './symbols';
+import { getRelObserver, getRelObserverOrSelf } from './methods/getRelObserver';
 
 const toString = Object.prototype.toString;
 const RE_QUERY = /(?:^|\.)([_a-zA-Z0-9]+)(\[(?:'(?:\\'|[^'])*'|"(?:\\"|[^"])*"|[^\]])+\](?:\[[+-]?\d*\])?)?/g;
@@ -33,7 +34,7 @@ export class Model extends Observer {
 
     constructor(attributes, key?, parent?) {
         if (process.env.NODE_ENV !== 'production') {
-            if (attributes && (attributes[SymbolObserver] || attributes instanceof Observer)) {
+            if (getRelObserver(attributes) || attributes instanceof Observer) {
                 throw new Error('attributes can not be Observer!');
             }
         }
@@ -213,10 +214,7 @@ export class Model extends Observer {
         const observableProps = state.observableProps;
         const setAttr = (attr) => {
             const origin = observableProps[attr] || attributes[attr];
-            let value = attrs[attr];
-            if (value && value[SymbolObserver] && value['[[ConnectModel]]'] !== false) {
-                value = value[SymbolObserver];
-            }
+            let value = getRelObserverOrSelf(attrs[attr]);
 
             if (origin !== value) {
                 if (value == null) {

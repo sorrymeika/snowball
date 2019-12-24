@@ -1,7 +1,7 @@
 import { Observer } from "./Observer";
 import { isArray } from '../utils/is';
 import { connect, disconnect } from './methods/connect';
-import { SymbolObserver } from './symbols';
+import { SymbolRelObserver } from './symbols';
 import { Collection, withMutations, initCollection } from './Collection';
 
 export class ObserverList extends Collection {
@@ -32,7 +32,7 @@ export default class List extends Observer {
         return withMutations(() => {
             let arrayLenth = array.length;
             for (let i = arrayLenth - 1; i < length; i++) {
-                disconnect(this, this[i][SymbolObserver]);
+                disconnect(this, this[i][SymbolRelObserver]);
                 delete this[i];
                 this.state.changed = true;
                 this.state.data.pop();
@@ -43,14 +43,14 @@ export default class List extends Observer {
 
             for (let i = 0; i < arrayLenth; i++) {
                 let item = array[i];
-                let sourceModel = item[SymbolObserver];
+                let sourceModel = item[SymbolRelObserver];
 
                 if (item !== this[i]) {
                     connected[sourceModel.state.id] = true;
                     connect(this, sourceModel, i);
 
                     if (this[i]) {
-                        disposers.push(this[i][SymbolObserver]);
+                        disposers.push(this[i][SymbolRelObserver]);
                         this.state.data[i] = sourceModel.state.data;
                     } else {
                         this.state.data.push(sourceModel.state.data);
@@ -83,10 +83,10 @@ export default class List extends Observer {
                 let item = array[i];
                 let index = this.length;
 
-                connect(this, item[SymbolObserver], index);
+                connect(this, item[SymbolRelObserver], index);
 
                 this[index] = item;
-                this.state.data[index] = item[SymbolObserver].state.data;
+                this.state.data[index] = item[SymbolRelObserver].state.data;
                 this.length++;
 
                 results.push(item);

@@ -1,7 +1,5 @@
 import React from 'react';
 import ScrollView from './ScrollView';
-import { inject } from '../app';
-
 import VScrollView from './VScrollView';
 import LoadMore from './LoadMore';
 import { IS_LTE_ANDROID_4_3 } from '../env';

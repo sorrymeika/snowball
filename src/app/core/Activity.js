@@ -2,8 +2,8 @@
 import { $ } from '../../utils';
 import { ViewModel } from '../../vm';
 import { ActivityOptions } from '../types';
-import ReactViewHandler from '../react/ReactViewHandler';
-import SnowballViewHandler from './SnowballViewHandler';
+import ReactViewAdapter from '../react/ReactViewAdapter';
+import SnowballViewAdapter from './SnowballViewAdapter';
 import { Page } from './Page';
 
 const ACTIVITY_STATUS_INIT = 0;
@@ -44,8 +44,8 @@ export class Activity {
         }
 
         const ViewHandler = viewFactory.prototype instanceof ViewModel
-            ? SnowballViewHandler
-            : ReactViewHandler;
+            ? SnowballViewAdapter
+            : ReactViewAdapter;
 
         this.view = new ViewHandler({
             el: this.el,
