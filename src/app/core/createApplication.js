@@ -54,48 +54,10 @@ function extendCtx(extendFn) {
     Object.keys(descriptors)
         .forEach((key) => {
             const descriptor = descriptors[key];
-
-            if (key === 'services' || key === 'service') {
-                const services = descriptor.value;
-                const cache = {};
-                const serviceClasses = {};
-
-                Object.defineProperty(ctx, 'service', {
-                    writable: false,
-                    value: Object.defineProperties({}, Object.keys(services).reduce((classes, key) => {
-                        const serviceClass = services[key];
-                        Object.defineProperty(serviceClass.prototype, 'ctx', {
-                            get() {
-                                return ctx.current;
-                            }
-                        });
-                        Object.defineProperty(serviceClass.prototype, 'app', {
-                            get() {
-                                return ctx;
-                            }
-                        });
-                        serviceClass.prototype.__is_app_service__ = true;
-                        serviceClasses[key] = serviceClass;
-                        classes[key] = {
-                            get() {
-                                let service = cache[key];
-                                if (!service) {
-                                    const ServiceClass = serviceClasses[key];
-                                    serviceClasses[key] = null;
-                                    return (cache[key] = new ServiceClass(ctx));
-                                }
-                                return service;
-                            }
-                        };
-                        return classes;
-                    }, {}))
-                });
-            } else {
-                if (isFunction(descriptor.get)) {
-                    descriptor.get = descriptor.get.bind(ctx);
-                }
-                Object.defineProperty(ctx, key, descriptor);
+            if (isFunction(descriptor.get)) {
+                descriptor.get = descriptor.get.bind(ctx);
             }
+            Object.defineProperty(ctx, key, descriptor);
         });
 }
 
@@ -114,6 +76,7 @@ export function createApplication({
     projects = {},
     routes,
     extend,
+    configuration,
     options,
     autoStart = true
 }, rootElement, callback?) {
@@ -136,6 +99,11 @@ export function createApplication({
         .setActivityManager(new ActivityManager(application, options));
 
     Object.assign(ctx, {
+        _config: configuration
+            ? Array.isArray(configuration)
+                ? configuration.reduce((result, desc) => Object.assign(result, desc), {})
+                : configuration
+            : {},
         navigation: ['forward', 'back', 'replace', 'transitionTo', 'home'].reduce((nav, prop) => {
             const method = navigation[prop];
             nav[prop] = (...args) => {
