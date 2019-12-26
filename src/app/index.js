@@ -14,8 +14,12 @@ export * from './core/backEventHandlers';
 
 export { controller } from './controller/controller';
 export { Service } from './controller/Service';
-export { injectable } from './controller/injectable';
+
 export { inject, PageContext } from './react/inject';
 export { observer } from './react/observer';
 export { ref } from './react/ref';
 export { provide } from './react/provide';
+
+export function injectable() {
+    console.warn('`injectable` is deprecated');
+}

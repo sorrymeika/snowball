@@ -1,6 +1,12 @@
 import { readonlyObserver } from "../Observer";
 import State from "../State";
 
+/**
+ * 监听多个Observer并处理
+ * @param {any[]|Function} observers Observer列表
+ * @param {Function} calc 计算方法
+ * @param {any} [initalValue] 初始值
+ */
 export default function batch(observers, calc, initialValue) {
     const [observer, next] = readonlyObserver(new State());
     const getArgs = () => observers.map((item) => item.get());

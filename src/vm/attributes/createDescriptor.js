@@ -2,7 +2,7 @@ import initializer from "./initializer";
 import { SymbolRelObserver } from "../symbols";
 import { reactTo } from "../Reaction";
 
-export function createDescriptor(set, get) {
+export function createDescriptor(get, set) {
     return (target, name, descriptor) => {
         initializer(target, name, descriptor);
 
@@ -12,7 +12,7 @@ export function createDescriptor(set, get) {
                 reactTo(this[SymbolRelObserver], name);
                 return get(this[SymbolRelObserver], name);
             },
-            set: function (val) {
+            set(val) {
                 set(this[SymbolRelObserver], name, val);
             }
         };

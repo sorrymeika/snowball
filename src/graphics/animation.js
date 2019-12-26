@@ -7,7 +7,11 @@ import tween from "./tween";
 import CubicBezier from "./CubicBezier";
 
 const TRANSFORM = $.fx.cssPrefix + 'transform';
-const eachAccessor = $.each;
+const eachAccessor = (data, fn) => {
+    for (let key in data) {
+        fn(key, data[key]);
+    }
+};
 
 const list = new LinkList();
 const defaultStyle = {
@@ -277,7 +281,7 @@ function prepare(animations) {
 export class Animation {
 
     constructor(animations) {
-        if (!$.isArray(animations)) animations = [animations];
+        if (!Array.isArray(animations)) animations = [animations];
         prepare(animations);
         this.list = animations;
     }

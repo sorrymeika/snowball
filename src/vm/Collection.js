@@ -309,10 +309,10 @@ export class Collection extends Observer {
 
     compute(attribute, calc) {
         if (isString(attribute) || isNumber(attribute)) {
-            return compute(this.get(attribute), (cb) => {
+            return compute((cb) => {
                 this.observe(attribute, cb);
                 return () => this.unobserve(attribute, cb);
-            }, calc);
+            }, calc, this.get(attribute));
         }
         return super.compute(attribute);
     }

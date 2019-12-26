@@ -1,8 +1,4 @@
-import { injectable } from "../controller/injectable";
-
 export function ref(target, name, descriptor) {
-    injectable(target, name, descriptor);
-
     return {
         get() {
             const newKey = '@' + name + '@';

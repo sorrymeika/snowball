@@ -80,7 +80,7 @@ function Slider(options) {
 
     self.set(data);
 
-    $(window).on('ortchange', $.proxy(self.adjustWidth, self));
+    $(window).on('ortchange', self.adjustWidth.bind(self));
 
     if (options.autoLoop) {
         self.startAutoLoop();

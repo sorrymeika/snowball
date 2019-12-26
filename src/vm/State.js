@@ -1,4 +1,4 @@
-import { Observer, Emitter } from "./Observer";
+import { Observer } from "./Observer";
 import { enqueueUpdate, defer } from "./methods/enqueueUpdate";
 
 
@@ -13,12 +13,11 @@ export default class State extends Observer {
             return this.state.next = this.state.next.then(() => this.set(data));
         }
 
-        super.set.call(this, data);
+        Observer.prototype.set.call(this, data);
+
         const newData = this.state.data;
         enqueueUpdate(this);
 
         return this.state.next = defer(() => newData);
     }
 }
-
-State.create = Emitter.create;

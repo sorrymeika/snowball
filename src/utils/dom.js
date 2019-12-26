@@ -1,8 +1,7 @@
-import '../libs/zepto';
+/* eslint-disable no-unused-expressions */
+import $ from '../core/zepto-lite';
 import { isNo } from './is';
 import style from './style';
-
-export const $ = window.$;
 
 export const TRANSITION_END = $.fx.transitionEnd;
 
@@ -13,10 +12,10 @@ export const ELEMENT_NODE = document.ELEMENT_NODE || 1;
 export function reflow(el) {
     if (el.length && el[0]) {
         for (let i = 0; i < el.length; i++) {
-            void el[i].clientHeight;
+            el[i].clientHeight;
         }
     } else {
-        void el.clientHeight;
+        el.clientHeight;
     }
     return el;
 }
@@ -167,3 +166,5 @@ export function isScrollToBottom(scrollElement) {
     }
     return scrollElement.scrollTop + scrollElement.clientHeight >= scrollElement.scrollHeight - 50;
 }
+
+export { $ };

@@ -1,4 +1,4 @@
-var toString = Object.prototype.toString;
+const toString = Object.prototype.toString;
 
 function is(type) {
     const objectTag = "[object " + type + "]";
@@ -7,7 +7,15 @@ function is(type) {
     };
 }
 
-export const isObject = is("Object");
+const notObjectTypes = 'Symbol Boolean Number String Function Array Date RegExp Error'.split(' ')
+    .reduce((types, name) => {
+        types["[object " + name + "]"] = true;
+        return types;
+    }, {});
+
+export function isObject(obj) {
+    return obj == null ? false : (typeof obj === 'object' && !notObjectTypes[toString.call(obj)]);
+}
 
 export const isSymbol = is("Symbol");
 

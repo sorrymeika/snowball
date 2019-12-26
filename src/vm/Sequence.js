@@ -18,7 +18,7 @@ export default class Sequence extends Observer {
             this.state.next = (this.state.next || resolvedPromise).then(() => {
                 return new Promise((resolve) => {
                     nextTick(() => {
-                        super.set.call(this, data);
+                        Observer.prototype.set.call(this, data);
                         const newData = this.state.data;
                         enqueueUpdate(this);
                         resolve();

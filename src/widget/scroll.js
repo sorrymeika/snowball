@@ -27,7 +27,7 @@ const TOUCH_AVAILABLE = 'ontouchstart' in document.body;
 export function ScrollView(el, options) {
     var self = this;
 
-    self.options = options = $.extend({}, self.options, options);
+    self.options = options = Object.assign({}, self.options, options);
 
     self.$el = $(el).css({ overflow: "hidden" });
     self.el = self.$el[0];

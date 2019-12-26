@@ -78,10 +78,10 @@ export class Observer implements IObservable {
     }
 
     compute(cacl) {
-        const computed = compute(this.get(), (cb) => {
+        const computed = compute((cb) => {
             this.observe(cb);
             return () => this.unobserve(cb);
-        }, cacl);
+        }, cacl, this.get());
         this.on('destroy', () => computed.destroy());
         return computed;
     }
@@ -144,13 +144,17 @@ Observer.prototype[TYPEOF] = 'Observer';
 
 export function readonlyObserver(observer) {
     const set = observer.set.bind(observer);
-    Object.defineProperty(observer, 'set', {
-        writable: false,
-        value: function (val) {
-            throw new Error('can not set readonly observer!');
-        },
-        enumerable: false
-    });
+    if (process.env.NODE_ENV === 'production') {
+        observer.set = undefined;
+    } else {
+        Object.defineProperty(observer, 'set', {
+            enumerable: false,
+            writable: false,
+            value: function (val) {
+                throw new Error('can not set readonly observer!');
+            }
+        });
+    }
     return [observer, set];
 }
 
@@ -204,41 +208,7 @@ ChangeObserver.prototype[TYPEOF] = 'ChangeObserver';
 /**
  * 立即触发型Observer
  */
-export class Emitter extends Observer {
-    static create() {
-        const emitter = new this();
-        const emitWrapper = (fn) => emitter.observe(fn);
-
-        return Object.defineProperties(emitWrapper, {
-            state: {
-                get() {
-                    return emitter.get();
-                }
-            },
-            event: {
-                writable: false,
-                value: emitter,
-            },
-            emit: {
-                writable: false,
-                value: (data) => {
-                    emitter.set(data);
-                }
-            },
-            once: {
-                writable: false,
-                value: (fn) => {
-                    let dispose;
-                    const cb = (data, e) => {
-                        dispose();
-                        fn(data, e);
-                    };
-                    dispose = emitter.observe(cb);
-                }
-            }
-        });
-    }
-
+export class Trigger extends Observer {
     set(data) {
         if (this.state.changed = (this.state.data !== data)) {
             this.state.data = data;
@@ -253,5 +223,4 @@ export class Emitter extends Observer {
     }
 }
 
-Emitter.prototype.emit = Emitter.prototype.set;
-Emitter.prototype[TYPEOF] = 'Emitter';
+Trigger.prototype[TYPEOF] = 'Trigger';

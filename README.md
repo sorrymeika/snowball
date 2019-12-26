@@ -5,7 +5,7 @@
 * 状态管理：immutable、响应式，和`redux`不同，`snowball`的状态管理更符合`OOP`思想。
 * 视图：fiber模式渲染，高性能，双向绑定。 采用运行时模版编译，在需要从服务端拉取模版渲染的场景优于`React`、`Vue`和`Angular`等框架。
 * 路由系统和状态管理都完全适配`React`。
-* 业务项目采用分层架构，主要分为`Controller`、`Service`、`View`层，`Controller`层用来组织`Service`层，并通过`injectable`注解将数据注入到`View`层。
+* 业务项目采用分层架构，主要分为`Controller`、`Service`、`View`层，`Controller`层用来组织`Service`层，并将数据注入到`View`层。
 
 
 ## 路由
@@ -93,7 +93,7 @@
 ## 项目结构
 
 * 项目主要分为`Controller`、`Service`、`View`层
-* `Controller`层用来组织`Service`层，并通过`injectable`注解将`service`和`状态`注入到`View`层
+* `Controller`层用来组织`Service`层，并将`service`和`状态`注入到`View`层
 
 ```html
 snowball-project
@@ -181,12 +181,13 @@ class UserService implements IUserService {
 * `app/home/controllers/HomeController.js`
 
 ```js
-import { controller, injectable } from "snowball/app";
+import { controller, autowired } from "snowball/app";
 
 // Controller
 @controller(Home)
 class HomeController {
-    @injectable typeUIService = new TypeUIService();
+    @autowired
+    typeUIService;
 
     onInit() {
     }
@@ -225,7 +226,8 @@ class Home extends Component {
 ```js
 import { inject } from "snowball/app";
 
-// 可通过 `inject` 方法将 `controller` 中 `injectable` 的属性注入到组件的 `props` 中
+// 可通过 `inject` 方法将 `controller` 的属性注入到组件的 `props` 中
+// `controller` 中以 `_`和'$'开头的属性会认为是私有属性，不可注入
 const TypeSelect = inject(({ typeUIService }) => (
     typeUIService
     ? {
@@ -290,9 +292,9 @@ class TypeUIService extends Service {
 
 * 关联页面/组件跟Controller类的方法，一般使用修饰符模式
 
-#### `@injectable` 方法
+#### `@autowired` 方法
 
-* 将Controller类的属性或方法传递给 `@controller` 关联的页面 (注入到props里)
+* 自动装载依赖
 
 #### 例
 
@@ -312,7 +314,6 @@ import Home from "../containers/Home";
  *     constructor
  *     页面生命周期
  *     属性 (get, set)
- *     expose给Container的事件
  *     方法
  */
 @controller(Home)
@@ -357,15 +358,10 @@ export default class HomeController {
     onDestroy() {
     }
 
-    // 可以通过`inject`方法把 `user` 注入到组件`props`中
-    @injectable
     get user() {
         return this.userService.getModel();
     }
 
-    // 把 `handleTitleClick` 注入到 `Home` 组件
-    // 使用 `@injectable` 后不要使用箭头函数
-    @injectable
     handleTitleClick() {
         this.userService.update();
     }
@@ -521,7 +517,7 @@ provide((props)=>{
 
 ### `inject` 方法
 
-* `controller`里`injectable`的属性和方法以及`provide`提供的属性和方法，可通过inject方法跨组件注入到子组件的props中
+* `controller`的属性和方法以及`provide`提供的属性和方法，可通过inject方法跨组件注入到子组件的props中
 
 ```js
 import { inject } from 'snowball';
@@ -808,7 +804,7 @@ Page.extentions.ctx((page, ctx) => {
 
 ```js
 import { Model, Collection, Reaction, attributes } from 'snowball';
-import { controller, injectable, service, observer } from 'snowball/app';
+import { controller, service, observer } from 'snowball/app';
 
 // Model 的接口必须定义
 interface IUser {
@@ -999,10 +995,10 @@ var model = new ViewModel({
 #### `vm.Observer` 类
 
 * 可观察对象，类的数据变化可被监听
-* `ViewModel`, `Model`, `Collection`, `List`, `Dictionary`, `DictionaryList`, `Emitter`, `State` 都是 `Observer` 的子类，分别有不同的作用
+* `ViewModel`, `Model`, `Collection`, `List`, `Dictionary`, `DictionaryList`, `Trigger`, `State` 都是 `Observer` 的子类，分别有不同的作用
 
 ```js
-import { Observer, ViewModel, Model, Collection, List, Emitter, State } from 'snowball';
+import { Observer, ViewModel, Model, Collection, List, Trigger, State } from 'snowball';
 
 var viewModel = new ViewModel({
     el: `<div>
@@ -1420,10 +1416,10 @@ console.log(state.get());
 // undefined
 ```
 
-### `vm.Emitter` 类
+### `vm.Trigger` 类
 
 ```js
-const emitter = new Emitter();
+const emitter = new Trigger();
 
 // 同步触发事件，并且会触发3次
 emitter.set(1);

@@ -1,21 +1,24 @@
-import { Observer, readonlyObserver, Emitter } from "../Observer";
+import { Observer, readonlyObserver, Trigger } from "../Observer";
 
-export default function compute(initalValue, observers, calc) {
-    if (typeof observers === 'function' && typeof calc === 'function') {
-        const [computed, setObserver] = readonlyObserver(new Emitter(calc(initalValue)));
+/**
+ * 计算方法
+ * @param {any[]|Function} source 来源的Observer列表
+ * @param {Function} calc 计算方法
+ * @param {any} [initalValue] 初始值
+ */
+export default function compute(source, calc, initalValue) {
+    if (typeof source === 'function' && typeof calc === 'function') {
+        const [computed, setObserver] = readonlyObserver(new Trigger(calc(initalValue)));
         const set = function (val) {
             setObserver(calc(val));
         };
-        const dispose = observers(set);
+        const dispose = source(set);
         computed.on('destroy', dispose);
         return computed;
     }
 
-    if (!Array.isArray(observers)) {
-        [observers, calc, initalValue] = [initalValue, observers];
-    }
     const [observer, setObserver] = readonlyObserver(new Observer(initalValue));
-    const getArgs = () => observers.map((item) => item.get());
+    const getArgs = () => source.map((item) => item.get());
 
     let olds = getArgs();
     const compute = () => {
@@ -23,9 +26,9 @@ export default function compute(initalValue, observers, calc) {
         setObserver(calc(args, olds, observer.get()));
         olds = args;
     };
-    observers.forEach((item) => item.observe(compute));
+    source.forEach((item) => item.observe(compute));
     observer.on('destroy', () =>
-        observers.forEach((item) =>
+        source.forEach((item) =>
             item.unobserve(compute)
         )
     );

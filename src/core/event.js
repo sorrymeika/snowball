@@ -157,13 +157,17 @@ function createEmitterFn(extend) {
         let funcs = [];
 
         const emitter = (fn) => {
-            funcs.push(fn);
-            return () => {
-                const index = funcs.indexOf(fn);
-                if (index !== -1) {
-                    funcs.splice(index, 1);
-                }
-            };
+            if (typeof fn === 'function') {
+                funcs.push(fn);
+                return () => {
+                    const index = funcs.indexOf(fn);
+                    if (index !== -1) {
+                        funcs.splice(index, 1);
+                    }
+                };
+            } else {
+                return emitter.emit(fn);
+            }
         };
 
         emitter.$$typeof = 'EventEmitter';
@@ -290,6 +294,11 @@ export const createAsyncEmitter = createEmitterFn((middlewares, funcs) => {
         }
     };
 });
+
+export const Emitter = {
+    create: createEmitter,
+    async: createAsyncEmitter
+};
 
 export default Event;
 

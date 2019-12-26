@@ -1,11 +1,13 @@
-import { isFunction, getPropertyDescriptor } from "../../utils";
+import { isFunction } from "../../utils";
 import { Reaction } from "../../vm";
 import { ActivityOptions } from '../types';
 import { getApplicationCtx } from "../core/createApplication";
 import { registerRoutes } from "../core/registerRoutes";
 import Activity from "../core/Activity";
 import { ACTIVITY_FACTORY } from "../core/ActivityManager";
-import { IS_CONTROLLER, INJECTABLE_PROPS } from "./symbols";
+import { IS_CONTROLLER } from "./symbols";
+
+export const INJECTABLE_PROPS = Symbol('INJECTABLE_PROPS');
 
 let currentCtx = null;
 
@@ -19,6 +21,44 @@ export function initWithContext(fn) {
         console.error('ctx 不能为空!');
     }
     fn(ctx);
+}
+
+let isCreating = false;
+const lifecycleNames = ['onInit', 'onQsChange', 'onShow', 'onCreate', 'onResume', 'onPause', 'onDestroy', 'shouldRender'];
+
+function createController(ControllerClass, props, ctx) {
+    if (isCreating) {
+        throw new Error('不能同时初始化化两个controller');
+    }
+    isCreating = true;
+    currentCtx = ctx;
+
+    ControllerClass.prototype._ctx = ctx;
+
+    const controllerInstance = new ControllerClass(props, ctx);
+    controllerInstance._ctx = ctx;
+
+    ControllerClass.prototype._ctx = null;
+
+    const lifecycle = {};
+
+    lifecycleNames.forEach((lifecycleName) => {
+        controllerInstance[lifecycleName] && (lifecycle[lifecycleName] = controllerInstance[lifecycleName].bind(controllerInstance));
+    });
+
+    ctx.page.setLifecycleDelegate(lifecycle);
+
+    isCreating = false;
+    currentCtx = null;
+
+    return controllerInstance;
+}
+
+
+const excludeProps = [...lifecycleNames, 'constructor', 'ctx', 'app'];
+
+function isInjectableProp(propName) {
+    return typeof propName === 'string' && !excludeProps.includes(propName) && /^[a-z]/.test(propName);
 }
 
 /**
@@ -41,76 +81,111 @@ export function controller(route, componentClass, options: ActivityOptions) {
         route = undefined;
     }
 
-    return function (Target) {
-        Object.defineProperty(Target.prototype, 'ctx', {
+    return function (Controller) {
+        let proto = Controller.prototype;
+        let descriptors = {};
+
+        while (1) {
+            descriptors = Object.assign(Object.getOwnPropertyDescriptors(proto), descriptors);
+
+            const parent = Object.getPrototypeOf(proto);
+            if (parent === proto || parent === Object.prototype) {
+                break;
+            } else {
+                proto = parent;
+            }
+        }
+
+        const injectableProps = {};
+        for (let propName in descriptors) {
+            if (isInjectableProp(propName)) {
+                injectableProps[propName] = descriptors[propName];
+            }
+        }
+        Controller[INJECTABLE_PROPS] = injectableProps;
+
+        Object.defineProperty(Controller.prototype, 'ctx', {
             get() {
                 return this._ctx;
             }
         });
-        Object.defineProperty(Target.prototype, 'app', {
+        Object.defineProperty(Controller.prototype, 'app', {
             get() {
                 return getApplicationCtx();
             }
         });
-        Target.prototype[IS_CONTROLLER] = true;
-        Target.prototype['[[ConnectModel]]'] = false;
+        Controller.prototype[IS_CONTROLLER] = true;
+        Controller.prototype['[[ConnectModel]]'] = false;
 
-        Target[ACTIVITY_FACTORY] = createActivityFactory(Target, componentClass, options);
+        Controller[ACTIVITY_FACTORY] = createActivityFactory(Controller, componentClass, options);
 
         if (route) {
             registerRoutes({
-                [route]: Target
+                [route]: Controller
             });
         }
-        return Target;
+        return Controller;
     };
 }
 
-function createActivityFactory(Target, componentClass, options) {
+function createActivityFactory(Controller, componentClass, options) {
     return (location, application) => new Activity(componentClass, location, application, (props, page) => {
         const { ctx } = page;
-        const controllerInstance = createController(Target, props, ctx);
+        const controllerInstance = createController(Controller, props, ctx);
 
         return (setState) => {
-            const injectableProps = controllerInstance[INJECTABLE_PROPS];
+            const protoProps = Controller[INJECTABLE_PROPS];
+            const injectableProps = Object.assign({}, protoProps, Object.getOwnPropertyDescriptors(controllerInstance));
+            const injectablePropNames = [];
+            for (let propName in injectableProps) {
+                if (isInjectableProp(propName)) {
+                    injectablePropNames.push(propName);
+                }
+            }
+
             const store = {
                 '[[Controller]]': controllerInstance
             };
 
-            if (injectableProps) {
-                const injectablePropKeys = Object.keys(injectableProps);
+            if (injectablePropNames.length) {
+                const bind = (fn, ctx) => {
+                    fn = fn.bind(ctx);
+                    fn._cb = fn;
+                    return fn;
+                };
                 const reaction = new Reaction(() => {
                     reaction.track(() => {
                         const newState = {};
-                        injectablePropKeys.forEach((injectorName) => {
-                            const old = store[injectorName];
-                            let newProp = controllerInstance[injectableProps[injectorName]];
+                        injectablePropNames.forEach((propName) => {
+                            const old = store[propName];
+                            let newProp = controllerInstance[propName];
                             if (old !== newProp) {
-                                if (isNoBindThisFn(newProp)) {
+                                if (typeof newProp === 'function') {
                                     if (old && old._cb === newProp) {
                                         return;
                                     } else {
-                                        newProp = bindThis(newProp, controllerInstance);
+                                        newProp = bind(newProp, controllerInstance);
                                     }
                                 }
-                                newState[injectorName] = store[injectorName] = newProp;
+                                newState[propName] = store[propName] = newProp;
                             }
                         });
                         setState(newState);
                     });
                 }, true)
                     .track(() => {
-                        Object.keys(injectableProps)
-                            .forEach((injectorName) => {
-                                store[injectorName] = bindThis(controllerInstance[injectableProps[injectorName]], controllerInstance);
-                            });
+                        injectablePropNames.forEach((propName) => {
+                            const prop = controllerInstance[propName];
+                            store[propName] = typeof prop === 'function' && protoProps[propName]
+                                ? bind(prop, controllerInstance)
+                                : prop;
+                        });
                     });
                 page.on('destroy', () => reaction.destroy());
 
-                Object.keys(injectableProps)
-                    .forEach((injectorName) => {
-                        const propertyName = injectableProps[injectorName];
-                        const descriptor = getPropertyDescriptor(controllerInstance, propertyName);
+                injectablePropNames
+                    .forEach((propName) => {
+                        const descriptor = injectableProps[propName];
                         const newDescriptor = {
                             enumerable: descriptor.enumerable,
                             configurable: descriptor.configurable,
@@ -118,11 +193,11 @@ function createActivityFactory(Target, componentClass, options) {
 
                         if (descriptor.get === undefined && descriptor.set === undefined) {
                             newDescriptor.get = function () {
-                                return store[injectorName];
+                                return store[propName];
                             };
                             if (descriptor.writable) {
                                 newDescriptor.set = function (val) {
-                                    store[injectorName] = bindThis(val, this);
+                                    store[propName] = val;
                                     setState(store);
                                 };
                             }
@@ -131,64 +206,15 @@ function createActivityFactory(Target, componentClass, options) {
                             if (descriptor.set) {
                                 newDescriptor.set = function (val) {
                                     descriptor.set.call(this, val);
-                                    store[injectorName] = bindThis(descriptor.get.call(this), this);
+                                    store[propName] = descriptor.get.call(this);
                                     setState(store);
                                 };
                             }
                         }
-                        Object.defineProperty(controllerInstance, propertyName, newDescriptor);
+                        Object.defineProperty(controllerInstance, propName, newDescriptor);
                     });
             }
             setState(store);
         };
     }, options);
-}
-
-
-let isCreating = false;
-
-function createController(ControllerClass, props, ctx) {
-    if (isCreating) {
-        throw new Error('不能同时初始化化两个controller');
-    }
-    isCreating = true;
-    currentCtx = ctx;
-
-    ControllerClass.prototype._ctx = ctx;
-
-    const controllerInstance = new ControllerClass(props, ctx);
-    controllerInstance._ctx = ctx;
-
-    ControllerClass.prototype._ctx = null;
-
-    const lifecycle = {};
-
-    controllerInstance.onInit && (lifecycle.onInit = controllerInstance.onInit.bind(controllerInstance));
-    controllerInstance.onQsChange && (lifecycle.onQsChange = controllerInstance.onQsChange.bind(controllerInstance));
-    controllerInstance.onShow && (lifecycle.onShow = controllerInstance.onShow.bind(controllerInstance));
-    controllerInstance.onCreate && (lifecycle.onCreate = controllerInstance.onCreate.bind(controllerInstance));
-    controllerInstance.onResume && (lifecycle.onResume = controllerInstance.onResume.bind(controllerInstance));
-    controllerInstance.onPause && (lifecycle.onPause = controllerInstance.onPause.bind(controllerInstance));
-    controllerInstance.onDestroy && (lifecycle.onDestroy = controllerInstance.onDestroy.bind(controllerInstance));
-    controllerInstance.shouldRender && (lifecycle.shouldRender = controllerInstance.shouldRender.bind(controllerInstance));
-
-    ctx.page.setLifecycleDelegate(lifecycle);
-
-    isCreating = false;
-    currentCtx = null;
-
-    return controllerInstance;
-}
-
-function isNoBindThisFn(method) {
-    return typeof method === 'function' && method.$$typeof !== 'EventEmitter';
-}
-
-function bindThis(method, instance) {
-    if (isNoBindThisFn(method)) {
-        const fn = (...args) => method.apply(instance, args);
-        fn._cb = method;
-        return fn;
-    }
-    return method;
 }
