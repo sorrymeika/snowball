@@ -6,7 +6,7 @@ import { registerRoutes } from "../core/registerRoutes";
 import Activity from "../core/Activity";
 import { ACTIVITY_FACTORY } from "../core/ActivityManager";
 import { IS_CONTROLLER } from "./symbols";
-import { _getAutowired, getAutowiredCtx } from "./autowired";
+import { _getAutowired, getAutowiredCtx, isAutowired } from "./autowired";
 
 export const INJECTABLE_PROPS = Symbol('INJECTABLE_PROPS');
 
@@ -33,6 +33,12 @@ type ControllerCfg = {
 
 /**
  * 控制层修饰符
+ * @param {ControllerCfg} cfg 参数
+ * @param {*} cfg.component 页面组件
+ * @param {*} [cfg.route] 路由，非必填，尽量将路由收敛到 routes.js中
+ * @param {*} [cfg.configuration] 配置项
+ * @param {*} [cfg.options]
+ * @description
  * Controller类生命周期
  *     onInit: 页面第一次打开，且动画开始前触发
  *     onShow: 页面显示，动画结束时触发
@@ -40,11 +46,6 @@ type ControllerCfg = {
  *     onResume: 页面从后台进入前台，且动画结束时触发
  *     onPause: 页面从前台进入后台，且动画结束时触发
  *     onDestroy: 页面被销毁后触发
- * @param {ControllerCfg} cfg 参数
- * @param {*} cfg.component 页面组件
- * @param {*} [cfg.route] 路由，非必填，尽量将路由收敛到 routes.js中
- * @param {*} [cfg.configuration] 配置项
- * @param {*} [cfg.options]
  */
 export function controller(cfg: ControllerCfg) {
     let options,
@@ -117,22 +118,28 @@ export function controller(cfg: ControllerCfg) {
 function createActivityFactory(Controller, componentClass, config, options) {
     return (location, application) => new Activity(componentClass, location, application, (props, page) => {
         const { ctx } = page;
-        ctx._config = config;
+        ctx._config = Array.isArray(config)
+            ? config.reduce((result, desc) => Object.assign(result, desc), {})
+            : config;
         const controllerInstance = createController(Controller, props, ctx);
 
         return (setState) => {
             const protoProps = Controller[INJECTABLE_PROPS];
             const injectableProps = Object.assign({}, protoProps, Object.getOwnPropertyDescriptors(controllerInstance));
             const injectablePropNames = [];
-            for (let propName in injectableProps) {
-                if (isInjectableProp(propName)) {
-                    injectablePropNames.push(propName);
-                }
-            }
-
             const store = {
                 '[[Controller]]': controllerInstance
             };
+
+            for (let propName in injectableProps) {
+                if (isInjectableProp(propName)) {
+                    if (isAutowired(controllerInstance, propName)) {
+                        store[propName] = controllerInstance[propName];
+                    } else {
+                        injectablePropNames.push(propName);
+                    }
+                }
+            }
 
             if (injectablePropNames.length) {
                 const bind = (fn, ctx) => {

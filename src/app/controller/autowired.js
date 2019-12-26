@@ -14,6 +14,10 @@ export function getAutowiredCtx() {
     return pageCtx;
 }
 
+export function isAutowired(proto, name) {
+    return !!proto[AUTOWIRED_PROPS][name];
+}
+
 function defineAutowired(proto) {
     Object.defineProperty(proto, AUTOWIRED_CONFIG, {
         configurable: true,
@@ -23,23 +27,36 @@ function defineAutowired(proto) {
                 return true;
             }
 
-            let config = this.ctx._currentConfig;
-            if (!config) {
-                config = this.ctx._currentConfig = this.ctx._config ? Object.defineProperties({}, this.ctx._config) : {};
-                this.ctx._currentConfig[AUTOWIRED_CONFIG] = Object.defineProperties({}, this.app._config);
-            }
+            const ctxConfig = this.ctx._config;
+            const appConfig = this.app._config;
 
-            pageCtx = this.ctx;
+            let wired = this.ctx._wired;
+            if (!wired) {
+                wired = this.ctx._wired = Object.defineProperties({}, ctxConfig);
+                wired[AUTOWIRED_CONFIG] = Object.defineProperties({}, appConfig);
+            }
 
             const autowiredProps = this[AUTOWIRED_PROPS];
             const properties = Object.keys(autowiredProps).reduce((properties, name) => {
+                pageCtx = this.ctx;
+
                 const resourceName = autowiredProps[name];
-                const value = config[resourceName];
-                properties[name] = value === undefined ? config[AUTOWIRED_CONFIG][resourceName] : value;
+                const wiredName = name + '@' + resourceName;
+                let val = wired[wiredName];
+
+                if (val === undefined) {
+                    val = wired[resourceName];
+                    if (val === undefined) {
+                        val = wired[AUTOWIRED_CONFIG][resourceName];
+                    }
+                }
+
+                properties[name] = val;
+                pageCtx = null;
+
                 return properties;
             }, {});
 
-            pageCtx = null;
 
             Object.defineProperty(this, AUTOWIRED_CONFIG, {
                 get() {
