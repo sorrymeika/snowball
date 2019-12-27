@@ -29,7 +29,13 @@ function defineAutowired(proto) {
 
             let wired = this.ctx._wired;
             if (!wired) {
-                wired = this.ctx._wired = new this.ctx.Configuration();
+                const { Configuration } = this.ctx;
+                Configuration.prototype.ctx = this.ctx;
+                Configuration.prototype.app = this.app;
+                wired = this.ctx._wired = new Configuration();
+                Configuration.prototype.ctx = Configuration.prototype.app = null;
+                wired.ctx = this.ctx;
+                wired.app = this.app;
             }
 
             const autowiredProps = this[AUTOWIRED_PROPS];

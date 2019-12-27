@@ -1,4 +1,4 @@
-import { isFunction, isString, mixin, getOwnPropertyDescriptors } from "../../utils";
+import { isFunction, isString, getOwnPropertyDescriptors } from "../../utils";
 import { Reaction } from "../../vm";
 import { ActivityOptions } from '../types';
 import { getApplicationCtx } from "../core/createApplication";

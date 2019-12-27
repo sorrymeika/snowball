@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import ReactDOM from 'react-dom';
-import { ViewModel, component, Model, attributes, autorun } from './vm';
+import { ViewModel, component, Model, attributes, autorun } from './snowball';
 
 @component({
     tagName: 'Test',
