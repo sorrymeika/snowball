@@ -1,4 +1,4 @@
-import { isFunction, isString } from "../../utils";
+import { isFunction, isString, mixin, getOwnPropertyDescriptors } from "../../utils";
 import { Reaction } from "../../vm";
 import { ActivityOptions } from '../types';
 import { getApplicationCtx } from "../core/createApplication";
@@ -7,6 +7,7 @@ import Activity from "../core/Activity";
 import { ACTIVITY_FACTORY } from "../core/ActivityManager";
 import { IS_CONTROLLER } from "./symbols";
 import { _getAutowired, getAutowiredCtx, isAutowired } from "./autowired";
+import { buildConfiguration } from "./configuration";
 
 export const INJECTABLE_PROPS = Symbol('INJECTABLE_PROPS');
 
@@ -73,7 +74,7 @@ export function controller(cfg: ControllerCfg) {
         let descriptors = {};
 
         while (1) {
-            descriptors = Object.assign(Object.getOwnPropertyDescriptors(proto), descriptors);
+            descriptors = Object.assign(getOwnPropertyDescriptors(proto), descriptors);
 
             const parent = Object.getPrototypeOf(proto);
             if (parent === proto || parent === Object.prototype) {
@@ -116,16 +117,21 @@ export function controller(cfg: ControllerCfg) {
 }
 
 function createActivityFactory(Controller, componentClass, config, options) {
+    const configs = config ? [].concat(config) : [];
+
+    let Configuration;
+
     return (location, application) => new Activity(componentClass, location, application, (props, page) => {
         const { ctx } = page;
-        ctx._config = Array.isArray(config)
-            ? config.reduce((result, desc) => Object.assign(result, desc), {})
-            : config;
+        if (!Configuration) {
+            Configuration = buildConfiguration(configs.concat(ctx.app._configuration));
+        }
+        ctx.Configuration = Configuration;
         const controllerInstance = createController(Controller, props, ctx);
 
         return (setState) => {
             const protoProps = Controller[INJECTABLE_PROPS];
-            const injectableProps = Object.assign({}, protoProps, Object.getOwnPropertyDescriptors(controllerInstance));
+            const injectableProps = Object.assign({}, protoProps, getOwnPropertyDescriptors(controllerInstance));
             const injectablePropNames = [];
             const store = {
                 '[[Controller]]': controllerInstance

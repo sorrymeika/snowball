@@ -1,11 +1,11 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable react-hooks/rules-of-hooks */
-import React, { createElement, useMemo, useState, useEffect, useContext } from 'react';
+import React, { Component, createElement, useMemo, useState, useEffect, useContext } from 'react';
 import { isString, isArray, isFunction } from '../../utils';
 import { Reaction } from '../../vm';
 import { setCurrentCtx } from '../controller/controller';
 import { observer } from './observer';
-import { _getApplication } from '../core/createApplication';
+import { ctx, _getApplication } from '../core/createApplication';
 
 export const PageContext = React.createContext();
 
@@ -15,7 +15,7 @@ function isStateless(component) {
     return !(component.prototype && component.prototype.render);
 }
 
-function makeStatelessComponentReacitve(statelessComponentFn, forwardRef) {
+function makeStatelessComponentReacitve(statelessComponentFn) {
     const componentFn = (props) => {
         let [version, setRendering] = useState(0);
 
@@ -43,7 +43,7 @@ function makeStatelessComponentReacitve(statelessComponentFn, forwardRef) {
 
         let element;
         reaction.track(() => {
-            element = statelessComponentFn(props, forwardRef);
+            element = statelessComponentFn(props);
         });
         return element;
     };
@@ -64,7 +64,7 @@ function createInjector(grabDepsFn, componentClass) {
         componentClass = observer(componentClass);
     }
 
-    const InjectHocRef = makeStatelessComponentReacitve((props, forwardRef) => {
+    const Injector = React.forwardRef((props, forwardRef) => makeStatelessComponentReacitve((props) => {
         const context = useContext(PageContext);
         const [injector] = useState({
             factoryInstances: {}
@@ -74,17 +74,17 @@ function createInjector(grabDepsFn, componentClass) {
         for (let key in additionalProps) {
             props[key] = additionalProps[key];
         }
-        props.ref = forwardRef;
         if (!_isStateless) {
+            props.ref = forwardRef;
             return createElement(componentClass, props);
         }
         return componentClass(props);
-    });
+    }));
 
-    InjectHocRef.wrappedComponent = wrappedComponent;
-    InjectHocRef.$$isInjector = true;
+    Injector.wrappedComponent = wrappedComponent;
+    Injector.$$isInjector = true;
 
-    return InjectHocRef;
+    return Injector;
 }
 
 function compose(grabDepsFns) {

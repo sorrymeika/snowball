@@ -1,34 +1,28 @@
-function conf(Configuration, configurations) {
-    let descriptors = {};
-    let proto = Configuration.prototype;
+import { mixin } from "../../utils";
 
-    while (1) {
-        descriptors = Object.assign(Object.getOwnPropertyDescriptors(proto), descriptors);
-
-        const parent = Object.getPrototypeOf(proto);
-        if (parent === proto || parent === Object.prototype) {
-            break;
-        } else {
-            proto = parent;
-        }
-    }
-
-    descriptors = Object.assign(
-        configurations.reduce((result, desc) => Object.assign(result, desc), {}),
-        descriptors
-    );
-
-    const result = {};
-    for (let key in descriptors) {
-        if (key !== 'constructor') {
-            result[key] = descriptors[key];
-        }
-    }
-    return result;
+function conf(Configuration, dependencies) {
+    Configuration.dependencies = dependencies;
+    return Configuration;
 }
 
-export function configuration(...configurations) {
-    return typeof configurations[0] === 'function'
-        ? conf(configurations[0], [])
-        : (Configuration) => conf(Configuration, configurations);
+export function buildConfiguration(configurations) {
+    const result = new Set();
+    buildConf(configurations, result);
+    return mixin(...result);
+}
+
+function buildConf(configurations, result) {
+    for (let i = 0; i < configurations.length; i++) {
+        const conf = configurations[i];
+        if (conf.dependencies && conf.dependencies.length) {
+            buildConf(conf.dependencies, result);
+        }
+        result.add(conf);
+    }
+}
+
+export function configuration(dependencies) {
+    return Array.isArray(dependencies)
+        ? (Configuration) => conf(Configuration, dependencies)
+        : conf(dependencies);
 }

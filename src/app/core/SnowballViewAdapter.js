@@ -2,13 +2,12 @@ import { IViewAdapter } from "../types";
 
 export default class SnowballViewAdapter implements IViewAdapter {
 
-    constructor({ el, page, activity, location, viewFactory, mapStoreToProps }) {
+    constructor({ el, page, activity, viewFactory, mapStoreToProps }) {
         const ViewClass = viewFactory;
 
         this.model = new ViewClass({
             app: page.ctx.app,
             ctx: page.ctx,
-            location
         });
         this.activity = activity;
         this.isReady = false;

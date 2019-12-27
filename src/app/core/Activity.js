@@ -50,7 +50,6 @@ export class Activity {
         this.view = new ViewHandler({
             el: this.el,
             viewFactory,
-            location,
             mapStoreToProps,
             activity: this,
             page: this.page

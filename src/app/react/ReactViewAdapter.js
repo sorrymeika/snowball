@@ -7,17 +7,17 @@ import { SymbolFrom } from '../../vm/symbols';
 import { PageContext, makeComponentReacitve } from './inject';
 
 export default class ReactViewAdapter implements IViewAdapter {
-    constructor({ el, page, activity, location, viewFactory, mapStoreToProps }) {
+    constructor({ el, page, activity, viewFactory, mapStoreToProps }) {
         this.el = el;
         this.page = page;
         this.activity = activity;
         this.model = new Model({
             app: page.ctx.app,
             ctx: page.ctx,
-            location
+            location: activity.location
         });
         this.state = {};
-        this._defineProps(['app', 'ctx', 'location']);
+        this._defineProps(['app', 'ctx']);
         this.isReady = false;
         this.readyActions = [];
         this.mapStoreToProps = mapStoreToProps;
@@ -98,10 +98,6 @@ export default class ReactViewAdapter implements IViewAdapter {
         }
     }
 
-    get location() {
-        return this.model.attributes.location;
-    }
-
     ready(fn) {
         if (this.isReady) {
             fn();
@@ -168,7 +164,7 @@ export default class ReactViewAdapter implements IViewAdapter {
             now;
 
         if (process.env.NODE_ENV !== 'test') {
-            timer = `render ${this.location.path} spend`;
+            timer = `render ${this.activity.location.path} spend`;
             now = Date.now();
             console.time(timer);
         }

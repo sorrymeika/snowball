@@ -1,6 +1,6 @@
 import { IPage, PageLifecycleDelegate } from '../types';
 import { Model, observable, autorun } from '../../vm';
-import { store } from '../../utils';
+import { store, copyProperties } from '../../utils';
 import { EventEmitter, createAsyncEmitter, createEmitter } from '../../core/event';
 
 const defaultTitle = document.title;
@@ -69,6 +69,11 @@ function createPageCtx(page, ctx) {
                 messageChannel.trigger(...args);
             }
         },
+        emitter(type) {
+            return (...args) => {
+                messageChannel.trigger(type, ...args);
+            };
+        },
         createEvent: {
             writable: false,
             value: () => {
@@ -110,7 +115,7 @@ function createPageCtx(page, ctx) {
         }
     });
 
-    Object.defineProperties(pageCtx, Object.getOwnPropertyDescriptors(pageCtxExtentions.reduce((res, fn) => Object.assign(res, fn(page, pageCtx)), {})));
+    copyProperties(pageCtx, pageCtxExtentions.reduce((res, fn) => Object.assign(res, fn(page, pageCtx)), {}));
 
     page.on('destroy', () => {
         messageChannel.off();
@@ -131,7 +136,7 @@ export class Page extends EventEmitter implements IPage {
             });
         },
         mixin: (props) => {
-            Object.defineProperties(Page.prototype, Object.getOwnPropertyDescriptors(props));
+            copyProperties(Page.prototype, props);
         },
         react({ Provider }) {
             Object.defineProperty(Page.prototype, 'react', {

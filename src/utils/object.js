@@ -67,17 +67,28 @@ export function mixin(...mixins) {
     return Mix;
 }
 
-function copyProperties(target = {}, source = {}) {
+export function copyProperties(target = {}, source = {}) {
     const ownPropertyNames = Object.getOwnPropertyNames(source);
 
     ownPropertyNames
         .filter(key => !/^(prototype|name|constructor)$/.test(key))
         .forEach(key => {
             const desc = Object.getOwnPropertyDescriptor(source, key);
-
             Object.defineProperty(target, key, desc);
         });
 }
+
+export const getOwnPropertyDescriptors = Object.getOwnPropertyDescriptor || ((source) => {
+    const ownPropertyNames = Object.getOwnPropertyNames(source);
+
+    return ownPropertyNames
+        .filter(key => !/^(prototype|name|constructor)$/.test(key))
+        .reduce((result, key) => {
+            const desc = Object.getOwnPropertyDescriptor(source, key);
+            result[key] = desc;
+            return result;
+        }, {});
+});
 
 export function getPropertyDescriptor(target, propertyName) {
     let proto = target;

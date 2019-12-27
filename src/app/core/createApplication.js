@@ -1,4 +1,4 @@
-import { isFunction } from '../../utils';
+import { isFunction, getOwnPropertyDescriptors } from '../../utils';
 import ActivityManager from './ActivityManager';
 import Router from './Router';
 import Navigation from './Navigation';
@@ -50,7 +50,7 @@ export const ctx = Object.create(EventEmitter.prototype, {
 ctx.emit = ctx.trigger.bind(ctx);
 
 function extendCtx(extendFn) {
-    const descriptors = Object.getOwnPropertyDescriptors(extendFn(ctx));
+    const descriptors = getOwnPropertyDescriptors(extendFn(ctx));
     Object.keys(descriptors)
         .forEach((key) => {
             const descriptor = descriptors[key];
@@ -99,11 +99,7 @@ export function createApplication({
         .setActivityManager(new ActivityManager(application, options));
 
     Object.assign(ctx, {
-        _config: configuration
-            ? Array.isArray(configuration)
-                ? configuration.reduce((result, desc) => Object.assign(result, desc), {})
-                : configuration
-            : {},
+        _configuration: configuration ? [].concat(configuration) : [],
         navigation: ['forward', 'back', 'replace', 'transitionTo', 'home'].reduce((nav, prop) => {
             const method = navigation[prop];
             nav[prop] = (...args) => {

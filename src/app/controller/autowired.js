@@ -27,13 +27,9 @@ function defineAutowired(proto) {
                 return true;
             }
 
-            const ctxConfig = this.ctx._config;
-            const appConfig = this.app._config;
-
             let wired = this.ctx._wired;
             if (!wired) {
-                wired = this.ctx._wired = Object.defineProperties({}, ctxConfig);
-                wired[AUTOWIRED_CONFIG] = Object.defineProperties({}, appConfig);
+                wired = this.ctx._wired = new this.ctx.Configuration();
             }
 
             const autowiredProps = this[AUTOWIRED_PROPS];
@@ -41,16 +37,11 @@ function defineAutowired(proto) {
                 pageCtx = this.ctx;
 
                 const resourceName = autowiredProps[name];
-                const wiredName = name + '@' + resourceName;
+                const wiredName = name.replace(/^[_]/, '') + '@' + resourceName;
                 let val = wired[wiredName];
-
                 if (val === undefined) {
-                    val = wired[resourceName];
-                    if (val === undefined) {
-                        val = wired[AUTOWIRED_CONFIG][resourceName];
-                    }
+                    val = wired[wiredName] = wired[resourceName];
                 }
-
                 properties[name] = val;
                 pageCtx = null;
 
