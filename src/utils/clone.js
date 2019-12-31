@@ -1,5 +1,4 @@
 import { isArray, isObject } from './is';
-import { equals, pick } from './object';
 
 var slice = Array.prototype.slice;
 
@@ -49,52 +48,3 @@ export function clone(data, deep) {
 export function deepClone(data) {
     return clone(data, true);
 }
-
-export function cloneObject(obj, keys) {
-    return new ObjectClone(obj, keys);
-}
-
-function ObjectClone(obj, keys) {
-    this.keys = keys;
-    this._result = true;
-    this.set(obj);
-}
-
-ObjectClone.prototype.set = function (obj) {
-    var object = {};
-    var keys = this.keys;
-    if (keys) {
-        var key;
-        for (var i = 0, length = keys.length; i < length; i++) {
-            key = keys[i];
-            if (key in obj) object[key] = deepClone(obj[key]);
-        }
-    } else {
-        _extend(object, obj, true);
-    }
-    this._clone = object;
-    return this;
-};
-
-ObjectClone.prototype.merge = function (obj) {
-    _extend(this._clone, obj, true);
-    return this;
-};
-
-ObjectClone.prototype.equals = function (obj) {
-    return (this._result = equals(this._clone, this.keys ? pick(obj, this.keys) : obj));
-};
-
-ObjectClone.prototype.equalsOrSet = function (obj) {
-    if (!this.equals(obj))
-        return this.set(obj).lastResult();
-    return true;
-};
-
-ObjectClone.prototype.lastResult = function () {
-    return this._result;
-};
-
-ObjectClone.prototype.object = function () {
-    return this._clone;
-};

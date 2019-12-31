@@ -6,7 +6,7 @@ import { registerRoutes } from "../core/registerRoutes";
 import Activity from "../core/Activity";
 import { ACTIVITY_FACTORY } from "../core/ActivityManager";
 import { IS_CONTROLLER } from "./symbols";
-import { _getAutowired, getAutowiredCtx, isAutowired } from "./autowired";
+import { getAutowiredCtx, isAutowired } from "./autowired";
 import { buildConfiguration } from "./configuration";
 
 export const INJECTABLE_PROPS = Symbol('INJECTABLE_PROPS');
@@ -124,7 +124,7 @@ function createActivityFactory(Controller, componentClass, config, options) {
     return (location, application) => new Activity(componentClass, location, application, (props, page) => {
         const { ctx } = page;
         if (!Configuration) {
-            Configuration = buildConfiguration(configs.concat(ctx.app._configuration));
+            Configuration = buildConfiguration(ctx.app._configuration.concat(configs));
         }
         ctx.Configuration = Configuration;
         const controllerInstance = createController(Controller, props, ctx);
@@ -234,8 +234,6 @@ function createController(Controller, props, ctx) {
 
     const controllerInstance = new Controller(props, ctx);
     controllerInstance._ctx = ctx;
-    controllerInstance._autowired = _getAutowired(controllerInstance);
-
     Controller.prototype._ctx = null;
 
     const lifecycle = {};

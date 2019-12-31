@@ -6,6 +6,7 @@ import { Reaction } from '../../vm';
 import { setCurrentCtx } from '../controller/controller';
 import { observer } from './observer';
 import { _getApplication } from '../core/createApplication';
+import { doWire, autowired } from '../controller/autowired';
 
 export const PageContext = React.createContext();
 
@@ -69,10 +70,11 @@ function createInjector(grabDepsFn, componentClass) {
         const [injector] = useState({
             factoryInstances: {}
         });
-
-        const additionalProps = grabDepsFn(context, props, injector) || {};
-        for (let key in additionalProps) {
-            props[key] = additionalProps[key];
+        if (context) {
+            const additionalProps = grabDepsFn(context, props, injector) || {};
+            for (let key in additionalProps) {
+                props[key] = additionalProps[key];
+            }
         }
         props.ref = forwardRef;
         if (!_isStateless) {
@@ -91,19 +93,21 @@ function compose(grabDepsFns) {
     return function (dependencies, nextProps, injector) {
         setCurrentCtx(dependencies.ctx);
         const newProps = {};
-        grabDepsFns.forEach(function (grabDepsFn, i) {
-            let additionalProps = (injector['REDUCER_' + i] || grabDepsFn)(dependencies, nextProps);
-            if (typeof additionalProps === 'function') {
-                injector['REDUCER_' + i] = additionalProps;
-                additionalProps = additionalProps(dependencies, nextProps);
-            }
-            if (additionalProps) {
-                for (let key in additionalProps) {
-                    // if (key in nextProps)
-                    //     continue;
-                    newProps[key] = additionalProps[key];
+        doWire(dependencies, () => {
+            grabDepsFns.forEach(function (grabDepsFn, i) {
+                let additionalProps = (injector['REDUCER_' + i] || grabDepsFn)(dependencies, nextProps);
+                if (typeof additionalProps === 'function') {
+                    injector['REDUCER_' + i] = additionalProps;
+                    additionalProps = additionalProps(dependencies, nextProps);
                 }
-            }
+                if (additionalProps) {
+                    for (let key in additionalProps) {
+                        // if (key in nextProps)
+                        //     continue;
+                        newProps[key] = additionalProps[key];
+                    }
+                }
+            });
         });
         setCurrentCtx(null);
         return newProps;
@@ -138,13 +142,9 @@ function mapDepsToProps(dependencies, nextProps, injector, depName, mapName = de
         return;
     }
 
-    if (!(depName in dependencies))
-        throw new Error(
-            "Snowball injector: Dependency '" +
-            depName +
-            "' is not available! Make sure it is provided by Controller or some Provider"
-        );
-    nextProps[mapName] = dependencies[depName];
+    doWire(dependencies, () => {
+        nextProps[mapName] = autowired(depName);
+    });
 }
 
 function injectFactoryInstance(dependencies, nextProps, injector, factoryName, mapName) {
@@ -170,12 +170,15 @@ function injectFactoryInstance(dependencies, nextProps, injector, factoryName, m
  * // 将 `depName1` 和 `depName2` 注入到 props 中
  * inject('depName1', 'depName2')(componentClass)
  *
- * inject((deps, props) => ({
- *   depName1: deps.depName1
- * }))(componentClass)
+ * inject((props) => {
+ *  const userService = autowired<IUserService>('userService');
+ *  return {
+ *   depName1: userService.name
+ *  }
+ * })(componentClass)
  *
  * // 不会将 `foo` 和 `bar` 注入到 props 中
- * inject(['foo', 'bar'], ({ foo, bar }) => ({
+ * inject(['foo', 'bar'], ([foo, bar], props) => ({
  *  barName: bar.name
  *  fooName: foo.name
  * }))(componentClass)
@@ -192,11 +195,11 @@ export function inject(deps, injection) {
             throw new Error('injection must be function!!');
         }
         grabDepsFn = (dependencies, nextProps, injector) => {
-            const depProps = { ...nextProps };
+            const depProps = Object.assign({}, nextProps);
             deps.forEach(function (depName, i) {
                 mapDepsToProps(dependencies, depProps, injector, depName);
             });
-            return injection(depProps);
+            return injection(deps.map(name => depProps[name]));
         };
     } else {
         grabDepsFn = renameProps(deps);

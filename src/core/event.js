@@ -152,7 +152,7 @@ export function eventMixin(fn, ext) {
 }
 
 function createEmitterFn(extend) {
-    return () => {
+    return (init) => {
         let middlewares = [];
         let funcs = [];
 
@@ -197,6 +197,10 @@ function createEmitterFn(extend) {
         emitter.off = () => {
             middlewares = funcs = null;
         };
+
+        if (typeof init === 'function') {
+            emitter(init);
+        }
 
         return emitter;
     };
@@ -301,6 +305,47 @@ export const Emitter = {
 };
 
 export default Event;
+
+export function EventDelegate(eventEmitter, type, listener) {
+    let delegate;
+
+    if (typeof eventEmitter === 'function') {
+        let despose;
+        const on = () => {
+            despose && despose();
+            despose = eventEmitter();
+            return delegate;
+        };
+        delegate = {
+            on,
+            off() {
+                despose && despose();
+                return delegate;
+            }
+        };
+        on();
+    } else {
+        eventEmitter.on(type, listener);
+        delegate = {
+            emit(...args) {
+                eventEmitter.trigger(type, ...args);
+                return delegate;
+            },
+
+            on() {
+                delegate.off();
+                eventEmitter.on(type, listener);
+                return delegate;
+            },
+
+            off() {
+                eventEmitter.off(type, listener);
+                return delegate;
+            },
+        };
+    }
+    return delegate;
+}
 
 // var event = new EventEmitter();
 

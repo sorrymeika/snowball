@@ -21,8 +21,7 @@ export { Service } from './controller/Service';
 export { inject, PageContext } from './react/inject';
 export { observer } from './react/observer';
 export { ref } from './react/ref';
-export { provide } from './react/provide';
 
 export function injectable() {
-    console.warn('`injectable` is deprecated');
+    throw new Error('`injectable` is deprecated');
 }

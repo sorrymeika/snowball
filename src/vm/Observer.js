@@ -208,7 +208,7 @@ ChangeObserver.prototype[TYPEOF] = 'ChangeObserver';
 /**
  * 立即触发型Observer
  */
-export class Trigger extends Observer {
+export class Subject extends Observer {
     set(data) {
         if (this.state.changed = (this.state.data !== data)) {
             this.state.data = data;
@@ -223,4 +223,4 @@ export class Trigger extends Observer {
     }
 }
 
-Trigger.prototype[TYPEOF] = 'Trigger';
+Subject.prototype[TYPEOF] = 'Subject';

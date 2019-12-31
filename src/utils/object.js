@@ -78,7 +78,7 @@ export function copyProperties(target = {}, source = {}) {
         });
 }
 
-export const getOwnPropertyDescriptors = Object.getOwnPropertyDescriptor || ((source) => {
+export const getOwnPropertyDescriptors = Object.getOwnPropertyDescriptors || ((source) => {
     const ownPropertyNames = Object.getOwnPropertyNames(source);
 
     return ownPropertyNames

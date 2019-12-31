@@ -995,10 +995,10 @@ var model = new ViewModel({
 #### `vm.Observer` 类
 
 * 可观察对象，类的数据变化可被监听
-* `ViewModel`, `Model`, `Collection`, `List`, `Dictionary`, `DictionaryList`, `Trigger`, `State` 都是 `Observer` 的子类，分别有不同的作用
+* `ViewModel`, `Model`, `Collection`, `List`, `Dictionary`, `DictionaryList`, `Subject`, `State` 都是 `Observer` 的子类，分别有不同的作用
 
 ```js
-import { Observer, ViewModel, Model, Collection, List, Trigger, State } from 'snowball';
+import { Observer, ViewModel, Model, Collection, List, Subject, State } from 'snowball';
 
 var viewModel = new ViewModel({
     el: `<div>
@@ -1416,10 +1416,10 @@ console.log(state.get());
 // undefined
 ```
 
-### `vm.Trigger` 类
+### `vm.Subject` 类
 
 ```js
-const emitter = new Trigger();
+const emitter = new Subject();
 
 // 同步触发事件，并且会触发3次
 emitter.set(1);

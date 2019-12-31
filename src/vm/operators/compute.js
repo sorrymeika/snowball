@@ -1,4 +1,4 @@
-import { Observer, readonlyObserver, Trigger } from "../Observer";
+import { Observer, readonlyObserver, Subject } from "../Observer";
 
 /**
  * 计算方法
@@ -8,7 +8,7 @@ import { Observer, readonlyObserver, Trigger } from "../Observer";
  */
 export default function compute(source, calc, initalValue) {
     if (typeof source === 'function' && typeof calc === 'function') {
-        const [computed, setObserver] = readonlyObserver(new Trigger(calc(initalValue)));
+        const [computed, setObserver] = readonlyObserver(new Subject(calc(initalValue)));
         const set = function (val) {
             setObserver(calc(val));
         };

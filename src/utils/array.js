@@ -470,7 +470,7 @@ export function sum(arr, key) {
  *
  * @param {Array} arr
  */
-function ArrayQuery(arr) {
+function LazyArray(arr) {
     this.array = arr;
     this.conditionGroups = [];
     this.conditions = [];
@@ -486,12 +486,12 @@ var ARRAY_EXCLUDE = 7;
 var ARRAY_REDUCE = 8;
 var ARRAY_FIRST = 9;
 
-ArrayQuery.prototype._ = function (query) {
+LazyArray.prototype._ = function (query) {
     this.conditions.push(ARRAY_QUERY, compileQuery(query));
     return this;
 };
 
-ArrayQuery.prototype.map = function (key) {
+LazyArray.prototype.map = function (key) {
     this.conditions.push(ARRAY_MAP, typeof key === 'string'
         ? function (item) {
             return item[key];
@@ -510,7 +510,7 @@ ArrayQuery.prototype.map = function (key) {
     return this;
 };
 
-ArrayQuery.prototype.filter = function (key, val) {
+LazyArray.prototype.filter = function (key, val) {
     var keyType = typeof key;
 
     this.conditions.push(ARRAY_FILTER, keyType === 'string' && arguments.length == 2
@@ -525,13 +525,13 @@ ArrayQuery.prototype.filter = function (key, val) {
     return this;
 };
 
-ArrayQuery.prototype.exclude = function (key, val) {
+LazyArray.prototype.exclude = function (key, val) {
     this.filter(key, val);
     this.conditions[this.conditions.length - 2] = ARRAY_EXCLUDE;
     return this;
 };
 
-ArrayQuery.prototype._renewConditions = function () {
+LazyArray.prototype._renewConditions = function () {
     if (this.conditions.length) {
         this.conditionGroups.push({
             type: ARRAY_LOOP,
@@ -541,7 +541,7 @@ ArrayQuery.prototype._renewConditions = function () {
     }
 };
 
-ArrayQuery.prototype.addConditionGroup = function (type, fn) {
+LazyArray.prototype.addConditionGroup = function (type, fn) {
     this._renewConditions();
     this.conditionGroups.push({
         type: type,
@@ -550,37 +550,37 @@ ArrayQuery.prototype.addConditionGroup = function (type, fn) {
     return this;
 };
 
-ArrayQuery.prototype.concat = function (arr) {
+LazyArray.prototype.concat = function (arr) {
     return this.addConditionGroup(ARRAY_CONCAT, function (result) {
         return result.concat(arr);
     });
 };
 
-ArrayQuery.prototype.reduce = function (fn, first) {
+LazyArray.prototype.reduce = function (fn, first) {
     return this.addConditionGroup(ARRAY_REDUCE, function (result) {
         return result.reduce(fn, first);
     });
 };
 
-ArrayQuery.prototype.reduceRight = function (fn, first) {
+LazyArray.prototype.reduceRight = function (fn, first) {
     return this.addConditionGroup(ARRAY_REDUCE, function (result) {
         return result.reduceRight(fn, first);
     });
 };
 
-ArrayQuery.prototype.remove = function (key, val) {
+LazyArray.prototype.remove = function (key, val) {
     return this.addConditionGroup(ARRAY_REMOVE, function (result) {
         return remove(result, key, val);
     });
 };
 
-ArrayQuery.prototype.find = ArrayQuery.prototype.first = function (key, val) {
+LazyArray.prototype.find = LazyArray.prototype.first = function (key, val) {
     this.filter(key, val);
     this.conditions[this.conditions.length - 2] = ARRAY_FIRST;
     return this.toJSON();
 };
 
-ArrayQuery.prototype.toArray = ArrayQuery.prototype.toJSON = function () {
+LazyArray.prototype.toArray = LazyArray.prototype.toJSON = function () {
     var result = this.array;
     var conditionGroup;
     var arr;
@@ -635,5 +635,5 @@ ArrayQuery.prototype.toArray = ArrayQuery.prototype.toJSON = function () {
 };
 
 export function array(arr) {
-    return new ArrayQuery(arr);
+    return new LazyArray(arr);
 }

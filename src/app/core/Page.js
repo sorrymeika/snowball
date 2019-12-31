@@ -1,7 +1,7 @@
 import { IPage, PageLifecycleDelegate } from '../types';
 import { Model, observable, autorun } from '../../vm';
 import { store, copyProperties } from '../../utils';
-import { EventEmitter, createAsyncEmitter, createEmitter } from '../../core/event';
+import { EventEmitter, createAsyncEmitter, createEmitter, EventDelegate } from '../../core/event';
 
 const defaultTitle = document.title;
 
@@ -69,23 +69,34 @@ function createPageCtx(page, ctx) {
                 messageChannel.trigger(...args);
             }
         },
-        emitter(type) {
-            return (...args) => {
-                messageChannel.trigger(type, ...args);
-            };
+        emitter: {
+            writable: false,
+            value(type) {
+                return (...args) => {
+                    messageChannel.trigger(type, ...args);
+                };
+            }
+        },
+        delegate: {
+            writable: false,
+            value(eventEmitter, type, listener) {
+                const delegate = new EventDelegate(eventEmitter, type, listener);
+                page.on('destroy', delegate.off);
+                return delegate;
+            }
         },
         createEvent: {
             writable: false,
-            value: () => {
-                const event = createEmitter();
+            value: (init) => {
+                const event = createEmitter(init);
                 page.on('destroy', event.off);
                 return event;
             }
         },
         createAsyncEvent: {
             writable: false,
-            value: () => {
-                const event = createAsyncEmitter();
+            value: (init) => {
+                const event = createAsyncEmitter(init);
                 page.on('destroy', event.off);
                 return event;
             }

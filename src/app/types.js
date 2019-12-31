@@ -166,12 +166,18 @@ type IEmitter = { once(): () => void, off(): never, middleware(): never };
 export type Emitter = Function & { emit(): Event } & IEmitter;
 export type AsyncEmitter = Function & { emit(): Promise<Event> } & IEmitter;
 
+type IEventDelegate = {
+    on(): IEventDelegate,
+    off(): IEventDelegate
+}
+
 export type PageCtx = {
     location: Location,
     page: IPage,
     on(): PageCtx,
     off(): PageCtx,
     emit(): any,
+    delegate(): IEventDelegate,
     createEvent(): Emitter,
     createAsyncEvent(): AsyncEmitter,
     autorun(): () => any,
