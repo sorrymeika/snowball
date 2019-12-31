@@ -5,7 +5,6 @@ import { getApplicationCtx } from "../core/createApplication";
 import { registerRoutes } from "../core/registerRoutes";
 import Activity from "../core/Activity";
 import { ACTIVITY_FACTORY } from "../core/ActivityManager";
-import { IS_CONTROLLER } from "./symbols";
 import { getAutowiredCtx, isAutowired } from "./autowired";
 import { buildConfiguration } from "./configuration";
 
@@ -102,7 +101,6 @@ export function controller(cfg: ControllerCfg) {
                 return getApplicationCtx();
             }
         });
-        Controller.prototype[IS_CONTROLLER] = true;
         Controller.prototype['[[ConnectModel]]'] = false;
 
         Controller[ACTIVITY_FACTORY] = createActivityFactory(Controller, componentClass, config, options);
