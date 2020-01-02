@@ -20,7 +20,7 @@ export function buildConfiguration(configurations) {
                     return new ClassType(this.ctx, this.app);
                 } else {
                     // eslint-disable-next-line new-cap
-                    return ClassType(this._autowiredFrom, this.ctx, this.app);
+                    return ClassType.call(this._autowiredFrom, this.ctx, this.app);
                 }
             }
         });
