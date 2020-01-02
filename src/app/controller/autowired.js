@@ -22,7 +22,7 @@ export function isAutowired(proto, name) {
     return !!proto[AUTOWIRED_PROPS] && !!proto[AUTOWIRED_PROPS][name];
 }
 
-function getAutowiredConfiguration(classInstance) {
+function getAutowiredConfiguration(classInstance, fn) {
     const { app, ctx } = classInstance;
     let config = ctx._autowiredConfig;
     if (!config) {
@@ -34,39 +34,53 @@ function getAutowiredConfiguration(classInstance) {
         config.ctx = ctx;
         config.app = app;
     }
-    return config;
+    config._autowiredFrom = classInstance;
+    pageCtx = classInstance.ctx;
+
+    const res = fn(config);
+
+    pageCtx = null;
+    config._autowiredFrom = null;
+
+    return res;
 }
 
-function wire(classInstance, propName, resourceName) {
-    const config = getAutowiredConfiguration(classInstance);
-    pageCtx = classInstance.ctx;
-    const wiredName = propName.replace(/^[_]/g, '') + '@' + resourceName;
-    let val = config[wiredName];
-    if (val === undefined) {
-        val = config[wiredName] = config[resourceName];
-    }
-    if (val === undefined)
-        throw new Error(
-            "autowired: Dependency '" + resourceName + "' is not available! Make sure it is provided by Configuration!"
-        );
-    pageCtx = null;
-    return val;
+function wire(classInstance, propName, resourceName, options) {
+    return getAutowiredConfiguration(classInstance, (config) => {
+        let val;
+
+        const wiredName = propName.replace(/^[_]/g, '') + '@' + resourceName;
+        val = config[wiredName];
+        if (val === undefined) {
+            val = config[wiredName] = config[resourceName];
+        }
+        if (val === undefined)
+            throw new Error(
+                "autowired: Dependency '" + resourceName + "' is not available! Make sure it is provided by Configuration!"
+            );
+
+        return val;
+    });
 }
 
 function defineAutowired(proto) {
     Object.defineProperty(proto, AUTOWIRED_METHOD, {
         configurable: true,
-        value(propName, resourceName) {
+        value(propName, resourceName, options) {
             const proto = this.constructor.prototype;
             if (proto === this) {
                 return;
             }
-            return wire(this, propName, resourceName);
+            return wire(this, propName, resourceName, options);
         }
     });
 }
 
-function configAutowired(proto, resourceName, name, descriptor, args) {
+function configAutowired(proto, resourceName, name, descriptor, options) {
+    if (typeof descriptor.get === 'function' || descriptor.set === 'function') {
+        throw new Error('can not decorate `get` or `set` property!');
+    }
+
     const autowiredProps = Object.prototype.hasOwnProperty.call(proto, AUTOWIRED_PROPS)
         ? proto[AUTOWIRED_PROPS]
         : (proto[AUTOWIRED_PROPS] = proto[AUTOWIRED_PROPS] ? { ...proto[AUTOWIRED_PROPS] } : {});
@@ -79,12 +93,12 @@ function configAutowired(proto, resourceName, name, descriptor, args) {
 
     return {
         get() {
-            return this[AUTOWIRED_METHOD](name, resourceName);
+            return this[AUTOWIRED_METHOD](name, resourceName, options);
         }
     };
 }
 
-export function autowired<T>(proto, name, descriptor, args): T {
+export function autowired<T>(proto, name, descriptor): T {
     if (wiringInstance) {
         if (isString(proto)) {
             const resourceName = proto;
@@ -98,9 +112,80 @@ export function autowired<T>(proto, name, descriptor, args): T {
 
     if (isString(proto)) {
         const resourceName = proto;
-        return (target, name, descriptor, args) => {
-            return configAutowired(target, resourceName, name, descriptor, args);
+        return (target, name, descriptor) => {
+            return configAutowired(target, resourceName, name, descriptor);
         };
     }
-    return configAutowired(proto, name.replace(/^[_]/g, ''), name, descriptor, args);
+    return configAutowired(proto, name.replace(/^[_]/g, ''), name, descriptor);
+}
+
+function wireParam(classInstance, resourceName, options) {
+    return getAutowiredConfiguration(classInstance, (config) => {
+        if (resourceName in config.__params__) {
+            return config.__params__[resourceName];
+        } else {
+            const paramVal = resourceName in pageCtx.location.params
+                ? pageCtx.location.params[resourceName]
+                : pageCtx.location.query[resourceName];
+            if (paramVal == null) {
+                return 'defaultValue' in options
+                    ? options.defaultValue
+                    : options.type === 'number'
+                        ? 0
+                        : options.type === 'string'
+                            ? ''
+                            : paramVal;
+            } else if (options.type === 'string') {
+                return paramVal;
+            } else if (options.type === 'number' || /^-?\d+(\.\d+)?$/.test(paramVal)) {
+                return Number(paramVal) || 0;
+            } else if (options.type === 'bool' || options.type === 'boolean') {
+                return paramVal && paramVal != 'false' && paramVal != '0';
+            } else if (paramVal === 'true') {
+                return true;
+            } else if (paramVal === 'false') {
+                return false;
+            } else if (options.type === 'json') {
+                try {
+                    return JSON.parse(paramVal);
+                } catch (error) {
+                    return null;
+                }
+            } else {
+                return paramVal;
+            }
+        }
+    });
+}
+
+function decorateParam(proto, resourceName, propName, descriptor, options) {
+    if (typeof descriptor.get === 'function' || descriptor.set === 'function') {
+        throw new Error('can not decorate `get` or `set` property!');
+    }
+
+    return {
+        writable: true,
+        configurable: true,
+        initializer() {
+            return wireParam(this, resourceName, options);
+        }
+    };
+}
+
+export function param<T>(proto, propName, descriptor): T {
+    if (isString(proto)) {
+        const resourceName = proto;
+        return (target, name, descriptor) => {
+            return decorateParam(target, resourceName, name, descriptor, {
+                type: 'any',
+                ...propName,
+                autowiredType: 'param'
+            });
+        };
+    }
+
+    return decorateParam(proto, propName.replace(/^[_]/g, ''), propName, descriptor, {
+        type: 'any',
+        autowiredType: 'param',
+    });
 }

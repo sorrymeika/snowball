@@ -16,7 +16,7 @@ import { observable } from './observable';
 import { observeProp, unobserveProp } from './methods/observeProp';
 import compute from './operators/compute';
 import { SymbolFrom } from './symbols';
-import { getRelObserver, getRelObserverOrSelf } from './methods/getRelObserver';
+import { getRelObserver, getRelObserverOrSelf, neverConnectToModel } from './methods/getRelObserver';
 
 const toString = Object.prototype.toString;
 const RE_QUERY = /(?:^|\.)([_a-zA-Z0-9]+)(\[(?:'(?:\\'|[^'])*'|"(?:\\"|[^"])*"|[^\]])+\](?:\[[+-]?\d*\])?)?/g;
@@ -31,6 +31,8 @@ export class Model extends Observer {
             return value;
         }
     }
+
+    static neverConnectToModel = neverConnectToModel;
 
     constructor(attributes, key?, parent?) {
         if (process.env.NODE_ENV !== 'production') {
@@ -412,7 +414,6 @@ export class Model extends Observer {
 
 Model.prototype[TYPEOF] = 'Model';
 
-
 function createAttribute(model, name, value) {
     return model.constructor.createAttribute(model, name, value);
 }
@@ -424,6 +425,7 @@ function parseChanges(attrs) {
         .map(name => ':' + name)
         .join(' change');
 }
+
 
 if (process.env.NODE_ENV === 'development') {
     setTimeout(() => {

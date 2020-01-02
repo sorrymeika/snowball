@@ -1,5 +1,5 @@
 import { isFunction, isString, getOwnPropertyDescriptors } from "../../utils";
-import { Reaction } from "../../vm";
+import { Reaction, Model } from "../../vm";
 import { ActivityOptions } from '../types';
 import { getApplicationCtx } from "../core/createApplication";
 import { registerRoutes } from "../core/registerRoutes";
@@ -37,7 +37,7 @@ type ControllerCfg = {
  * @param {*} cfg.component 页面组件
  * @param {*} [cfg.route] 路由，非必填，尽量将路由收敛到 routes.js中
  * @param {*} [cfg.configuration] 配置项
- * @param {*} [cfg.options]
+ * @param {ActivityOptions} [cfg.options]
  * @description
  * Controller类生命周期
  *     onInit: 页面第一次打开，且动画开始前触发
@@ -101,7 +101,7 @@ export function controller(cfg: ControllerCfg) {
                 return getApplicationCtx();
             }
         });
-        Controller.prototype['[[ConnectModel]]'] = false;
+        Model.neverConnectToModel(Controller.prototype);
 
         Controller[ACTIVITY_FACTORY] = createActivityFactory(Controller, componentClass, config, options);
 

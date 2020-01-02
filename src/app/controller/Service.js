@@ -2,6 +2,7 @@
 import { initWithContext } from "./controller";
 import { getApplicationCtx } from "../core/createApplication";
 import { PageCtx } from "../types";
+import { Model } from "../../vm";
 
 export class Service {
     constructor() {
@@ -21,4 +22,4 @@ export class Service {
     }
 }
 
-Service.prototype['[[ConnectModel]]'] = false;
+Model.neverConnectToModel(Service.prototype);

@@ -4,8 +4,10 @@ export function buildConfiguration(configurations) {
     buildConf(configurations, result);
 
     const modules = {};
+    const parameters = {};
     for (let conf of result) {
         Object.assign(modules, conf.modules);
+        Object.assign(parameters, conf.parameters);
     }
 
     const proto = {};
@@ -18,8 +20,19 @@ export function buildConfiguration(configurations) {
                     return new ClassType(this.ctx, this.app);
                 } else {
                     // eslint-disable-next-line new-cap
-                    return ClassType(this.ctx, this.app);
+                    return ClassType(this._autowiredFrom, this.ctx, this.app);
                 }
+            }
+        });
+    }
+
+    const params = proto.__params__ = {};
+    for (let name in parameters) {
+        const paramType = parameters[name];
+        Object.defineProperty(params, name, {
+            get() {
+                const { __configuration__ } = this;
+                return paramType.call(__configuration__._autowiredFrom, __configuration__.ctx, __configuration__.app);
             }
         });
     }
@@ -27,6 +40,7 @@ export function buildConfiguration(configurations) {
     function Configuration(ctx, app) {
         this.ctx = ctx;
         this.app = app;
+        this.__params__.__configuration__ = this;
     }
     Configuration.prototype = proto;
     return Configuration;
@@ -35,20 +49,21 @@ export function buildConfiguration(configurations) {
 function buildConf(configurations, result) {
     for (let i = 0; i < configurations.length; i++) {
         const conf = configurations[i];
-        if (conf.imports && conf.imports.length) {
-            buildConf(conf.imports, result);
+        if (conf.dependencies && conf.dependencies.length) {
+            buildConf(conf.dependencies, result);
         }
         result.add(conf);
     }
 }
 
 class Configuration {
-    constructor({ imports, modules }) {
-        this.imports = imports ? [].concat(imports) : [];
+    constructor({ dependencies, modules, parameters }) {
+        this.dependencies = dependencies ? [].concat(dependencies) : [];
         this.modules = modules;
+        this.parameters = parameters || {};
     }
 }
 
-export function configuration({ imports, modules }) {
-    return new Configuration({ imports, modules });
+export function configuration({ dependencies, modules, parameters }) {
+    return new Configuration({ dependencies, modules, parameters });
 }
