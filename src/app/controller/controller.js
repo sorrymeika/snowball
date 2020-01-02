@@ -147,9 +147,9 @@ function createActivityFactory(Controller, componentClass, config, options) {
 
             if (injectablePropNames.length) {
                 const bind = (fn, ctx) => {
-                    fn = fn.bind(ctx);
-                    fn._cb = fn;
-                    return fn;
+                    const bindedFn = fn.bind(ctx);
+                    bindedFn._cb = fn;
+                    return bindedFn;
                 };
                 const reaction = new Reaction(() => {
                     reaction.track(() => {

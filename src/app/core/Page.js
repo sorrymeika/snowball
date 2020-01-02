@@ -6,130 +6,64 @@ import { EventEmitter, createAsyncEmitter, createEmitter, EventDelegate } from '
 const defaultTitle = document.title;
 
 const extentions = [];
-const pageCtxExtentions = [];
 
-function createPageCtx(page, ctx) {
-    const messageChannel = new EventEmitter();
+class PageCtx extends EventEmitter {
+    constructor(page, app) {
+        super();
 
-    const pageCtx = Object.create({}, {
-        app: {
-            get() {
-                return ctx;
-            }
-        },
-        navigation: {
-            get() {
-                return ctx.navigation;
-            }
-        },
-        service: {
-            get() {
-                return ctx.service;
-            }
-        },
-        location: {
-            get() {
-                return page.location;
-            }
-        },
-        page: {
-            get() {
-                return page;
-            }
-        },
-        on: {
-            writable: false,
-            value: (type, fn) => {
-                messageChannel.on(type, fn);
-                return pageCtx;
-            }
-        },
-        off: {
-            writable: false,
-            value: (...args) => {
-                messageChannel.off(...args);
-                return pageCtx;
-            }
-        },
-        once: {
-            writable: false,
-            value: (type, callback) => {
-                function once(e) {
-                    messageChannel.off(name, once);
-                    return callback.call(pageCtx, e);
-                }
-                once._cb = callback;
-                messageChannel.on(type, once);
-                return pageCtx;
-            }
-        },
-        emit: {
-            writable: false,
-            value: (...args) => {
-                messageChannel.trigger(...args);
-            }
-        },
-        emitter: {
-            writable: false,
-            value(type) {
-                return (...args) => {
-                    messageChannel.trigger(type, ...args);
-                };
-            }
-        },
-        delegate: {
-            writable: false,
-            value(eventEmitter, type, listener) {
-                const delegate = new EventDelegate(eventEmitter, type, listener);
-                page.on('destroy', delegate.off);
-                return delegate;
-            }
-        },
-        createEvent: {
-            writable: false,
-            value: (init) => {
-                const event = createEmitter(init);
-                page.on('destroy', event.off);
-                return event;
-            }
-        },
-        createAsyncEvent: {
-            writable: false,
-            value: (init) => {
-                const event = createAsyncEmitter(init);
-                page.on('destroy', event.off);
-                return event;
-            }
-        },
-        autorun: {
-            writable: false,
-            value: (fn) => {
-                const dispose = autorun(fn);
-                page.on('destroy', dispose);
-                return dispose;
-            }
-        },
-        useObservable: {
-            writable: false,
-            value: (value) => {
-                const observer = observable(value);
-                page.on('destroy', () => observer.destroy());
-                return observer;
-            }
-        },
-        autoDispose: {
-            writable: false,
-            value: (fn) => {
-                page.on('destroy', fn);
-                return fn;
-            }
-        }
-    });
+        this.page = page;
+        this.app = app;
+    }
 
-    copyProperties(pageCtx, pageCtxExtentions.reduce((res, fn) => Object.assign(res, fn(page, pageCtx)), {}));
+    get navigation() {
+        return this.app.navigation;
+    }
+
+    get location() {
+        return this.page.location;
+    }
+
+    delegate(eventEmitter, type, listener) {
+        const delegate = new EventDelegate(eventEmitter, type, listener);
+        this.page.on('destroy', delegate.off);
+        return delegate;
+    }
+
+    createEmitter(init) {
+        const event = createEmitter(init);
+        this.page.on('destroy', event.off);
+        return event;
+    }
+
+    createAsyncEmitter(init) {
+        const event = createAsyncEmitter(init);
+        this.page.on('destroy', event.off);
+        return event;
+    }
+
+    autorun(fn) {
+        const dispose = autorun(fn);
+        this.page.on('destroy', dispose);
+        return dispose;
+    }
+
+    useObservable(value) {
+        const observer = observable(value);
+        this.page.on('destroy', () => observer.destroy());
+        return observer;
+    }
+
+    autoDispose(fn) {
+        this.page.on('destroy', fn);
+        return fn;
+    }
+}
+
+function createPageCtx(page, app) {
+    const pageCtx = new PageCtx(page, app);
 
     page.on('destroy', () => {
-        messageChannel.off();
+        pageCtx.off();
     });
 
     return pageCtx;
@@ -157,8 +91,8 @@ export class Page extends EventEmitter implements IPage {
                 writable: false
             });
         },
-        ctx(func) {
-            pageCtxExtentions.push(func);
+        ctx(props) {
+            copyProperties(PageCtx.prototype, props);
         }
     }
 

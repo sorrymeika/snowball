@@ -35,19 +35,24 @@ const currentCtxProperty = {
     writable: false
 };
 
-export const ctx = Object.create(EventEmitter.prototype, {
+export const ctx = new EventEmitter();
+
+Object.defineProperties(ctx, {
     currentCtx: currentCtxProperty,
     current: currentCtxProperty,
-    createEvent: {
+    createEmitter: {
         value: createEmitter,
         writable: false
     },
-    createAsyncEvent: {
+    createAsyncEmitter: {
         value: createAsyncEmitter,
         writable: false
     },
+    emit: {
+        value: ctx.trigger.bind(ctx),
+        writable: false
+    },
 });
-ctx.emit = ctx.trigger.bind(ctx);
 
 function extendCtx(extendFn) {
     const descriptors = getOwnPropertyDescriptors(extendFn(ctx));

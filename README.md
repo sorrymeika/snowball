@@ -264,8 +264,8 @@ class TypeUIService extends Service {
     @observable subTypes = [];
 
     // 创建事件
-    onInit = this.ctx.createEvent();
-    onTypeChange = this.ctx.createEvent();
+    onInit = this.ctx.createEmitter();
+    onTypeChange = this.ctx.createEmitter();
 
     constructor() {
         this.onTypeChange((typeId) => this.changeType(typeId));
@@ -641,13 +641,13 @@ class UserService extends Service {
 }
 ```
 
-### `ctx.createEvent` 
+### `ctx.createEmitter` 
 
 * 创建页面级事件
 
 ```js
 
-this.onClick = this.ctx.createEvent();
+this.onClick = this.ctx.createEmitter();
 
 this.onClick((data, event) => {
     console.log(data);

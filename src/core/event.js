@@ -139,6 +139,12 @@ const EventEmitterProto = {
             }
         }
         return this;
+    },
+
+    emitter(type) {
+        return (...args) => {
+            this.trigger(type, ...args);
+        };
     }
 };
 
@@ -158,13 +164,7 @@ function createEmitterFn(extend) {
 
         const emitter = (fn) => {
             if (typeof fn === 'function') {
-                funcs.push(fn);
-                return () => {
-                    const index = funcs.indexOf(fn);
-                    if (index !== -1) {
-                        funcs.splice(index, 1);
-                    }
-                };
+                emitter.on(fn);
             } else {
                 return emitter.emit(fn);
             }
@@ -174,6 +174,16 @@ function createEmitterFn(extend) {
 
         const props = extend(middlewares, funcs);
         Object.assign(emitter, props);
+
+        emitter.on = (fn) => {
+            funcs.push(fn);
+            return () => {
+                const index = funcs.indexOf(fn);
+                if (index !== -1) {
+                    funcs.splice(index, 1);
+                }
+            };
+        };
 
         emitter.middleware = (fn) => {
             middlewares.push(fn);
@@ -346,6 +356,9 @@ export function EventDelegate(eventEmitter, type, listener) {
     }
     return delegate;
 }
+
+EventDelegate.create = EventDelegate;
+
 
 // var event = new EventEmitter();
 

@@ -22,9 +22,9 @@ interface IScrollViewProps {
  */
 class ScrollHandler extends Service {
 
-    onInit = this.ctx.createEvent();
-    onDestroy = this.ctx.createEvent();
-    _onScrollToBottom = this.ctx.createEvent();
+    onInit = this.ctx.createEmitter();
+    onDestroy = this.ctx.createEmitter();
+    _onScrollToBottom = this.ctx.createEmitter();
 
     constructor(options) {
         super();

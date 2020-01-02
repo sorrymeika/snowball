@@ -19,7 +19,6 @@ export function buildConfiguration(configurations) {
                 if (ClassType.prototype) {
                     return new ClassType(this.ctx, this.app);
                 } else {
-                    // eslint-disable-next-line new-cap
                     return ClassType.call(this._autowiredFrom, this.ctx, this.app);
                 }
             }
