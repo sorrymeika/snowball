@@ -59,13 +59,13 @@ export function makeComponentReacitve(componentClass) {
 
 function createInjector(grabDepsFn, componentClass) {
     const _isStateless = isStateless(componentClass);
-    const wrappedComponent = componentClass;
+    const WrappedComponent = componentClass;
 
     if (!_isStateless) {
         componentClass = observer(componentClass);
     }
 
-    const InjectHocRef = makeStatelessComponentReacitve((props, forwardRef) => {
+    const InjectHocRef = React.forwardRef(makeStatelessComponentReacitve((props, forwardRef) => {
         const context = useContext(PageContext);
         const [injector] = useState({
             factoryInstances: {}
@@ -81,9 +81,9 @@ function createInjector(grabDepsFn, componentClass) {
             return createElement(componentClass, props);
         }
         return componentClass(props);
-    });
+    }));
 
-    InjectHocRef.wrappedComponent = wrappedComponent;
+    InjectHocRef.WrappedComponent = WrappedComponent;
     InjectHocRef.$$isInjector = true;
 
     return InjectHocRef;
@@ -95,11 +95,16 @@ function compose(grabDepsFns) {
         const newProps = {};
         doWire(dependencies, () => {
             grabDepsFns.forEach(function (grabDepsFn, i) {
-                let additionalProps = (injector['REDUCER_' + i] || grabDepsFn)(dependencies, nextProps);
+                const processerName = 'PROCESSER_' + i;
+                let additionalProps = !injector[processerName]
+                    ? grabDepsFn(dependencies, nextProps)
+                    : injector[processerName](nextProps);
+
                 if (typeof additionalProps === 'function') {
-                    injector['REDUCER_' + i] = additionalProps;
+                    injector[processerName] = additionalProps;
                     additionalProps = additionalProps(dependencies, nextProps);
                 }
+
                 if (additionalProps) {
                     for (let key in additionalProps) {
                         // if (key in nextProps)
@@ -143,7 +148,9 @@ function mapDepsToProps(dependencies, nextProps, injector, depName, mapName = de
     }
 
     doWire(dependencies, () => {
-        nextProps[mapName] = autowired(depName);
+        nextProps[mapName] = dependencies[depName] !== undefined
+            ? dependencies[depName]
+            : autowired(depName);
     });
 }
 
@@ -199,11 +206,11 @@ export function inject(deps, injection) {
             deps.forEach(function (depName, i) {
                 mapDepsToProps(dependencies, depProps, injector, depName);
             });
-            return injection(deps.map(name => depProps[name]));
+            return injection(deps.map(name => depProps[name]), nextProps);
         };
     } else {
         grabDepsFn = renameProps(deps);
     }
 
-    return (componentClass) => createInjector(grabDepsFn, componentClass);
+    return (componentClass): Function & { WrappedComponent: any } => createInjector(grabDepsFn, componentClass);
 }

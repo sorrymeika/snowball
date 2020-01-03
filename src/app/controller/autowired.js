@@ -45,12 +45,10 @@ function getAutowiredConfiguration(classInstance, fn) {
     return res;
 }
 
-let instanceId = 0;
-
 function wire(classInstance, propName, resourceName, options) {
     return getAutowiredConfiguration(classInstance, (config) => {
         let val;
-        let wiredName = '#' + propName.replace(/^[_]/g, '') + '@' + resourceName;
+        let wiredName = ('#' + propName.replace(/^[_]/g, '') + '@' + resourceName).toLowerCase();
         let callerInstance;
 
         if (options && options.level === 'instance') {
@@ -110,10 +108,7 @@ function configAutowired(proto, resourceName, name, descriptor, options) {
 export function autowired<T>(resourceName, options?: { level: 'ctx' | 'instance' }, descriptor?): T {
     if (wiringInstance) {
         if (isString(resourceName)) {
-            if (wiringInstance[resourceName]) {
-                return wiringInstance[resourceName];
-            }
-            return wire(wiringInstance, resourceName, resourceName);
+            return wire(wiringInstance, resourceName, resourceName, options);
         }
         return null;
     }
