@@ -148,6 +148,8 @@ const EventEmitterProto = {
     }
 };
 
+EventEmitterProto.emit = EventEmitterProto.trigger;
+
 export function EventEmitter() {
 }
 EventEmitter.prototype = EventEmitterProto;
