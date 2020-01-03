@@ -45,19 +45,28 @@ function getAutowiredConfiguration(classInstance, fn) {
     return res;
 }
 
+let instanceId = 0;
+
 function wire(classInstance, propName, resourceName, options) {
     return getAutowiredConfiguration(classInstance, (config) => {
         let val;
+        let wiredName = '#' + propName.replace(/^[_]/g, '') + '@' + resourceName;
+        let callerInstance;
 
-        const wiredName = propName.replace(/^[_]/g, '') + '@' + resourceName;
-        val = config[wiredName];
-        if (val === undefined) {
-            val = config[wiredName] = config[resourceName];
+        if (options && options.level === 'instance') {
+            callerInstance = classInstance;
+        } else {
+            callerInstance = config;
         }
-        if (val === undefined)
-            throw new Error(
-                "autowired: Dependency '" + resourceName + "' is not available! Make sure it is provided by Configuration!"
-            );
+
+        val = callerInstance[wiredName];
+        if (val === undefined) {
+            val = callerInstance[wiredName] = callerInstance[resourceName];
+            if (val === undefined)
+                throw new Error(
+                    "autowired: Dependency '" + resourceName + "' is not available! Make sure it is provided by Configuration!"
+                );
+        }
 
         return val;
     });
@@ -98,25 +107,30 @@ function configAutowired(proto, resourceName, name, descriptor, options) {
     };
 }
 
-export function autowired<T>(proto, name, descriptor): T {
+export function autowired<T>(resourceName, options?: { level: 'ctx' | 'instance' }, descriptor?): T {
     if (wiringInstance) {
-        if (isString(proto)) {
-            const resourceName = proto;
+        if (isString(resourceName)) {
             if (wiringInstance[resourceName]) {
                 return wiringInstance[resourceName];
             }
             return wire(wiringInstance, resourceName, resourceName);
         }
-        return proto;
+        return null;
     }
 
-    if (isString(proto)) {
-        const resourceName = proto;
+    if (isString(resourceName)) {
         return (target, name, descriptor) => {
-            return configAutowired(target, resourceName, name, descriptor);
+            return configAutowired(target, resourceName, name, descriptor, {
+                level: 'ctx',
+                ...options,
+                autowiredType: 'autowired'
+            });
         };
     }
-    return configAutowired(proto, name.replace(/^[_]/g, ''), name, descriptor);
+    return configAutowired(resourceName, options.replace(/^[_]/g, ''), options, descriptor, {
+        level: 'ctx',
+        autowiredType: 'autowired'
+    });
 }
 
 function wireParam(classInstance, resourceName, options) {

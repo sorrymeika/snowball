@@ -164,7 +164,7 @@ function createEmitterFn(extend) {
 
         const emitter = (fn) => {
             if (typeof fn === 'function') {
-                emitter.on(fn);
+                return emitter.on(fn);
             } else {
                 return emitter.emit(fn);
             }
