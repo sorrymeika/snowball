@@ -211,76 +211,7 @@ export class Model extends Observer {
 
         state.data = attributes;
         state.setting = true;
-
-        const changes = [];
-        const observableProps = state.observableProps;
-        const setAttr = (attr) => {
-            const origin = observableProps[attr] || attributes[attr];
-            let value = getRelObserverOrSelf(attrs[attr]);
-
-            if (origin !== value) {
-                if (value == null) {
-                    changes.push(attr, value, attributes[attr]);
-                    attributes[attr] = observableProps[attr] = value;
-                    if (isObservable(origin)) {
-                        disconnect(this, origin);
-                    }
-                    isChange = true;
-                } else if (isObservable(value)) {
-                    changes.push(attr, value.state.data, attributes[attr]);
-                    observableProps[attr] = value;
-                    attributes[attr] = value.state.data;
-
-                    if (isObservable(origin)) {
-                        disconnect(this, origin);
-                    }
-                    connect(this, value, attr);
-
-                    isChange = true;
-                } else if (isModel(origin)) {
-                    if (origin.state.facade && !isPlainObject(value)) {
-                        throw new Error('不可改变' + attr + '的数据类型');
-                    }
-                    origin.set(renew || renewChild, value);
-                    attributes[attr] = origin.state.data;
-
-                    if (origin.state.changed) isChange = true;
-                } else if (isCollection(origin)) {
-                    if (!isArray(value)) {
-                        if (value == null) {
-                            value = [];
-                        } else {
-                            throw new Error('[Array to ' + (typeof value) + ' error]不可改变' + attr + '的数据类型');
-                        }
-                    }
-
-                    origin.set(value);
-                    attributes[attr] = origin.state.data;
-
-                    if (origin.state.changed) isChange = true;
-                } else if (isObservable(origin)) {
-                    origin.set(value);
-                    attributes[attr] = origin.state.data;
-
-                    if (origin.state.changed) isChange = true;
-                } else if (isThenable(value)) {
-                    value.then(((attr, res) => {
-                        this.set(renew, attr, res);
-                    }).bind(this, attr));
-                } else {
-                    value = createAttribute(this, attr, value);
-                    if (isObservable(value)) {
-                        changes.push(attr, value.state.data, attributes[attr]);
-                        observableProps[attr] = value;
-                        attributes[attr] = value.state.data;
-                    } else {
-                        changes.push(attr, value, attributes[attr]);
-                        attributes[attr] = value;
-                    }
-                    isChange = true;
-                }
-            }
-        };
+        const changes = state.changes = [];
 
         for (let attr in attrs) {
             if (attr === 'constructor' && typeof attrs[attr] === 'function') {
@@ -289,11 +220,13 @@ export class Model extends Observer {
             if (attr === '__proto__' || attr === 'withMutations' || attr === SymbolFrom) {
                 continue;
             }
-            setAttr(attr);
+
+            let newValue = getRelObserverOrSelf(attrs[attr]);
+            isChange |= setAttribute(this, attr, newValue, renew, renewChild);
         }
 
         for (let i = 0; i < removeKeys.length; i++) {
-            setAttr(removeKeys[i]);
+            isChange |= setAttribute(this, removeKeys[i], undefined, renew, renewChild);
         }
 
         if (isChange) {
@@ -418,6 +351,82 @@ function createAttribute(model, name, value) {
     return model.constructor.createAttribute(model, name, value);
 }
 
+function setAttribute(model, attr, newValue, renew, renewChild) {
+    const state = model.state;
+    const { data: attributes, observableProps, changes } = state;
+    const oldValue = observableProps[attr] || attributes[attr];
+
+    if (oldValue !== newValue) {
+        if (newValue == null) {
+            changes.push(attr, newValue, attributes[attr]);
+            attributes[attr] = observableProps[attr] = newValue;
+            if (isObservable(oldValue)) {
+                disconnect(model, oldValue);
+            }
+            return true;
+        } else if (isObservable(newValue)) {
+            changes.push(attr, newValue.state.data, attributes[attr]);
+            observableProps[attr] = newValue;
+            attributes[attr] = newValue.state.data;
+
+            if (isObservable(oldValue)) {
+                disconnect(model, oldValue);
+            }
+            connect(model, newValue, attr);
+            return true;
+        } else if (isModel(oldValue)) {
+            if (oldValue.state.facade && !isPlainObject(newValue)) {
+                throw new Error('不可改变' + attr + '的数据类型');
+            }
+            oldValue.set(renew || renewChild, newValue);
+            attributes[attr] = oldValue.state.data;
+
+            if (oldValue.state.changed) {
+                return true;
+            }
+        } else if (isCollection(oldValue)) {
+            if (!isArray(newValue)) {
+                if (newValue == null) {
+                    newValue = [];
+                } else {
+                    throw new Error('[Array to ' + (typeof newValue) + ' error]不可改变' + attr + '的数据类型');
+                }
+            }
+
+            oldValue.set(newValue);
+            attributes[attr] = oldValue.state.data;
+
+            if (oldValue.state.changed) {
+                return true;
+            }
+        } else if (isObservable(oldValue)) {
+            oldValue.set(newValue);
+            attributes[attr] = oldValue.state.data;
+
+            if (oldValue.state.changed) {
+                return true;
+            }
+        } else if (isThenable(newValue)) {
+            newValue.then(((attr, res) => {
+                model.set(renew, attr, res);
+            }).bind(model, attr));
+        } else {
+            newValue = createAttribute(model, attr, newValue);
+            if (isObservable(newValue)) {
+                changes.push(attr, newValue.state.data, attributes[attr]);
+                observableProps[attr] = newValue;
+                attributes[attr] = newValue.state.data;
+            } else {
+                changes.push(attr, newValue, attributes[attr]);
+                attributes[attr] = newValue;
+            }
+            return true;
+        }
+    }
+
+    return false;
+}
+
 function parseChanges(attrs) {
     return "change" + attrs
         .split(/\s+/)
@@ -425,7 +434,6 @@ function parseChanges(attrs) {
         .map(name => ':' + name)
         .join(' change');
 }
-
 
 if (process.env.NODE_ENV === 'development') {
     setTimeout(() => {
@@ -476,8 +484,15 @@ if (process.env.NODE_ENV === 'development') {
         console.assert(model.attributes.name.id === 1, 'model.attributes.name.id must be 1, now is ' + model.attributes);
 
         model.set({
-            name: null
+            name: null,
+            id: 1
         });
         console.assert(model.attributes.name === null, 'model.attributes.name must be null, now is ' + model.attributes);
+
+        model.set(true, {
+            name: 1
+        });
+
+        console.assert(model.attributes.id === undefined, 'model.attributes.id must be undefined, now is ' + model.attributes.id);
     }, 0);
 }

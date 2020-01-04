@@ -1,5 +1,6 @@
 import { isArray, isString } from './is';
 import { castPath } from './castPath';
+import { unique } from './array';
 
 var hasOwnProperty = Object.prototype.hasOwnProperty;
 var ArrayProto = Array.prototype;
@@ -67,11 +68,17 @@ export function mixin(...mixins) {
     return Mix;
 }
 
+function createPropFilter(target) {
+    return typeof target === 'function'
+        ? (key) => !/^(prototype|name|constructor)$/.test(key)
+        : (key) => key !== 'constructor';
+}
+
 export function copyProperties(target = {}, source = {}) {
     const ownPropertyNames = Object.getOwnPropertyNames(source);
 
     ownPropertyNames
-        .filter(key => !/^(prototype|name|constructor)$/.test(key))
+        .filter(createPropFilter(target))
         .forEach(key => {
             const desc = Object.getOwnPropertyDescriptor(source, key);
             Object.defineProperty(target, key, desc);
@@ -82,7 +89,6 @@ export const getOwnPropertyDescriptors = Object.getOwnPropertyDescriptors || ((s
     const ownPropertyNames = Object.getOwnPropertyNames(source);
 
     return ownPropertyNames
-        .filter(key => !/^(prototype|name|constructor)$/.test(key))
         .reduce((result, key) => {
             const desc = Object.getOwnPropertyDescriptor(source, key);
             result[key] = desc;
@@ -109,6 +115,40 @@ export function getPropertyDescriptor(target, propertyName) {
     }
 
     return descriptor;
+}
+
+export function getPropertyDescriptors(proto) {
+    let descriptors = {};
+
+    while (1) {
+        descriptors = Object.assign(getOwnPropertyDescriptors(proto), descriptors);
+
+        const parent = Object.getPrototypeOf(proto);
+        if (parent === proto || parent === Object.prototype) {
+            break;
+        } else {
+            proto = parent;
+        }
+    }
+
+    return descriptors;
+}
+
+export function getPropertyNames(proto) {
+    let propertyNames = [];
+
+    while (1) {
+        propertyNames = propertyNames.concat(Object.getOwnPropertyNames(proto));
+
+        const parent = Object.getPrototypeOf(proto);
+        if (parent === proto || parent === Object.prototype) {
+            break;
+        } else {
+            proto = parent;
+        }
+    }
+
+    return unique(propertyNames);
 }
 
 class MixinBuilder {

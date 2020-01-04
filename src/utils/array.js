@@ -176,6 +176,31 @@ export function map(arr, key) {
     return result;
 }
 
+export function unique(arr, key) {
+    let result = [],
+        len = arr.length,
+        eq = typeof key === 'string'
+            ? (a, b) => a[key] === b[key]
+            : typeof key === 'function'
+                ? key
+                : (a, b) => (a === b);
+
+    for (let i = 0; i < len; i++) {
+        let isUnique = true;
+        for (let j = 0; j < result.length; j++) {
+            if (eq(arr[i], result[j])) {
+                isUnique = false;
+                break;
+            }
+        }
+        if (isUnique) {
+            result.push(arr[i]);
+        }
+    }
+
+    return result;
+}
+
 /**
  * 筛选数组中匹配的
  *

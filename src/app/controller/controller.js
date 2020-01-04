@@ -1,4 +1,4 @@
-import { isFunction, isString, getOwnPropertyDescriptors } from "../../utils";
+import { isFunction, isString, getOwnPropertyDescriptors, getPropertyDescriptors } from "../../utils";
 import { Reaction, Model } from "../../vm";
 import { ActivityOptions } from '../types';
 import { getApplicationCtx } from "../core/createApplication";
@@ -69,27 +69,7 @@ export function controller(cfg: ControllerCfg) {
     }
 
     return function (Controller) {
-        let proto = Controller.prototype;
-        let descriptors = {};
-
-        while (1) {
-            descriptors = Object.assign(getOwnPropertyDescriptors(proto), descriptors);
-
-            const parent = Object.getPrototypeOf(proto);
-            if (parent === proto || parent === Object.prototype) {
-                break;
-            } else {
-                proto = parent;
-            }
-        }
-
-        const injectableProps = {};
-        for (let propName in descriptors) {
-            if (isInjectableProp(propName)) {
-                injectableProps[propName] = descriptors[propName];
-            }
-        }
-        Controller[INJECTABLE_PROPS] = injectableProps;
+        Controller[INJECTABLE_PROPS] = filterInjectableProps(getPropertyDescriptors(Controller.prototype));
 
         Object.defineProperty(Controller.prototype, 'ctx', {
             get() {
@@ -130,7 +110,7 @@ function createActivityFactory(Controller, componentClass, config, options) {
         return (setState) => {
             const protoProps = Controller[INJECTABLE_PROPS];
             const injectableProps = Object.assign({}, protoProps, getOwnPropertyDescriptors(controllerInstance));
-            const injectablePropNames = [];
+            const reactivePropNames = [];
             const store = {
                 '[[Controller]]': controllerInstance
             };
@@ -140,12 +120,12 @@ function createActivityFactory(Controller, componentClass, config, options) {
                     if (isAutowired(controllerInstance, propName)) {
                         store[propName] = controllerInstance[propName];
                     } else {
-                        injectablePropNames.push(propName);
+                        reactivePropNames.push(propName);
                     }
                 }
             }
 
-            if (injectablePropNames.length) {
+            if (reactivePropNames.length) {
                 const bind = (fn, ctx) => {
                     const bindedFn = fn.bind(ctx);
                     bindedFn._cb = fn;
@@ -154,7 +134,7 @@ function createActivityFactory(Controller, componentClass, config, options) {
                 const reaction = new Reaction(() => {
                     reaction.track(() => {
                         const newState = {};
-                        injectablePropNames.forEach((propName) => {
+                        reactivePropNames.forEach((propName) => {
                             const old = store[propName];
                             let newProp = controllerInstance[propName];
                             if (old !== newProp) {
@@ -172,7 +152,7 @@ function createActivityFactory(Controller, componentClass, config, options) {
                     });
                 }, true)
                     .track(() => {
-                        injectablePropNames.forEach((propName) => {
+                        reactivePropNames.forEach((propName) => {
                             const prop = controllerInstance[propName];
                             store[propName] = typeof prop === 'function' && protoProps[propName]
                                 ? bind(prop, controllerInstance)
@@ -181,7 +161,7 @@ function createActivityFactory(Controller, componentClass, config, options) {
                     });
                 page.on('destroy', () => reaction.destroy());
 
-                injectablePropNames
+                reactivePropNames
                     .forEach((propName) => {
                         const descriptor = injectableProps[propName];
                         const newDescriptor = {
@@ -250,6 +230,16 @@ function createController(Controller, props, ctx) {
 
 
 const excludeProps = [...lifecycleNames, 'constructor', 'ctx', 'app'];
+
+function filterInjectableProps(descriptors) {
+    const injectableProps = {};
+    for (let propName in descriptors) {
+        if (isInjectableProp(propName)) {
+            injectableProps[propName] = descriptors[propName];
+        }
+    }
+    return injectableProps;
+}
 
 function isInjectableProp(propName) {
     return typeof propName === 'string' && !excludeProps.includes(propName) && /^[a-z]/.test(propName);
