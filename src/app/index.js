@@ -17,6 +17,7 @@ export { configuration } from './controller/configuration';
 export { autowired, param } from './controller/autowired';
 export { singleton } from './controller/singleton';
 export { Service } from './controller/Service';
+export { default as Module } from './controller/Module';
 
 export { inject, PageContext } from './react/inject';
 export { observer } from './react/observer';

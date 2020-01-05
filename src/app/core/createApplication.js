@@ -29,10 +29,9 @@ function beforeAppStart() {
 }
 
 const currentCtxProperty = {
-    value: () => {
+    get() {
         return application.currentActivity.page.ctx;
-    },
-    writable: false
+    }
 };
 
 export const ctx = new EventEmitter();
