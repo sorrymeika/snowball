@@ -23,7 +23,7 @@ export default class ReactViewAdapter implements IViewAdapter {
         this.mapStoreToProps = mapStoreToProps;
 
         const viewHandler = this;
-        const reactiveView = viewFactory.$$isInjector === true ? viewFactory : makeComponentReacitve(viewFactory);
+        const reactiveView = viewFactory.isSnowballInjector === true ? viewFactory : makeComponentReacitve(viewFactory);
 
         class PageProvider extends Component {
             constructor() {

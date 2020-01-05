@@ -11,7 +11,7 @@ export { Model } from './Model';
 export { default as State } from './State';
 export { Reaction, autorun } from './Reaction';
 export { attributes };
-export { observable } from './observable';
+export { observable, asObservable } from './observable';
 export { batch, compute } from './operators';
 export { findChildModel } from './methods/findChildModel';
 export { nextTick } from "./methods/enqueueUpdate";

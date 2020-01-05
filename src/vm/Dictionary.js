@@ -6,6 +6,7 @@ import { enqueueUpdate } from "./methods/enqueueUpdate";
 import { isObservable } from "./predicates";
 import { disconnect, connect, freezeObject } from "./methods/connect";
 import { getRelObserverOrSelf } from "./methods/getRelObserver";
+import { SymbolFrom } from "./symbols";
 
 const hasOwnProperty = Object.prototype.hasOwnProperty;
 const MARK_SWEEP = Symbol('mark and sweep');
@@ -74,7 +75,7 @@ export class Dictionary extends Observer {
             if (key === 'constructor' && typeof data[key] === 'function') {
                 continue;
             }
-            if (key === '__proto__') {
+            if (key === '__proto__' || key === 'withMutations' || key === SymbolFrom) {
                 continue;
             }
 

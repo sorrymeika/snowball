@@ -47,8 +47,8 @@ export function freezeObject(data, observer) {
         configurable: false,
         writable: false,
         value(fn) {
-            fn(observer);
-            return observer.state.data;
+            fn(this[SymbolFrom]);
+            return this[SymbolFrom].state.data;
         }
     });
 

@@ -16,8 +16,8 @@ function isStateless(component) {
     return !(component.prototype && component.prototype.render);
 }
 
-function makeStatelessComponentReacitve(statelessComponentFn, forwardRef) {
-    const componentFn = (props) => {
+function makeStatelessComponentReacitve(statelessComponentFn) {
+    const componentFn = (props, forwardRef) => {
         let [version, setRendering] = useState(0);
 
         const reaction = useMemo(() => {
@@ -65,28 +65,31 @@ function createInjector(grabDepsFn, componentClass) {
         componentClass = observer(componentClass);
     }
 
-    const InjectHocRef = React.forwardRef(makeStatelessComponentReacitve((props, forwardRef) => {
+    const Injector = React.forwardRef(makeStatelessComponentReacitve((props, forwardRef) => {
         const context = useContext(PageContext);
         const [injector] = useState({
             factoryInstances: {}
         });
+        let newProps = Object.assign({}, props);
         if (context) {
-            const additionalProps = grabDepsFn(context, props, injector) || {};
+            const additionalProps = grabDepsFn(context, newProps, injector) || {};
             for (let key in additionalProps) {
-                props[key] = additionalProps[key];
+                newProps[key] = additionalProps[key];
             }
         }
-        props.ref = forwardRef;
-        if (!_isStateless) {
-            return createElement(componentClass, props);
+        if (forwardRef) {
+            newProps.ref = forwardRef;
         }
-        return componentClass(props);
+        if (!_isStateless) {
+            return createElement(componentClass, newProps);
+        }
+        return componentClass(newProps);
     }));
 
-    InjectHocRef.WrappedComponent = WrappedComponent;
-    InjectHocRef.$$isInjector = true;
+    Injector.WrappedComponent = WrappedComponent;
+    Injector.isSnowballInjector = true;
 
-    return InjectHocRef;
+    return Injector;
 }
 
 function compose(grabDepsFns) {
@@ -148,7 +151,7 @@ function mapDepsToProps(dependencies, nextProps, injector, depName, mapName = de
     }
 
     doWire(dependencies, () => {
-        nextProps[mapName] = dependencies[depName] !== undefined
+        nextProps[mapName] = depName in dependencies
             ? dependencies[depName]
             : autowired(depName);
     });
@@ -184,7 +187,6 @@ function injectFactoryInstance(dependencies, nextProps, injector, factoryName, m
  *  }
  * })(componentClass)
  *
- * // 不会将 `foo` 和 `bar` 注入到 props 中
  * inject(['foo', 'bar'], ([foo, bar], props) => ({
  *  barName: bar.name
  *  fooName: foo.name

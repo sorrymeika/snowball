@@ -1,10 +1,10 @@
-import { Observer, readonlyObserver } from "./Observer";
+import { Observer, readonlyObserver, Subject, IObservable } from "./Observer";
 import { isObservable } from "./predicates";
 import { isPlainObject, isFunction, isString } from "../utils";
 import { Model } from "./Model";
 import { Collection } from "./Collection";
-import State from "./State";
 import { reactTo } from "./Reaction";
+import { SymbolFrom } from "./symbols";
 
 const propertyKey = Symbol('propertyKey');
 const reactiveProps = Symbol('reactiveProps');
@@ -119,7 +119,7 @@ export const observable = (initalValue, execute, descriptor) => {
     }
 
     if (isFunction(initalValue)) {
-        const [observer, set] = readonlyObserver(new State());
+        const [observer, set] = readonlyObserver(new Subject());
         const dispose = initalValue(set);
         observer.on('destroy', dispose);
         return observer;
@@ -140,6 +140,14 @@ export const observable = (initalValue, execute, descriptor) => {
         return new Observer(initalValue);
     }
 };
+
+export function asObservable(data): IObservable {
+    return data[SymbolFrom]
+        ? data[SymbolFrom]
+        : isObservable(data)
+            ? data
+            : observable(data);
+}
 
 export default observable;
 

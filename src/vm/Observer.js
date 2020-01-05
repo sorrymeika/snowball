@@ -7,7 +7,6 @@ import { updateRefs } from './methods/updateRefs';
 import { connect, disconnect } from './methods/connect';
 import compute from './operators/compute';
 import { TYPEOF } from './predicates';
-import { SymbolFrom } from "./symbols";
 
 export interface IObservable {
     get: () => any,
@@ -24,11 +23,6 @@ export interface IObservable {
  * 可观察对象，new之后不会触发observe，每次set若数据变更会触发observe
  */
 export class Observer implements IObservable {
-    static of(data) {
-        if (data && data[SymbolFrom]) return data[SymbolFrom];
-        return new this(data);
-    }
-
     constructor(data, key?, parent?) {
         this.state = {
             initialized: false,
