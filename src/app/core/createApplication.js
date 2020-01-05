@@ -4,6 +4,8 @@ import Router from './Router';
 import Navigation from './Navigation';
 import Application from './Application';
 import { EventEmitter, createEmitter, createAsyncEmitter } from '../../core/event';
+import { withAutowired } from '../controller/autowired';
+import { buildConfiguration } from '../controller/configuration';
 
 // 当前启动的应用的实例
 let application;
@@ -92,6 +94,10 @@ export function createApplication({
         ...options
     };
 
+    const conf = configuration ? [].concat(configuration) : [];
+    ctx._configuration = conf;
+    ctx.Configuration = buildConfiguration(conf);
+
     application = new Application(
         new Router(projects, routes),
         rootElement,
@@ -103,7 +109,6 @@ export function createApplication({
         .setActivityManager(new ActivityManager(application, options));
 
     Object.assign(ctx, {
-        _configuration: configuration ? [].concat(configuration) : [],
         navigation: ['forward', 'back', 'replace', 'transitionTo', 'home'].reduce((nav, prop) => {
             const method = navigation[prop];
             nav[prop] = (...args) => {
@@ -115,7 +120,9 @@ export function createApplication({
     });
 
     if (extend) {
-        extendCtx(extend);
+        withAutowired(application, () => {
+            extendCtx(extend);
+        });
     }
 
     application.ctx = ctx;

@@ -3,6 +3,7 @@ import { store, isThenable } from '../../utils';
 import { popup } from '../../widget';
 
 import { IApplication, IRouter, IActivityManager, INavigation } from '../types';
+import { withAutowired } from '../controller/autowired';
 
 export default class Application implements IApplication {
 
@@ -63,7 +64,11 @@ export default class Application implements IApplication {
                 this.pageCache = null;
             })
             .then(() => {
-                callback && callback(this.ctx);
+                if (callback) {
+                    withAutowired(this, () => {
+                        callback(this.ctx);
+                    });
+                }
             });
 
         if (cache) {

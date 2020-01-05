@@ -12,10 +12,11 @@ export function getAutowiredCtx() {
 
 let wiringInstance;
 
-export function doWire(instance, fn) {
+export function withAutowired(instance, fn) {
+    const prevInstance = wiringInstance;
     wiringInstance = instance;
     fn();
-    wiringInstance = null;
+    wiringInstance = prevInstance;
 }
 
 export function isAutowired(proto, name) {

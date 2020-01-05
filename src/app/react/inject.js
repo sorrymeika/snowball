@@ -5,10 +5,13 @@ import { isString, isArray, isFunction } from '../../utils';
 import { Reaction } from '../../vm';
 import { setCurrentCtx } from '../controller/controller';
 import { observer } from './observer';
-import { _getApplication } from '../core/createApplication';
-import { doWire, autowired } from '../controller/autowired';
+import { _getApplication, getApplicationCtx } from '../core/createApplication';
+import { withAutowired, autowired } from '../controller/autowired';
 
 export const PageContext = React.createContext();
+
+window.useState = useState;
+window.React = React;
 
 function isStateless(component) {
     // `function() {}` has prototype, but `() => {}` doesn't
@@ -57,6 +60,13 @@ export function makeComponentReacitve(componentClass) {
         : observer(componentClass);
 }
 
+function getDefaultContext() {
+    return {
+        app: getApplicationCtx(),
+        ctx: getApplicationCtx().currentCtx
+    };
+}
+
 function createInjector(grabDepsFn, componentClass) {
     const _isStateless = isStateless(componentClass);
     const WrappedComponent = componentClass;
@@ -68,15 +78,16 @@ function createInjector(grabDepsFn, componentClass) {
     const Injector = React.forwardRef(makeStatelessComponentReacitve((props, forwardRef) => {
         const context = useContext(PageContext);
         const [injector] = useState({
-            factoryInstances: {}
+            factoryInstances: {},
+            defaultContext: getDefaultContext()
         });
         let newProps = Object.assign({}, props);
-        if (context) {
-            const additionalProps = grabDepsFn(context, newProps, injector) || {};
-            for (let key in additionalProps) {
-                newProps[key] = additionalProps[key];
-            }
+
+        const additionalProps = grabDepsFn(context || injector.defaultContext, newProps, injector) || {};
+        for (let key in additionalProps) {
+            newProps[key] = additionalProps[key];
         }
+
         if (forwardRef) {
             newProps.ref = forwardRef;
         }
@@ -96,7 +107,7 @@ function compose(grabDepsFns) {
     return function (dependencies, nextProps, injector) {
         setCurrentCtx(dependencies.ctx);
         const newProps = {};
-        doWire(dependencies, () => {
+        withAutowired(dependencies, () => {
             grabDepsFns.forEach(function (grabDepsFn, i) {
                 const processerName = 'PROCESSER_' + i;
                 let additionalProps = !injector[processerName]
@@ -150,7 +161,7 @@ function mapDepsToProps(dependencies, nextProps, injector, depName, mapName = de
         return;
     }
 
-    doWire(dependencies, () => {
+    withAutowired(dependencies, () => {
         nextProps[mapName] = depName in dependencies
             ? dependencies[depName]
             : autowired(depName);
