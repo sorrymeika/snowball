@@ -198,13 +198,13 @@ class HomeController {
 * `app/home/containers/Home.jsx`
 
 ```js
-import { attributes } from "snowball";
+import { observable } from "snowball";
 import { observer } from "snowball/app";
 
 @observer
 class Home extends Component {
     // 在 React.Component 中 `attributes` 可和 `observer` 配合使用
-    @attributes.string
+    @observable.string
     ohNo = 'oh, no!!';
 
     ohYes = () => {
@@ -753,7 +753,7 @@ Page.extentions.ctx((page, ctx) => {
 * `models/UserModel.js`
 
 ```js
-import { Model, Collection, Reaction, attributes } from 'snowball';
+import { Model, Collection, Reaction, observable } from 'snowball';
 import { controller, service, observer } from 'snowball/app';
 
 // Model 的接口必须定义
@@ -777,10 +777,10 @@ console.log(user.get(''));
 
 // 可用 Reactive Object 替换 Model
 class User implements IUser {
-    @attributes.number
+    @observable.number
     userId;
 
-    @attributes.string
+    @observable.string
     userName;
 
     constructor(user: IUser) {
@@ -1380,49 +1380,39 @@ console.log(emitter.get());
 // 3
 ```
 
-### `vm.attributes`
+### `vm.observable`
 
 ```js
 class User {
-    @attributes.number
+    @observable
+    anyType;
+
+    @observable.number
     userId = 0;
 
-    @attributes.string
+    @observable.string
     userName;
 
-    @attributes.object
+    @observable.object
     auth;
-
-    constructor(data) {
-        User.init(this, data);
-    }
 }
 
-const user = new User();
-user.userId = 1;
-user.userName = '张三';
+const user = User.from({
+    userId: 1,
+    userName: '张三'
+});
 
-// 监听user
-User.observe(user, ()=>{
-});
 // 监听user.userId
-User.observe(user, 'userId', ()=>{
+asObservable(user).observe('userId', ()=>{
 });
+
 // 计算user.userId
-User.compute(user, 'userId', (userId)=>{
+asObservable(user).compute('userId', (userId)=>{
     return 'userId:' + userId;
 });
-// user to plainObject
-User.get(user);
 
-User.set(user, {
-    userId: 1
-});
-
-User.set(user, (userModel) => {
-    userModel.set({
-        userId: 10
-    })
+asObservable(user).set({
+    name: 1
 });
 
 for (var key in user) {

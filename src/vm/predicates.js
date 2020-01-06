@@ -1,3 +1,5 @@
+import { SymbolRelObserver, SymbolFrom } from "./symbols";
+
 export const TYPEOF = '[[ObservableObjectType]]';
 
 export function isObserver(observer) {
@@ -10,6 +12,10 @@ export function isObservable(observer) {
 
 export function isModel(model) {
     return model && (model[TYPEOF] === 'Model' || model[TYPEOF] === 'ViewModel');
+}
+
+export function isObservableObject(data) {
+    return data && (data[SymbolFrom] || data[SymbolRelObserver]);
 }
 
 export function isViewModel(model) {

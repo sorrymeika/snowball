@@ -3,12 +3,8 @@ import { isObservable } from "./predicates";
 import { isPlainObject, isFunction, isString } from "../utils";
 import { Model } from "./Model";
 import { Collection } from "./Collection";
-import { reactTo } from "./Reaction";
-import { SymbolFrom } from "./symbols";
-
-const propertyKey = Symbol('propertyKey');
-const reactiveProps = Symbol('reactiveProps');
-const initedClasses = new WeakMap();
+import { SymbolFrom, SymbolRelObserver } from "./symbols";
+import * as attributes from "./attributes";
 
 /**
  * 可观察对象
@@ -26,96 +22,7 @@ const initedClasses = new WeakMap();
 export const observable = (initalValue, execute, descriptor) => {
     // 装饰器模式
     if (isString(execute)) {
-        if (!initedClasses.has(initalValue)) {
-            initedClasses.set(initalValue, true);
-
-            initalValue[reactiveProps] = initalValue[reactiveProps]
-                ? [...initalValue[reactiveProps]]
-                : [];
-
-            Object.defineProperty(initalValue, 'asModel', {
-                writable: false,
-                enumerable: false,
-                configurable: false,
-                value: function () {
-                    return this[propertyKey];
-                }
-            });
-
-            Object.defineProperty(initalValue, propertyKey, {
-                configurable: true,
-                get() {
-                    const proto = this.constructor.prototype;
-                    if (proto === this) {
-                        return true;
-                    }
-
-                    let initProperties;
-
-                    const props = proto[reactiveProps];
-                    if (props) {
-                        const instance = Object.create(this, props.reduce((result, { name, desc }) => {
-                            result[name] = {
-                                get() {
-                                    return desc.initializer
-                                        ? desc.initializer.call(instance)
-                                        : desc.get
-                                            ? desc.get.call(instance)
-                                            : desc.value;
-                                }
-                            };
-                            return result;
-                        }, {}));
-                        initProperties = props.reduce((result, { name }) => {
-                            result[name] = instance[name];
-                            return result;
-                        }, {});
-                    } else {
-                        initProperties = {};
-                    }
-
-                    const model = new Model(initProperties);
-                    model.state.facade = this;
-
-                    Object.defineProperty(this, propertyKey, {
-                        get() {
-                            return model;
-                        }
-                    });
-
-                    return model;
-                }
-            });
-        }
-
-        if (descriptor.initializer || descriptor.value !== undefined || descriptor.get) {
-            const descriptors = initalValue[reactiveProps];
-            const index = descriptors.findIndex(({ name }) => name === execute);
-            const newDesc = {
-                name: execute,
-                desc: descriptor
-            };
-            if (index != -1) {
-                descriptors[index] = newDesc;
-            } else {
-                descriptors.push(newDesc);
-            }
-        }
-
-        return {
-            enumerable: true,
-            get() {
-                const model = this[propertyKey];
-
-                reactTo(model, execute);
-
-                const prop = model.state.observableProps[execute];
-                return (prop && prop.state.facade) || model.state.data[execute];
-            },
-            set(val) {
-                this[propertyKey].set(true, execute, val);
-            }
-        };
+        return attributes.any(initalValue, execute, descriptor);
     }
 
     if (isFunction(initalValue)) {
@@ -141,12 +48,23 @@ export const observable = (initalValue, execute, descriptor) => {
     }
 };
 
+observable.number = attributes.number;
+observable.string = attributes.string;
+observable.func = attributes.func;
+observable.object = attributes.object;
+observable.array = attributes.array;
+observable.boolean = attributes.boolean;
+
+function throwIsNotObservableError() {
+    throw new Error('data is not an observable array, you can use `observable(data)` to create a new observable object!');
+}
+
 export function asObservable(data): IObservable {
-    return data[SymbolFrom]
-        ? data[SymbolFrom]
-        : isObservable(data)
+    return data[SymbolFrom] || data[SymbolRelObserver] || (
+        isObservable(data)
             ? data
-            : throw new Error('data is not an observable object, you can use `observable(data)` to create a new observable object!');
+            : throwIsNotObservableError()
+    );
 }
 
 export default observable;

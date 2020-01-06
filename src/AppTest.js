@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import ReactDOM from 'react-dom';
-import { ViewModel, component, Model, attributes, autorun } from './snowball';
+import { ViewModel, component, Model, observable, autorun } from './snowball';
 
 @component({
     tagName: 'Test',
@@ -66,15 +66,15 @@ class App extends Component {
     }
 }
 class B {
-    @attributes.number
+    @observable.number
     id;
 }
 
 class A {
-    @attributes.number
+    @observable.number
     id;
 
-    @attributes.any
+    @observable
     b;
 }
 

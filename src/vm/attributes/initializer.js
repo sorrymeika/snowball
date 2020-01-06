@@ -6,7 +6,7 @@ const reactiveProps = Symbol('reactiveProps');
 const initedClasses = new WeakMap();
 const instanceStore = new WeakSet();
 
-function getSource(obj, constructor) {
+function asModel(obj, constructor) {
     if (process.env.NODE_ENV === "development") {
         if (!obj instanceof constructor) {
             throw new Error('obj must instanceof' + constructor);
@@ -19,7 +19,7 @@ function getSource(obj, constructor) {
 }
 
 function _init(obj, data) {
-    const model = getSource(obj, this);
+    const model = asModel(obj, this);
     model.state.initialized = false;
     model.set(data);
     model.state.initialized = true;
@@ -31,16 +31,16 @@ function init(obj, data) {
     _init.call(this, obj, data);
 }
 
-function _of(data) {
+function _from(data, ...args) {
     const Klass = this;
-    const instance = new Klass();
+    const instance = new Klass(...args);
     _init.call(this, instance, data);
     return instance;
 }
 
-export function hoistStaticMethods(obj) {
+function hoistStaticMethods(obj) {
     obj.init = init;
-    obj.of = _of;
+    obj.from = _from;
 }
 
 export default function initializer(obj, name, descriptor) {
@@ -52,15 +52,6 @@ export default function initializer(obj, name, descriptor) {
             : [];
 
         hoistStaticMethods(obj.constructor);
-
-        Object.defineProperty(obj, 'asModel', {
-            writable: false,
-            enumerable: false,
-            configurable: false,
-            value: function () {
-                return this[SymbolRelObserver];
-            }
-        });
 
         Object.defineProperty(obj, SymbolRelObserver, {
             configurable: true,
