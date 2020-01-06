@@ -1,9 +1,10 @@
 # Snowball
 
 * `snowball` 是一个一站式前端开发框架，你可以使用`snowball`轻松构建出一套`web app/hybrid app`。`snowball`内置了`view`层，但同时也支持`React`。它比`React`全家桶轻量又支持更多功能，如下：
+* 依赖注入：通过注解进行依赖注入。 
 * 路由系统：拥有多工程跨工程加载、页面切换前进后退动画效果、手势返回、动态管理DOM等功能。 
 * 状态管理：immutable、响应式，和`redux`不同，`snowball`的状态管理更符合`OOP`思想。
-* 视图：fiber模式渲染，高性能，双向绑定。 采用运行时模版编译，在需要从服务端拉取模版渲染的场景优于`React`、`Vue`和`Angular`等框架。
+* 视图：fiber模式渲染，高性能，双向绑定。 支持字符串模版，采用运行时模版编译。
 * 路由系统和状态管理都完全适配`React`。
 * 业务项目采用分层架构，主要分为`Controller`、`Service`、`View`层，`Controller`层用来组织`Service`层，并将数据注入到`View`层。
 
@@ -49,7 +50,7 @@
 2. run `cd snowball && npm install`
 3. run `npm run project yourProjectName` to create your own project
 4. `import { env, Model } from "snowball"`
-5. see `https://github.com/sorrymeika/juicy` or `https://github.com/sorrymeika/sn-trade-mngr` to get the full example!
+5. see `https://github.com/sorrymeika/juicy` or `https://github.com/sorrymeika/sn-pyarmid` to get the full example!
 
 ### Getting Start
 
@@ -316,8 +317,16 @@ import Home from "../containers/Home";
  *     属性 (get, set)
  *     方法
  */
-@controller(Home)
+@controller({
+    component: Home,
+    configuration: HomeConfiguration
+})
 export default class HomeController {
+    @param
+    type;
+
+    @autowired
+    userService;
 
     constructor(props, ctx) {
         // 框架会自动带入路由参数到 props 中
@@ -325,6 +334,8 @@ export default class HomeController {
         // props.location.query 为hash链接`?`后面的参数
         const id = ctx.location.params.id;
         const type = ctx.location.params.type;
+
+        console.log('this.type === type:', this.type, type)
 
         // /home?source=wap&id=1
         // 此时 props.location.query 为 { source: 'wap',id: 1 }
@@ -335,8 +346,6 @@ export default class HomeController {
         // console.log(ctx.page.isActive());
         // 页面是否是销毁
         // console.log(ctx.page.isDestroyed());
-
-        this.userService = new UserService();
     }
 
     // 页面初始化事件，数据请求不要放到 `constructor` 里，而是放在 `onInit` 里
@@ -368,72 +377,6 @@ export default class HomeController {
 }
 ```
 
-#### `controller` 层业务逻辑拆分
-
-* 业务逻辑过多时需要将业务逻辑拆分，推荐使用多个`service`组合，`不推荐`使用 `mixin`
-* 下面是一个使用 `mixin` 的示例
-
-```js
-// types.js
-export interface IControllerBase {
-    // TODO: your properties
-}
-
-export interface IHomeController extends IControllerBase {
-    // TODO: your properties
-}
-
-// ControllerBase.js
-import { IControllerBase } from "../constants/types";
-
-export default class ControllerBase implements IControllerBase {
-    constructor(service, page) {
-        this.service = service;
-    }
-
-    // 页面初始化事件，数据请求不要放到 `constructor` 里，而是放在 `onInit` 里
-    onInit(page) {
-        this.service.fetch();
-    }
-}
-
-// `globalAddressMixin.js`
-import { controller } from "snowball";
-import { IControllerBase } from "../constants/types";
-
-export default function globalAddressMixin(ControllerBase: IControllerBase) {
-    return class extends ControllerBase {
-        constructor(service, page) {
-            super(service, page);
-
-            this.globalAddressService = GlobalAddressService.getInstance();
-        }
-
-        onInit() {
-            super.onInit();
-
-            this.globalAddressService.fetch();
-        }
-    }
-}
-
-// HomeController.js
-import { controller, mix } from "snowball";
-import Home from "../containers/Home";
-import { IHomeController } from "../constants/types";
-import globalAddressMixin from "./globalAddressMixin";
-
-export default class HomeController extends mix(ControllerBase)
-        .with(globalAddressMixin) implements IHomeController  {
-    constructor(props, page) {
-        const homeService = new HomeService();
-        super(homeService, page);
-
-        this.type = location.params.type;
-    }
-}
-```
-
 <br>
 
 -------
@@ -448,7 +391,6 @@ export default class HomeController extends mix(ControllerBase)
 
 ```js
 import UserModel from "../models/UserModel";
-
 
 export default class UserService implements IUserService {
 
@@ -549,7 +491,7 @@ inject(({ user, data }, props)=>{
 * 启动应用
 
 ```js
-import { createApplication } from 'snowball';
+import { createApplication, configuration, singleton } from 'snowball';
 import HomeController from 'controller/HomeController';
 
 // 子应用根路由注册
@@ -566,6 +508,11 @@ const routes = {
 const app = createApplication({
     projects,
     routes,
+    configuration: configuration({
+        modules: {
+            userService: singleton(UserService)
+        }
+    }),
     options: {
         // 禁用跳转切换动画
         disableTrasition: true
@@ -623,6 +570,9 @@ import User from './components/User';
 
 @controller(User)
 class UserController {
+    @autowired
+    _userService;
+    
     constructor(props, ctx) {
         this.userId = ctx.location.params.id;
     }
