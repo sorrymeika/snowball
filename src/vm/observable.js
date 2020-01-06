@@ -146,7 +146,7 @@ export function asObservable(data): IObservable {
         ? data[SymbolFrom]
         : isObservable(data)
             ? data
-            : observable(data);
+            : throw new Error('data is not an observable object, you can use `observable(data)` to create a new observable object!');
 }
 
 export default observable;
