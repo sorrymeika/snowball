@@ -60,7 +60,7 @@ function wire(classInstance, propName, resourceName, options) {
 
         val = callerInstance[wiredName];
         if (val === undefined) {
-            val = callerInstance[wiredName] = callerInstance[resourceName];
+            val = callerInstance[wiredName] = config[resourceName];
             if (val === undefined)
                 throw new Error(
                     "autowired: Dependency '" + resourceName + "' is not available! Make sure it is provided by Configuration!"
