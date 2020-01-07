@@ -204,6 +204,7 @@ function createEmitterFn(extend) {
             } else {
                 funcs = [];
             }
+            return emitter;
         };
 
         emitter.middleware = (fn) => {
@@ -219,6 +220,7 @@ function createEmitterFn(extend) {
         emitter.clear = () => {
             middlewares = [];
             funcs = [];
+            return emitter;
         };
 
         emitter.destroy = () => {

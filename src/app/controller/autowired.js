@@ -10,13 +10,13 @@ export function getAutowiredCtx() {
     return pageCtx;
 }
 
-let wiringInstance;
+let wiringCaller;
 
 export function withAutowired(instance, fn) {
-    const prevInstance = wiringInstance;
-    wiringInstance = instance;
+    const prevInstance = wiringCaller;
+    wiringCaller = instance;
     fn();
-    wiringInstance = prevInstance;
+    wiringCaller = prevInstance;
 }
 
 export function isAutowired(proto, name) {
@@ -46,6 +46,8 @@ function getAutowiredConfiguration(classInstance, fn) {
     return res;
 }
 
+const wiringNames = {};
+
 function wire(classInstance, propName, resourceName, options) {
     return getAutowiredConfiguration(classInstance, (config) => {
         let val;
@@ -60,7 +62,12 @@ function wire(classInstance, propName, resourceName, options) {
 
         val = callerInstance[wiredName];
         if (val === undefined) {
+            if (wiringNames[wiredName]) {
+                throw new Error('circular reference: ' + wiredName);
+            }
+            wiringNames[wiredName] = true;
             val = callerInstance[wiredName] = config[resourceName];
+            delete wiringNames[wiredName];
             if (val === undefined)
                 throw new Error(
                     "autowired: Dependency '" + resourceName + "' is not available! Make sure it is provided by Configuration!"
@@ -107,9 +114,9 @@ function configAutowired(proto, resourceName, name, descriptor, options) {
 }
 
 export function autowired<T>(resourceName, options?: { level: 'ctx' | 'instance' }, descriptor?): T {
-    if (wiringInstance) {
+    if (wiringCaller) {
         if (isString(resourceName)) {
-            return wire(wiringInstance, resourceName, resourceName, options);
+            return wire(wiringCaller, resourceName, resourceName, options);
         }
         return null;
     }

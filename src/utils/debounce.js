@@ -12,7 +12,7 @@ export function debounce(fn, threshhold) {
         }, threshhold);
     };
 
-    method.clear = function () {
+    method.clearDebounce = function () {
         if (timer) clearTimeout(timer);
     };
 
