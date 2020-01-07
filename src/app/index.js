@@ -15,6 +15,7 @@ export * from './core/backEventHandlers';
 export { controller } from './controller/controller';
 export { configuration } from './controller/configuration';
 export { autowired, param } from './controller/autowired';
+export { emitter, asyncEmitter } from './controller/emitter';
 export { singleton } from './controller/singleton';
 export { Service } from './controller/Service';
 export { default as Module } from './controller/Module';

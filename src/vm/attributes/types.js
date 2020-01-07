@@ -7,7 +7,6 @@ export const any = createDescriptor(
         return (prop && prop.state.facade) || observer.get(name);
     },
     (observer, name, val) => {
-        console.log(observer, name, val);
         observer.set(name, val);
     }
 );

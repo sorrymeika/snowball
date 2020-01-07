@@ -179,12 +179,31 @@ function createEmitterFn(extend) {
 
         emitter.on = (fn) => {
             funcs.push(fn);
-            return () => {
+            return () => emitter.off(fn);
+        };
+
+        emitter.once = (fn) => {
+            const once = (state, e) => {
+                dispose();
+                fn(state, e);
+            };
+            const dispose = emitter.on(once);
+            return dispose;
+        };
+
+        emitter.reset = () => {
+            funcs = init ? [init] : [];
+        };
+
+        emitter.off = (fn) => {
+            if (fn) {
                 const index = funcs.indexOf(fn);
                 if (index !== -1) {
                     funcs.splice(index, 1);
                 }
-            };
+            } else {
+                funcs = [];
+            }
         };
 
         emitter.middleware = (fn) => {
@@ -197,16 +216,12 @@ function createEmitterFn(extend) {
             };
         };
 
-        emitter.once = (fn) => {
-            const once = (state) => {
-                dispose();
-                fn(state);
-            };
-            const dispose = emitter(once);
-            return dispose;
+        emitter.clear = () => {
+            middlewares = [];
+            funcs = [];
         };
 
-        emitter.off = () => {
+        emitter.destroy = () => {
             middlewares = funcs = null;
         };
 
