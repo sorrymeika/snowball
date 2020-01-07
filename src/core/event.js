@@ -58,7 +58,7 @@ const EventEmitterProto = {
         return this.on(name, once);
     },
 
-    one(name, callback) {
+    once(name, callback) {
         if (!callback) return this;
 
         var self = this;

@@ -1,11 +1,12 @@
-import { _getApplication, internal_beforeStartApplication } from "./createApplication";
+import { _getApplication, getApplicationCtx } from "./createApplication";
 
 export function registerRoutes(routes) {
     const application = _getApplication();
     if (!application) {
-        internal_beforeStartApplication((application) => {
-            application.registerRoutes(routes);
-        });
+        getApplicationCtx()
+            .once('beforestart', () => {
+                _getApplication().registerRoutes(routes);
+            });
     } else {
         application.registerRoutes(routes);
     }

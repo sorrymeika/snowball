@@ -9,25 +9,13 @@ import { buildConfiguration } from '../controller/configuration';
 
 // 当前启动的应用的实例
 let application;
-let actionsBeforeAppStart = [];
 
 export function _getApplication() {
     return application;
 }
 
 export function getApplicationCtx() {
-    return ctx;
-}
-
-export function internal_beforeStartApplication(fn) {
-    actionsBeforeAppStart.push(fn);
-}
-
-function beforeAppStart() {
-    actionsBeforeAppStart.forEach((action) => {
-        action(application);
-    });
-    actionsBeforeAppStart = null;
+    return appCtx;
 }
 
 const currentCtxProperty = {
@@ -36,9 +24,9 @@ const currentCtxProperty = {
     }
 };
 
-export const ctx = new EventEmitter();
+export const appCtx = new EventEmitter();
 
-Object.defineProperties(ctx, {
+Object.defineProperties(appCtx, {
     currentCtx: currentCtxProperty,
     current: currentCtxProperty,
     createEmitter: {
@@ -50,20 +38,20 @@ Object.defineProperties(ctx, {
         writable: false
     },
     emit: {
-        value: ctx.trigger.bind(ctx),
+        value: appCtx.trigger.bind(appCtx),
         writable: false
     },
 });
 
 function extendCtx(extendFn) {
-    const descriptors = getOwnPropertyDescriptors(extendFn(ctx));
+    const descriptors = getOwnPropertyDescriptors(extendFn(appCtx));
     Object.keys(descriptors)
         .forEach((key) => {
             const descriptor = descriptors[key];
             if (isFunction(descriptor.get)) {
-                descriptor.get = descriptor.get.bind(ctx);
+                descriptor.get = descriptor.get.bind(appCtx);
             }
-            Object.defineProperty(ctx, key, descriptor);
+            Object.defineProperty(appCtx, key, descriptor);
         });
 }
 
@@ -74,7 +62,9 @@ function extendCtx(extendFn) {
  * @param {Object} props.routes 路由映射
  * @param {Object} props.extend 扩展应用上下文
  * @param {Object} [props.options] 应用属性
+ * @param {boolean} [props.options.maxActivePages] 最大活动页面数
  * @param {boolean} [props.options.disableTransition] 禁用跳转切换动画
+ * @param {boolean} [props.options.autoStart] 是否自动启动，为否时需要主动调用start方法
  * @param {Element} rootElement 页面根元素
  * @param {Element} [callback] 回调函数
  */
@@ -84,19 +74,19 @@ export function createApplication({
     extend,
     configuration,
     options,
-    autoStart = true
 }, rootElement, callback?) {
-    if (application) throw new Error('application has already created!');
+    if (application) throw new Error('application has already been created!');
 
     options = {
         maxActivePages: 10,
         disableTransition: false,
+        autoStart: true,
         ...options
     };
 
     const conf = configuration ? [].concat(configuration) : [];
-    ctx._configuration = conf;
-    ctx.Configuration = buildConfiguration(conf);
+    appCtx._configuration = conf;
+    appCtx.Configuration = buildConfiguration(conf);
 
     application = new Application(
         new Router(projects, routes),
@@ -108,7 +98,8 @@ export function createApplication({
     application.setNavigation(navigation)
         .setActivityManager(new ActivityManager(application, options));
 
-    Object.assign(ctx, {
+    let isStart = false;
+    Object.assign(appCtx, {
         navigation: ['forward', 'back', 'replace', 'transitionTo', 'home'].reduce((nav, prop) => {
             const method = navigation[prop];
             nav[prop] = (...args) => {
@@ -117,6 +108,13 @@ export function createApplication({
             return nav;
         }, {}),
         registerRoutes: application.registerRoutes.bind(application),
+        start(cb) {
+            if (isStart) throw new Error('the application has already been started!');
+            isStart = true;
+
+            this.trigger('beforestart');
+            application.start(cb);
+        }
     });
 
     if (extend) {
@@ -125,17 +123,11 @@ export function createApplication({
         });
     }
 
-    application.ctx = ctx;
+    application.ctx = appCtx;
 
-    if (autoStart) {
-        beforeAppStart();
-        application.start(callback);
-    } else {
-        ctx.start = (cb) => {
-            beforeAppStart();
-            application.start(cb);
-        };
+    if (options.autoStart) {
+        appCtx.start(callback);
     }
 
-    return ctx;
+    return appCtx;
 }

@@ -5,7 +5,7 @@
 import * as resource from './core/resource';
 import { Page as _P } from './core/Page';
 
-export { createApplication, ctx as app } from './core/createApplication';
+export { createApplication, appCtx as app } from './core/createApplication';
 export { registerRoutes } from './core/registerRoutes';
 export { default as lazy } from './core/lazy';
 export { resource };
