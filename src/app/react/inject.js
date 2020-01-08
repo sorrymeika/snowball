@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable react-hooks/rules-of-hooks */
 import React, { createElement, useMemo, useState, useEffect, useContext } from 'react';
 import { isString, isArray, isFunction } from '../../utils';
@@ -7,8 +6,27 @@ import { setCurrentCtx } from '../controller/controller';
 import { observer } from './observer';
 import { _getApplication, getApplicationCtx } from '../core/createApplication';
 import { withAutowired, autowired } from '../controller/autowired';
+import { buildConfiguration } from '../controller/configuration';
 
 export const PageContext = React.createContext();
+
+export function AppContextProvider({ children, configurations = [] }) {
+    const app = getApplicationCtx();
+    const ctx = useMemo(() => {
+        return {
+            Configuration: buildConfiguration(app._configuration.concat(configurations))
+        };
+    }, [app._configuration, configurations]);
+
+    return (
+        <PageContext.Provider
+            value={{
+                app,
+                ctx,
+            }}
+        >{children}</PageContext.Provider>
+    );
+}
 
 window.useState = useState;
 window.React = React;
@@ -40,10 +58,11 @@ function makeStatelessComponentReacitve(statelessComponentFn) {
                 }
             }, true);
             return reaction;
+            // eslint-disable-next-line react-hooks/exhaustive-deps
         }, []);
         reaction.isRenderingPending = false;
 
-        useEffect(() => () => reaction.destroy(), []);
+        useEffect(() => () => reaction.destroy(), [reaction]);
 
         let element;
         reaction.track(() => {
@@ -60,13 +79,6 @@ export function makeComponentReacitve(componentClass) {
         : observer(componentClass);
 }
 
-function getDefaultContext() {
-    return {
-        app: getApplicationCtx(),
-        ctx: getApplicationCtx().currentCtx
-    };
-}
-
 function createInjector(grabDepsFn, componentClass) {
     const _isStateless = isStateless(componentClass);
     const WrappedComponent = componentClass;
@@ -79,13 +91,16 @@ function createInjector(grabDepsFn, componentClass) {
         const context = useContext(PageContext);
         const [injector] = useState({
             factoryInstances: {},
-            defaultContext: getDefaultContext()
         });
         let newProps = Object.assign({}, props);
 
-        const additionalProps = grabDepsFn(context || injector.defaultContext, newProps, injector) || {};
-        for (let key in additionalProps) {
-            newProps[key] = additionalProps[key];
+        if (context) {
+            const additionalProps = grabDepsFn(context, newProps, injector);
+            if (additionalProps) {
+                for (let key in additionalProps) {
+                    newProps[key] = additionalProps[key];
+                }
+            }
         }
 
         if (forwardRef) {
