@@ -80,7 +80,7 @@ function defaultMergeProps(additionalProps, ownProps) {
     return Object.assign({}, ownProps, additionalProps);
 }
 
-function createInjector(injectDependenciesToProps, mergeProps = defaultMergeProps, componentClass) {
+function createInjector(mapDependenciesToProps, mergeProps = defaultMergeProps, componentClass) {
     const _isStateless = isStateless(componentClass);
     const WrappedComponent = componentClass;
 
@@ -96,7 +96,7 @@ function createInjector(injectDependenciesToProps, mergeProps = defaultMergeProp
         let newProps;
 
         if (context) {
-            const additionalProps = injectDependenciesToProps(context, ownProps, injector);
+            const additionalProps = mapDependenciesToProps(context, ownProps, injector);
             newProps = mergeProps(additionalProps, ownProps);
         } else {
             newProps = Object.assign({}, ownProps);
@@ -195,24 +195,24 @@ function renameProps(mapper) {
  * }))(componentClass)
  */
 export function inject(mapDependenciesToPropsFactories, mergeProps, options) {
-    let injectDependenciesToProps;
+    let mapDependenciesToProps;
 
     if (isFunction(mapDependenciesToPropsFactories) || (isArray(mapDependenciesToPropsFactories) && isFunction(mapDependenciesToPropsFactories[0]))) {
-        injectDependenciesToProps = compose([].concat(mapDependenciesToPropsFactories));
+        mapDependenciesToProps = compose([].concat(mapDependenciesToPropsFactories));
     } else if (isString(mapDependenciesToPropsFactories)) {
-        injectDependenciesToProps = mapByNames([].slice.call(arguments));
+        mapDependenciesToProps = mapByNames([].slice.call(arguments));
     } else if (isArray(mapDependenciesToPropsFactories)) {
         const deps = mapDependenciesToPropsFactories;
         const map = mapByNames(deps);
         mapDependenciesToPropsFactories = mergeProps;
         mergeProps = options;
-        injectDependenciesToProps = (dependencies, ownProps, injector) => {
+        mapDependenciesToProps = (dependencies, ownProps, injector) => {
             const newProps = map(dependencies, ownProps, injector);
             return mapDependenciesToPropsFactories(deps.map(name => newProps[name]), ownProps);
         };
     } else {
-        injectDependenciesToProps = renameProps(mapDependenciesToPropsFactories);
+        mapDependenciesToProps = renameProps(mapDependenciesToPropsFactories);
     }
 
-    return (componentClass): Function & { WrappedComponent: any } => createInjector(injectDependenciesToProps, mergeProps, componentClass);
+    return (componentClass): Function & { WrappedComponent: any } => createInjector(mapDependenciesToProps, mergeProps, componentClass);
 }
