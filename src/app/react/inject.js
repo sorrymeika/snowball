@@ -28,9 +28,6 @@ export function AppContextProvider({ children, configurations = [] }) {
     );
 }
 
-window.useState = useState;
-window.React = React;
-
 function isStateless(component) {
     // `function() {}` has prototype, but `() => {}` doesn't
     // `() => {}` via Babel has prototype too.
@@ -79,7 +76,11 @@ export function makeComponentReacitve(componentClass) {
         : observer(componentClass);
 }
 
-function createInjector(grabDepsFn, componentClass) {
+function defaultMergeProps(additionalProps, ownProps) {
+    return Object.assign({}, ownProps, additionalProps);
+}
+
+function createInjector(injectDependenciesToProps, mergeProps = defaultMergeProps, componentClass) {
     const _isStateless = isStateless(componentClass);
     const WrappedComponent = componentClass;
 
@@ -87,20 +88,18 @@ function createInjector(grabDepsFn, componentClass) {
         componentClass = observer(componentClass);
     }
 
-    const Injector = React.forwardRef(makeStatelessComponentReacitve((props, forwardRef) => {
+    const Injector = React.forwardRef(makeStatelessComponentReacitve((ownProps, forwardRef) => {
         const context = useContext(PageContext);
         const [injector] = useState({
             factoryInstances: {},
         });
-        let newProps = Object.assign({}, props);
+        let newProps;
 
         if (context) {
-            const additionalProps = grabDepsFn(context, newProps, injector);
-            if (additionalProps) {
-                for (let key in additionalProps) {
-                    newProps[key] = additionalProps[key];
-                }
-            }
+            const additionalProps = injectDependenciesToProps(context, ownProps, injector);
+            newProps = mergeProps(additionalProps, ownProps);
+        } else {
+            newProps = Object.assign({}, ownProps);
         }
 
         if (forwardRef) {
@@ -118,26 +117,24 @@ function createInjector(grabDepsFn, componentClass) {
     return Injector;
 }
 
-function compose(grabDepsFns) {
-    return function (dependencies, nextProps, injector) {
+function compose(mapDependenciesToPropsFactories) {
+    return function (dependencies, ownProps, injector) {
         setCurrentCtx(dependencies.ctx);
         const newProps = {};
         withAutowired(dependencies, () => {
-            grabDepsFns.forEach(function (grabDepsFn, i) {
+            mapDependenciesToPropsFactories.forEach(function (mapDependenciesToProps, i) {
                 const processerName = 'PROCESSER_' + i;
                 let additionalProps = !injector[processerName]
-                    ? grabDepsFn(dependencies, nextProps)
-                    : injector[processerName](nextProps);
+                    ? mapDependenciesToProps(dependencies, ownProps)
+                    : injector[processerName](ownProps);
 
                 if (typeof additionalProps === 'function') {
                     injector[processerName] = additionalProps;
-                    additionalProps = additionalProps(dependencies, nextProps);
+                    additionalProps = mapDependenciesToProps(dependencies, ownProps);
                 }
 
                 if (additionalProps) {
                     for (let key in additionalProps) {
-                        // if (key in nextProps)
-                        //     continue;
                         newProps[key] = additionalProps[key];
                     }
                 }
@@ -148,55 +145,34 @@ function compose(grabDepsFns) {
     };
 }
 
-function grabDepsByName(depNames) {
-    return function (dependencies, nextProps, injector) {
-        depNames.forEach(function (depName) {
-            mapDepsToProps(dependencies, nextProps, injector, depName);
+function createMapDependenciesToPropsFn(depNames, mapNames) {
+    return (dependencies, ownProps, injector) => {
+        const autowiredProps = {};
+        withAutowired(dependencies, () => {
+            depNames.forEach((depName, i) => {
+                autowiredProps[mapNames[i]] = depName in dependencies
+                    ? dependencies[depName]
+                    : autowired(depName);
+            });
         });
-        return nextProps;
+        return autowiredProps;
     };
+}
+
+function mapByNames(depNames) {
+    return createMapDependenciesToPropsFn(depNames, depNames);
 }
 
 function renameProps(mapper) {
-    const keys = Object.keys(mapper);
-    return function (dependencies, nextProps, injector) {
-        keys.forEach(function (depName) {
-            mapDepsToProps(dependencies, nextProps, injector, depName, mapper[depName]);
-        });
-        return nextProps;
-    };
-}
+    const keys = [];
+    const values = [];
 
-function mapDepsToProps(dependencies, nextProps, injector, depName, mapName = depName) {
-    // prefer props over stores
-    if (mapName in nextProps)
-        return;
-
-    if (injectFactoryInstance(dependencies, nextProps, injector, depName + 'Factory', mapName)) {
-        return;
+    for (let key in mapper) {
+        keys.push(key);
+        values.push(mapper[key]);
     }
 
-    withAutowired(dependencies, () => {
-        nextProps[mapName] = depName in dependencies
-            ? dependencies[depName]
-            : autowired(depName);
-    });
-}
-
-function injectFactoryInstance(dependencies, nextProps, injector, factoryName, mapName) {
-    const factory = dependencies[factoryName];
-    const { factoryInstances } = injector;
-    if (factoryInstances[factoryName]) {
-        nextProps[mapName] = factoryInstances[factoryName];
-        return true;
-    }
-    if (isFunction(factory)) {
-        setCurrentCtx(dependencies.ctx);
-        factoryInstances[factoryName] = nextProps[mapName] = factory(nextProps);
-        setCurrentCtx(null);
-        return true;
-    }
-    return false;
+    return createMapDependenciesToPropsFn(keys, values);
 }
 
 /**
@@ -218,27 +194,25 @@ function injectFactoryInstance(dependencies, nextProps, injector, factoryName, m
  *  fooName: foo.name
  * }))(componentClass)
  */
-export function inject(deps, injection) {
-    let grabDepsFn;
+export function inject(mapDependenciesToPropsFactories, mergeProps, options) {
+    let injectDependenciesToProps;
 
-    if (typeof deps === "function") {
-        grabDepsFn = compose([].slice.call(arguments));
-    } else if (isString(deps)) {
-        grabDepsFn = grabDepsByName([].slice.call(arguments));
-    } else if (isArray(deps)) {
-        if (typeof injection !== 'function') {
-            throw new Error('injection must be function!!');
-        }
-        grabDepsFn = (dependencies, nextProps, injector) => {
-            const depProps = Object.assign({}, nextProps);
-            deps.forEach(function (depName, i) {
-                mapDepsToProps(dependencies, depProps, injector, depName);
-            });
-            return injection(deps.map(name => depProps[name]), nextProps);
+    if (isFunction(mapDependenciesToPropsFactories) || (isArray(mapDependenciesToPropsFactories) && isFunction(mapDependenciesToPropsFactories[0]))) {
+        injectDependenciesToProps = compose([].concat(mapDependenciesToPropsFactories));
+    } else if (isString(mapDependenciesToPropsFactories)) {
+        injectDependenciesToProps = mapByNames([].slice.call(arguments));
+    } else if (isArray(mapDependenciesToPropsFactories)) {
+        const deps = mapDependenciesToPropsFactories;
+        const map = mapByNames(deps);
+        mapDependenciesToPropsFactories = mergeProps;
+        mergeProps = options;
+        injectDependenciesToProps = (dependencies, ownProps, injector) => {
+            const newProps = map(dependencies, ownProps, injector);
+            return mapDependenciesToPropsFactories(deps.map(name => newProps[name]), ownProps);
         };
     } else {
-        grabDepsFn = renameProps(deps);
+        injectDependenciesToProps = renameProps(mapDependenciesToPropsFactories);
     }
 
-    return (componentClass): Function & { WrappedComponent: any } => createInjector(grabDepsFn, componentClass);
+    return (componentClass): Function & { WrappedComponent: any } => createInjector(injectDependenciesToProps, mergeProps, componentClass);
 }
