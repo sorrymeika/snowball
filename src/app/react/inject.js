@@ -147,15 +147,15 @@ function compose(mapDependenciesToPropsFactories) {
 
 function createMapDependenciesToPropsFn(depNames, mapNames) {
     return (dependencies, ownProps, injector) => {
-        const autowiredProps = {};
+        const injectionProps = {};
         withAutowired(dependencies, () => {
             depNames.forEach((depName, i) => {
-                autowiredProps[mapNames[i]] = depName in dependencies
+                injectionProps[mapNames[i]] = depName in dependencies
                     ? dependencies[depName]
                     : autowired(depName);
             });
         });
-        return autowiredProps;
+        return injectionProps;
     };
 }
 
