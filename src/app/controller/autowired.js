@@ -4,6 +4,25 @@ import { isString } from "../../utils";
 const AUTOWIRED_PROPS = Symbol('AUTOWIRED_PROPS');
 const AUTOWIRED_METHOD = Symbol('AUTOWIRED_METHOD');
 
+
+function formatName(name) {
+    return name.replace(/^[_]/g, '');
+}
+
+function formatResourceName(resourceType: string, resourceName: string) {
+    resourceName = formatName(resourceName).toLowerCase();
+    resourceType = resourceType.toLowerCase();
+    if (resourceName.endsWith(resourceType)) {
+        resourceName = resourceName.slice(0, resourceType.length * -1);
+    }
+    return resourceName;
+}
+
+function formatWiredName(resourceType: string, resourceName: string) {
+    return ('@' + resourceType + '#' + formatResourceName(resourceType, resourceName)).toLowerCase();
+}
+
+
 let pageCtx;
 
 export function getAutowiredCtx() {
@@ -48,10 +67,10 @@ function getAutowiredConfiguration(classInstance, fn) {
 
 const wiringNames = {};
 
-function wire(classInstance, propName, resourceName, options) {
+function wire(classInstance, resourceType, resourceName, options) {
     return getAutowiredConfiguration(classInstance, (config) => {
         let val;
-        let wiredName = ('#' + propName.replace(/^[_]/g, '') + '@' + resourceName).toLowerCase();
+        let wiredName = formatWiredName(resourceType, resourceName);
         let callerInstance;
 
         if (options && options.level === 'instance') {
@@ -66,11 +85,11 @@ function wire(classInstance, propName, resourceName, options) {
                 throw new Error('circular reference: ' + wiredName);
             }
             wiringNames[wiredName] = true;
-            val = callerInstance[wiredName] = config[resourceName];
+            val = callerInstance[wiredName] = config[resourceType];
             delete wiringNames[wiredName];
             if (val === undefined)
                 throw new Error(
-                    "autowired: Dependency '" + resourceName + "' is not available! Make sure it is provided by Configuration!"
+                    "autowired: Dependency '" + resourceType + "' is not available! Make sure it is provided by Configuration!"
                 );
         }
 
@@ -81,25 +100,27 @@ function wire(classInstance, propName, resourceName, options) {
 function defineAutowired(proto) {
     Object.defineProperty(proto, AUTOWIRED_METHOD, {
         configurable: true,
-        value(propName, resourceName, options) {
+        value(resourceType, propName, options) {
             const proto = this.constructor.prototype;
             if (proto === this) {
                 return;
             }
-            return wire(this, propName, resourceName, options);
+            return wire(this, resourceType, propName, options);
         }
     });
 }
 
-function configAutowired(proto, resourceName, name, descriptor, options) {
+function configAutowired(proto, resourceType, name, descriptor, options) {
     if (typeof descriptor.get === 'function' || descriptor.set === 'function') {
         throw new Error('can not decorate `get` or `set` property!');
     }
 
+    resourceType = formatName(resourceType);
+
     const autowiredProps = Object.prototype.hasOwnProperty.call(proto, AUTOWIRED_PROPS)
         ? proto[AUTOWIRED_PROPS]
         : (proto[AUTOWIRED_PROPS] = proto[AUTOWIRED_PROPS] ? { ...proto[AUTOWIRED_PROPS] } : {});
-    autowiredProps[name] = resourceName;
+    autowiredProps[name] = resourceType;
 
     const isDefine = !!proto[AUTOWIRED_METHOD];
     if (!isDefine) {
@@ -108,42 +129,42 @@ function configAutowired(proto, resourceName, name, descriptor, options) {
 
     return {
         get() {
-            return this[AUTOWIRED_METHOD](name, resourceName, options);
+            return this[AUTOWIRED_METHOD](resourceType, name, options);
         }
     };
 }
 
-export function autowired<T>(resourceName, options?: { level: 'ctx' | 'instance' }, descriptor?): T {
+export function autowired(resourceType, options?: { name?: 'string', level: 'ctx' | 'instance' }, descriptor?) {
     if (wiringCaller) {
-        if (isString(resourceName)) {
-            return wire(wiringCaller, resourceName, resourceName, options);
+        if (isString(resourceType)) {
+            return wire(wiringCaller, resourceType, (options && options.name) || resourceType, options);
         }
         return null;
     }
 
-    if (isString(resourceName)) {
+    if (isString(resourceType)) {
         return (target, name, descriptor) => {
-            return configAutowired(target, resourceName, name, descriptor, {
+            return configAutowired(target, resourceType, (options && options.name) || name, descriptor, {
                 level: 'ctx',
                 ...options,
                 autowiredType: 'autowired'
             });
         };
     }
-    return configAutowired(resourceName, options.replace(/^[_]/g, ''), options, descriptor, {
+    return configAutowired(resourceType, options, options, descriptor, {
         level: 'ctx',
         autowiredType: 'autowired'
     });
 }
 
-function wireParam(classInstance, resourceName, options) {
+function wireParam(classInstance, paramName, options) {
     return getAutowiredConfiguration(classInstance, (config) => {
-        if (resourceName in config.__params__) {
-            return config.__params__[resourceName];
+        if (paramName in config.__params__) {
+            return config.__params__[paramName];
         } else {
-            const paramVal = resourceName in pageCtx.location.params
-                ? pageCtx.location.params[resourceName]
-                : pageCtx.location.query[resourceName];
+            const paramVal = paramName in pageCtx.location.params
+                ? pageCtx.location.params[paramName]
+                : pageCtx.location.query[paramName];
             if (paramVal == null) {
                 return 'defaultValue' in options
                     ? options.defaultValue
@@ -175,25 +196,27 @@ function wireParam(classInstance, resourceName, options) {
     });
 }
 
-function decorateParam(proto, resourceName, propName, descriptor, options) {
+function decorateParam(proto, paramName, propName, descriptor, options) {
     if (typeof descriptor.get === 'function' || descriptor.set === 'function') {
         throw new Error('can not decorate `get` or `set` property!');
     }
+
+    paramName = paramName.replace(/^[_]/g, '');
 
     return {
         writable: true,
         configurable: true,
         initializer() {
-            return wireParam(this, resourceName, options);
+            return wireParam(this, paramName, options);
         }
     };
 }
 
 export function param<T>(proto, propName, descriptor): T {
     if (isString(proto)) {
-        const resourceName = proto;
+        const paramName = proto;
         return (target, name, descriptor) => {
-            return decorateParam(target, resourceName, name, descriptor, {
+            return decorateParam(target, paramName, name, descriptor, {
                 type: 'any',
                 ...propName,
                 autowiredType: 'param'
@@ -201,7 +224,7 @@ export function param<T>(proto, propName, descriptor): T {
         };
     }
 
-    return decorateParam(proto, propName.replace(/^[_]/g, ''), propName, descriptor, {
+    return decorateParam(proto, propName, propName, descriptor, {
         type: 'any',
         autowiredType: 'param',
     });
