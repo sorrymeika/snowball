@@ -12,7 +12,6 @@ import { enqueueUpdate } from './methods/enqueueUpdate';
 import { blindSet } from './methods/blindSet';
 import { updateRefs } from './methods/updateRefs';
 import { connect, disconnect, freezeObject } from './methods/connect';
-import { observable } from './observable';
 import { observeProp, unobserveProp } from './methods/observeProp';
 import compute from './operators/compute';
 import { SymbolFrom } from './symbols';
@@ -229,6 +228,8 @@ export class Model extends Observer {
             isChange |= setAttribute(this, removeKeys[i], undefined, renew, renewChild);
         }
 
+        state.setting = false;
+
         if (isChange) {
             freezeObject(attributes, this);
             enqueueUpdate(this);
@@ -241,7 +242,6 @@ export class Model extends Observer {
         } else {
             state.data = oldAttributes;
         }
-        state.setting = false;
         state.changed = isChange;
 
         return this;
@@ -273,7 +273,7 @@ export class Model extends Observer {
         if (observableProps[key]) return observableProps[key];
 
         var value = data == null ? undefined : data[key];
-        const observer = observable(value);
+        const observer = new Observer(value);
         this.set(key, observer);
         return observer;
     }
@@ -283,6 +283,22 @@ export class Model extends Observer {
             this.state.hasOnAttrChangeListener = true;
         }
         return super.on(type, fn);
+    }
+
+    off(type, fn) {
+        super.off(type, fn);
+
+        let hasOnAttrChangeListener = false;
+
+        for (let key in this.__events) {
+            if (/^change:/.test(key) && this.__events[key].length != 0) {
+                hasOnAttrChangeListener = true;
+                break;
+            }
+        }
+
+        this.state.hasOnAttrChangeListener = hasOnAttrChangeListener;
+        return this;
     }
 
     /**
@@ -355,17 +371,18 @@ function setAttribute(model, attr, newValue, renew, renewChild) {
     const state = model.state;
     const { data: attributes, observableProps, changes } = state;
     const oldValue = observableProps[attr] || attributes[attr];
+    const oldAttrValue = attributes[attr];
 
     if (oldValue !== newValue) {
         if (newValue == null) {
-            changes.push(attr, newValue, attributes[attr]);
+            changes.push(attr, newValue, oldAttrValue);
             attributes[attr] = observableProps[attr] = newValue;
             if (isObservable(oldValue)) {
                 disconnect(model, oldValue);
             }
             return true;
         } else if (isObservable(newValue)) {
-            changes.push(attr, newValue.state.data, attributes[attr]);
+            changes.push(attr, newValue.state.data, oldAttrValue);
             observableProps[attr] = newValue;
             attributes[attr] = newValue.state.data;
 
@@ -382,6 +399,7 @@ function setAttribute(model, attr, newValue, renew, renewChild) {
             attributes[attr] = oldValue.state.data;
 
             if (oldValue.state.changed) {
+                changes.push(attr, oldValue.state.data, oldAttrValue);
                 return true;
             }
         } else if (isCollection(oldValue)) {
@@ -397,6 +415,7 @@ function setAttribute(model, attr, newValue, renew, renewChild) {
             attributes[attr] = oldValue.state.data;
 
             if (oldValue.state.changed) {
+                changes.push(attr, oldValue.state.data, oldAttrValue);
                 return true;
             }
         } else if (isObservable(oldValue)) {
@@ -404,6 +423,7 @@ function setAttribute(model, attr, newValue, renew, renewChild) {
             attributes[attr] = oldValue.state.data;
 
             if (oldValue.state.changed) {
+                changes.push(attr, oldValue.state.data, oldAttrValue);
                 return true;
             }
         } else if (isThenable(newValue)) {
@@ -413,11 +433,11 @@ function setAttribute(model, attr, newValue, renew, renewChild) {
         } else {
             newValue = createAttribute(model, attr, newValue);
             if (isObservable(newValue)) {
-                changes.push(attr, newValue.state.data, attributes[attr]);
+                changes.push(attr, newValue.state.data, oldAttrValue);
                 observableProps[attr] = newValue;
                 attributes[attr] = newValue.state.data;
             } else {
-                changes.push(attr, newValue, attributes[attr]);
+                changes.push(attr, newValue, oldAttrValue);
                 attributes[attr] = newValue;
             }
             return true;
@@ -435,7 +455,70 @@ function parseChanges(attrs) {
         .join(' change');
 }
 
+
+// model test
 if (process.env.NODE_ENV === 'development') {
+
+    // change event test
+    setTimeout(() => {
+        const model = new Model({ name: 1 });
+        const childModel = new Model({
+            childName: 1
+        });
+
+        let count = 0;
+
+        model.on('change:name', (e, newVal, oldVal) => {
+            switch (count) {
+                case 0:
+                    console.assert(newVal === 2, 'model `name` must be 2, now is' + newVal);
+                    break;
+                case 1:
+                    console.assert(newVal === childModel.get(), 'model `name` must be childModel, now is' + newVal);
+                    break;
+                case 2:
+                    console.assert(newVal === childModel.get(), 'model `name` must be childModel, now is' + newVal);
+                    break;
+                case 3:
+                    console.assert(newVal === childModel.get(), 'model `name` must be childModel, now is' + newVal);
+                    break;
+                case 4:
+                    console.error('多了一次触发');
+                    break;
+            }
+            count++;
+        });
+
+        model.set({
+            name: 2
+        });
+        console.assert(count === 1, 'model `change:name` event is not emit!');
+
+        model.set({
+            name: childModel
+        });
+        console.assert(count === 2, 'model `change:name` event is not emit!');
+
+        childModel.set({
+            childName: 2
+        });
+        console.assert(count === 3, 'model `change:name` event is not emit!');
+
+        let childNameChanged = 0;
+        childModel.on('change:childName', () => {
+            childNameChanged++;
+        });
+
+        model.set({
+            name: {
+                childName: 3
+            }
+        });
+        console.assert(count === 4, 'model `change:name` event is not emit!');
+        console.assert(childNameChanged === 1, 'childModel `change:childName` event is not emit!');
+    });
+
+    // value set test
     setTimeout(() => {
         const model = new Model();
 

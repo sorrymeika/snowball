@@ -1,12 +1,12 @@
-import { Observer } from "./Observer";
-import { Model } from "./Model";
-import { Collection } from "./Collection";
-import { updateRefs } from "./methods/updateRefs";
-import { enqueueUpdate } from "./methods/enqueueUpdate";
-import { isObservable } from "./predicates";
-import { disconnect, connect, freezeObject } from "./methods/connect";
-import { getRelObserverOrSelf } from "./methods/getRelObserver";
-import { SymbolFrom } from "./symbols";
+import { Observer } from "../Observer";
+import { Model } from "../Model";
+import { updateRefs } from "../methods/updateRefs";
+import { enqueueUpdate } from "../methods/enqueueUpdate";
+import { isObservable } from "../predicates";
+import { disconnect, connect, freezeObject } from "../methods/connect";
+import { getRelObserverOrSelf } from "../methods/getRelObserver";
+import { SymbolFrom } from "../symbols";
+import { reactTo } from "./Reaction";
 
 const hasOwnProperty = Object.prototype.hasOwnProperty;
 const MARK_SWEEP = Symbol('mark and sweep');
@@ -70,6 +70,7 @@ export class Dictionary extends Observer {
                 data[key] = MARK_SWEEP;
             }
         }
+        this.state.setting = true;
 
         for (let key in data) {
             if (key === 'constructor' && typeof data[key] === 'function') {
@@ -93,6 +94,8 @@ export class Dictionary extends Observer {
             }
         }
 
+        this.state.setting = false;
+
         emitChanges.call(this, changes);
 
         return this;
@@ -103,6 +106,7 @@ export class Dictionary extends Observer {
         const attributes = this.state.data = Object.assign({}, state.data);
         const changes = [];
 
+        state.setting = true;
         for (let key in data) {
             if (key === 'constructor' && typeof data[key] === 'function') {
                 continue;
@@ -119,10 +123,18 @@ export class Dictionary extends Observer {
                 }
             }
         }
+        state.setting = false;
 
         emitChanges.call(this, changes);
 
         return this;
+    }
+
+    get(key) {
+        reactTo(this, key);
+
+        if (key == null) return this.state.data;
+        return this.state.data[key];
     }
 
     destroy() {
@@ -145,13 +157,7 @@ export class Dictionary extends Observer {
 }
 
 Dictionary.prototype.on = Model.prototype.on;
-Dictionary.prototype.get = Model.prototype.get;
+Dictionary.prototype.off = Model.prototype.off;
 Dictionary.prototype.observe = Model.prototype.observe;
 Dictionary.prototype.unobserve = Model.prototype.unobserve;
 Dictionary.prototype.compute = Model.prototype.compute;
-
-export class DictionaryList extends Collection {
-    static createItem(data, index, parent) {
-        return new Dictionary(data, index, parent);
-    }
-}

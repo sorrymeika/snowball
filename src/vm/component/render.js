@@ -1,9 +1,9 @@
 import { isYes, isNumber } from '../../utils/is';
 import { createComponent } from './component';
-import { Reaction } from '../Reaction';
+import { Reaction } from '../reaction/Reaction';
 import { get } from '../../utils';
 import { isModel, isCollection } from '../predicates';
-import { ObserverList } from '../List';
+import List from '../reaction/List';
 import {
     IElement,
     createElement,
@@ -217,7 +217,7 @@ function renderRepeatItem(element: IElement, state, data) {
 
     if (!isCollection(collection)) {
         const array = collection;
-        collection = element.collection || (element.collection = new ObserverList());
+        collection = element.collection || (element.collection = new List());
         collection.set(array);
     }
 

@@ -38,10 +38,14 @@ function bubbleUpdate(parent, model, key, value) {
                     for (let name in parentState.data) {
                         newData[name] = parentState.data[name];
                     }
+                    const oldVal = parentState.data[key];
                     newData[key] = value;
                     parentState.data = newData;
                     freezeObject(parentState.data, parent);
                     updateRefs(parent);
+                    if (parentState.hasOnAttrChangeListener) {
+                        parent.trigger('change:' + key, value, oldVal);
+                    }
                     return;
                 }
             }

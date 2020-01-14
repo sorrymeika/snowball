@@ -150,9 +150,11 @@ function createMapDependenciesToPropsFn(depNames, mapNames) {
         const injectionProps = {};
         withAutowired(dependencies, () => {
             depNames.forEach((depName, i) => {
-                injectionProps[mapNames[i]] = depName in dependencies
-                    ? dependencies[depName]
-                    : autowired(depName);
+                injectionProps[mapNames[i]] = depName in ownProps
+                    ? ownProps[depName]
+                    : depName in dependencies
+                        ? dependencies[depName]
+                        : autowired(depName);
             });
         });
         return injectionProps;

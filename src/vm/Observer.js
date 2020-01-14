@@ -10,6 +10,7 @@ import { TYPEOF } from './predicates';
 
 export interface IObservable {
     get: () => any,
+    set: () => IObservable,
     observe: (cb: (value: any) => any) => boolean,
     unobserve: (cb: (value: any) => any) => any,
     destroy: () => never,
@@ -37,7 +38,6 @@ export class Observer implements IObservable {
         if (parent) {
             connect(parent, this, key);
         }
-        this.render = this.render.bind(this);
         enqueueInit(this);
         if (data !== undefined) {
             this.set(data);
@@ -131,6 +131,17 @@ Observer.prototype.on = function (type, fn) {
         this.state.hasOnChangeListener = true;
     }
     return on.call(this, type, fn);
+};
+
+const off = Observer.prototype.off;
+Observer.prototype.off = function (type, fn) {
+    off.call(this, type, fn);
+
+    if (!this.__events['change'] || this.__events['change'].length == 0) {
+        this.state.hasOnChangeListener = false;
+    }
+
+    return this;
 };
 
 Observer.prototype[TYPEOF] = 'Observer';
