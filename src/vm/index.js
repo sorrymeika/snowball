@@ -2,7 +2,7 @@ import * as Operators from './operators';
 
 export { isObserver, isObservable, isObservableObject, isModel, isCollection, isList } from './predicates';
 
-export { Observer } from './Observer';
+export { Observer, Subject } from './Observer';
 export { Model } from './Model';
 export { Collection } from './Collection';
 export { default as State } from './State';
