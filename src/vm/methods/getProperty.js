@@ -4,6 +4,13 @@ import { castPath } from "../../utils/castPath";
 import { isModel, isDictionary, isObservable } from "../predicates";
 
 export function getProperty(model, path) {
+    if (!isObservable(model)) {
+        return get(model, path);
+    }
+    return getObsProperty(model, path);
+}
+
+function getObsProperty(model, path) {
     const { data } = model.state;
     if (path == null || path == '') {
         reactTo(model);
@@ -22,9 +29,15 @@ export function getProperty(model, path) {
             reactTo(model, firstKey);
             return data[firstKey];
         } else {
-            return getProperty(isModel(model) ? model.state.observableProps[firstKey] : data[firstKey], keys);
+            const subModel = isModel(model) ? model.state.observableProps[firstKey] : data[firstKey];
+            if (isObservable(subModel)) {
+                return getObsProperty(subModel, keys);
+            } else {
+                reactTo(model, firstKey);
+                return getProperty(subModel, keys);
+            }
         }
-    } else if (isObservable(model)) {
+    } else {
         reactTo(model);
     }
     return get(data, keys);

@@ -305,6 +305,9 @@ if (process.env.NODE_ENV === 'development') {
                 case 0:
                     console.assert(a.get('name') == 2, 'a.name must be 2!');
                     break;
+                case 1:
+                    console.assert(a.get('data.name') == 1, 'a.data.name must be 1!');
+                    break;
             }
         }, true);
 
@@ -320,5 +323,16 @@ if (process.env.NODE_ENV === 'development') {
         a.set({ name: 2, id: 1 });
         console.assert(count == 0, 'id change can not emit reaction!');
         console.assert(a.get('id') == 1, 'a.id must be 1!!');
+
+        reaction.track(() => {
+            tmp.name = a.get('data.name');
+        });
+
+        a.set({
+            data: {
+                name: 1
+            }
+        });
+        console.assert(count == 1, 'set a.data.name, reaction is not emit!');
     });
 }
