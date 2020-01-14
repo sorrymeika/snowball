@@ -1,9 +1,9 @@
 import { isYes, isNumber } from '../../utils/is';
 import { createComponent } from './component';
-import { Reaction } from '../reaction/Reaction';
+import { Reaction } from '../Reaction';
 import { get } from '../../utils';
 import { isModel, isCollection } from '../predicates';
-import List from '../reaction/List';
+import List from '../objects/List';
 import {
     IElement,
     createElement,

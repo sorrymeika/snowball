@@ -1,5 +1,5 @@
 import Event from "../core/event";
-import { IObservable } from "../vm/Observer";
+import { IObservable } from "../vm/objects/Observer";
 
 export type Location = {
     path: string,

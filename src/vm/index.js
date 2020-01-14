@@ -2,14 +2,14 @@ import * as Operators from './operators';
 
 export { isObserver, isObservable, isObservableObject, isModel, isCollection, isList } from './predicates';
 
-export { Observer, Subject } from './Observer';
-export { Model } from './Model';
-export { Collection } from './Collection';
-export { default as State } from './State';
+export { Observer, Subject } from './objects/Observer';
+export { Model } from './objects/Model';
+export { Collection } from './objects/Collection';
+export { default as State } from './objects/State';
 
-export { default as List } from './reaction/List';
-export { Dictionary } from './reaction/Dictionary';
-export { Reaction, autorun } from './reaction/Reaction';
+export { default as List } from './objects/List';
+export { Dictionary } from './objects/Dictionary';
+export { Reaction, autorun } from './Reaction';
 
 export { observable, asObservable } from './observable';
 

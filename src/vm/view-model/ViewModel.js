@@ -7,7 +7,7 @@ import { TYPEOF } from '../predicates';
 import { unbindEvents, bindEvents } from './events';
 import { TemplateCompiler } from './template';
 
-import { Model } from '../Model';
+import { Model } from '../objects/Model';
 import { enqueueUpdate, shouldContinueFlushingViews } from '../methods/enqueueUpdate';
 
 function compileNewTemplate(viewModel, template) {

@@ -1,12 +1,11 @@
-import { Observer } from "../Observer";
-import { Model } from "../Model";
+import { Observer } from "./Observer";
+import { Model } from "./Model";
 import { updateRefs } from "../methods/updateRefs";
 import { enqueueUpdate } from "../methods/enqueueUpdate";
 import { isObservable, TYPEOF } from "../predicates";
 import { disconnect, connect, freezeObject } from "../methods/connect";
 import { getRelObserverOrSelf } from "../methods/getRelObserver";
 import { SymbolFrom } from "../symbols";
-import { reactTo } from "./Reaction";
 
 const hasOwnProperty = Object.prototype.hasOwnProperty;
 const MARK_SWEEP = Symbol('mark and sweep');
@@ -24,14 +23,14 @@ function emitChanges(changes) {
     this.state.changed = true;
 }
 
-function addChange(attributes, key, value, originValue, changes) {
-    changes.push(key, value, originValue);
+function addChange(attributes, key, value, oldValue, changes) {
+    changes.push(key, value, oldValue);
 
     if (value) {
         const observer = getRelObserverOrSelf(value);
         if (isObservable(observer)) {
-            if (isObservable(originValue)) {
-                disconnect(this, originValue);
+            if (isObservable(oldValue)) {
+                disconnect(this, oldValue);
             }
             connect(this, observer, key);
         }
@@ -78,16 +77,16 @@ export class Dictionary extends Observer {
             }
 
             const value = data[key];
-            const originValue = oldAttributes[key];
+            const oldValue = oldAttributes[key];
 
             if (value === MARK_SWEEP) {
                 changes.push(key, undefined, attributes[key]);
 
-                if (isObservable(originValue)) {
-                    disconnect(this, originValue);
+                if (isObservable(oldValue)) {
+                    disconnect(this, oldValue);
                 }
-            } else if (originValue !== value) {
-                addChange.call(this, attributes, key, value, originValue, changes);
+            } else if (oldValue !== value) {
+                addChange.call(this, attributes, key, value, oldValue, changes);
             }
         }
 
@@ -123,10 +122,10 @@ export class Dictionary extends Observer {
             }
             if (hasOwnProperty.call(data, key)) {
                 const value = data[key];
-                const originValue = attributes[key];
+                const oldValue = attributes[key];
 
-                if (originValue !== value) {
-                    addChange.call(this, attributes, key, value, originValue, changes);
+                if (oldValue !== value) {
+                    addChange.call(this, attributes, key, value, oldValue, changes);
                 }
             }
         }
@@ -137,11 +136,35 @@ export class Dictionary extends Observer {
         return this;
     }
 
-    get(key) {
-        reactTo(this, key);
+    keys() {
+        return Object.keys(this.state.data);
+    }
 
-        if (key == null) return this.state.data;
-        return this.state.data[key];
+    has(key) {
+        return key in this.state.data;
+    }
+
+    delete(key) {
+        const { state } = this;
+        const { data } = state;
+
+        key = '' + key;
+        if (key in data) {
+            const oldValue = data[key];
+            const newData = {};
+            for (let attrName in data) {
+                if (key !== attrName) {
+                    newData[key] = data[attrName];
+                }
+            }
+            state.data = newData;
+
+            if (oldValue !== undefined) {
+                emitChanges.call(this, [key, undefined, oldValue]);
+            }
+            return true;
+        }
+        return false;
     }
 
     destroy() {

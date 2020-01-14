@@ -4,7 +4,7 @@ import { castPath } from '../../utils/castPath';
 import { isNumber } from '../../utils/is';
 import compileExpression from './compileExpression';
 import { findChildModel } from '../methods/findChildModel';
-import { Collection } from '../Collection';
+import { Collection } from '../objects/Collection';
 import NodeUpdateResult from './NodeUpdateResult';
 import { cloneEvents } from './events';
 import getFunctionArg from './getFunctionArg';

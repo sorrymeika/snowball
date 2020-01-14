@@ -1,5 +1,5 @@
 
-import { Observer, readonlyObserver } from '../Observer';
+import { Observer, readonlyObserver } from '../objects/Observer';
 
 export default function some(observers) {
     const [observer, setObserver] = readonlyObserver(new Observer());

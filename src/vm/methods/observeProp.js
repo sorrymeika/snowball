@@ -1,5 +1,5 @@
-import { ChangeObserver } from "../Observer";
 import { get } from "../../utils";
+import { ChangeObserver } from "../objects/Observer";
 
 export function observeProp(observer, name, fn) {
     if (!fn) {

@@ -1,12 +1,12 @@
-import { eventMixin } from '../core/event';
-import { get } from '../utils/object';
-import { identify } from '../utils/guid';
+import { eventMixin } from '../../core/event';
+import { identify } from '../../utils/guid';
 
-import { enqueueUpdate, nextTick, enqueueInit, emitUpdate } from './methods/enqueueUpdate';
-import { updateRefs } from './methods/updateRefs';
-import { connect, disconnect } from './methods/connect';
-import compute from './operators/compute';
-import { TYPEOF } from './predicates';
+import { enqueueUpdate, nextTick, enqueueInit, emitUpdate } from '../methods/enqueueUpdate';
+import { updateRefs } from '../methods/updateRefs';
+import { connect, disconnect } from '../methods/connect';
+import compute from '../operators/compute';
+import { TYPEOF } from '../predicates';
+import { getProperty } from '../methods/getProperty';
 
 export interface IObservable {
     get: () => any,
@@ -45,8 +45,8 @@ export class Observer implements IObservable {
         this.state.initialized = true;
     }
 
-    get(keys) {
-        return keys != null ? get(this.state.data, keys) : this.state.data;
+    get(path) {
+        return getProperty(this, path);
     }
 
     set(data) {

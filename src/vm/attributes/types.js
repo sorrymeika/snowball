@@ -1,7 +1,6 @@
-import { isNumber, isString, isObject, isBoolean, isPlainObject, isArray } from "../../utils";
+import { isNumber, isString, isObject, isBoolean, isArray } from "../../utils";
 import { createDescriptor } from "./createDescriptor";
-import { Dictionary } from "../reaction/Dictionary";
-import List from "../reaction/List";
+import List from "../objects/List";
 
 function defaultGetter(observer, name) {
     return observer.get(name);
@@ -14,9 +13,7 @@ export const any = createDescriptor(
     },
     (observer, name, val) => {
         if (!observer.state.observableProps[name]) {
-            if (isPlainObject(val)) {
-                val = new Dictionary(val);
-            } else if (isArray(val)) {
+            if (isArray(val)) {
                 val = new List(val);
             }
         }

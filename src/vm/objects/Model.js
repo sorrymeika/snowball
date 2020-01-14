@@ -1,21 +1,20 @@
 /* eslint-disable max-statements */
-import { isBoolean, isArray, isPlainObject, isThenable, isString } from '../utils/is';
-import { extend, deepClone } from '../utils/clone';
-import { get } from '../utils/object';
+import { isBoolean, isArray, isPlainObject, isThenable, isString } from '../../utils/is';
+import { extend, deepClone } from '../../utils/clone';
 
 import { Observer } from './Observer';
 import { Collection } from './Collection';
 
-import { isModel, isCollection, isObservable, TYPEOF, isDictionary, isList } from './predicates';
+import { isModel, isCollection, isObservable, TYPEOF, isDictionary, isList } from '../predicates';
 
-import { enqueueUpdate } from './methods/enqueueUpdate';
-import { blindSet } from './methods/set';
-import { updateRefs } from './methods/updateRefs';
-import { connect, disconnect, freezeObject } from './methods/connect';
-import { observeProp, unobserveProp } from './methods/observeProp';
-import compute from './operators/compute';
-import { SymbolFrom } from './symbols';
-import { getRelObserver, getRelObserverOrSelf, neverConnectToModel } from './methods/getRelObserver';
+import { enqueueUpdate } from '../methods/enqueueUpdate';
+import { blindSet } from '../methods/set';
+import { updateRefs } from '../methods/updateRefs';
+import { connect, disconnect, freezeObject } from '../methods/connect';
+import { observeProp, unobserveProp } from '../methods/observeProp';
+import compute from '../operators/compute';
+import { SymbolFrom } from '../symbols';
+import { getRelObserver, getRelObserverOrSelf, neverConnectToModel } from '../methods/getRelObserver';
 
 const toString = Object.prototype.toString;
 const RE_QUERY = /(?:^|\.)([_a-zA-Z0-9]+)(\[(?:'(?:\\'|[^'])*'|"(?:\\"|[^"])*"|[^\]])+\](?:\[[+-]?\d*\])?)?/g;
@@ -123,13 +122,6 @@ export class Model extends Observer {
                 return result;
             }, {})
             : {};
-    }
-
-    get(key) {
-        const { data } = this.state;
-        if (key == null) return data;
-        if (!data) return undefined;
-        return get(data, key);
     }
 
     /**

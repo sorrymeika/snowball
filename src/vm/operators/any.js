@@ -1,4 +1,4 @@
-import { Observer, readonlyObserver } from '../Observer';
+import { Observer, readonlyObserver } from '../objects/Observer';
 
 export default function any(observers) {
     const [observer, set] = readonlyObserver(new Observer());

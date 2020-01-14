@@ -1,6 +1,6 @@
 import { isObservable, isRenewSet } from "../predicates";
-import { Model } from "../Model";
-import { Collection } from "../Collection";
+import { Model } from "../objects/Model";
+import { Collection } from "../objects/Collection";
 import { freezeObject } from "./connect";
 
 export function renewSet(model, isRenew, val) {

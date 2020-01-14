@@ -1,18 +1,18 @@
-import { isArray, isString, isFunction, isNumber } from '../utils/is';
-import * as arrayUtils from '../utils/array';
-import { extend } from '../utils/clone';
-import { contains } from '../utils/object';
+import { isArray, isString, isFunction, isNumber } from '../../utils/is';
+import * as arrayUtils from '../../utils/array';
+import { extend } from '../../utils/clone';
+import { contains } from '../../utils/object';
 
 import { Observer } from './Observer';
 import { Model } from './Model';
-import { isObservable, isCollection, TYPEOF } from './predicates';
-import { enqueueUpdate } from './methods/enqueueUpdate';
-import { updateRefs } from './methods/updateRefs';
-import { connect, setMapper, disconnect, freezeObject } from './methods/connect';
-import { observeProp, unobserveProp } from './methods/observeProp';
-import compute from './operators/compute';
-import { getRelObserverOrSelf } from './methods/getRelObserver';
-import { renewSet } from './methods/set';
+import { isObservable, isCollection, TYPEOF } from '../predicates';
+import { enqueueUpdate } from '../methods/enqueueUpdate';
+import { updateRefs } from '../methods/updateRefs';
+import { connect, setMapper, disconnect, freezeObject } from '../methods/connect';
+import { observeProp, unobserveProp } from '../methods/observeProp';
+import compute from '../operators/compute';
+import { getRelObserverOrSelf } from '../methods/getRelObserver';
+import { renewSet } from '../methods/set';
 
 const RE_COLL_QUERY = /\[((?:'(?:\\'|[^'])*'|"(?:\\"|[^"])*"|[^\]])+)\](?:\[([+-]?)(\d+)?\])?(?:\.(.*))?/;
 
@@ -345,11 +345,6 @@ export class Collection extends Observer {
     getOrCreate(obj) {
         var index = arrayUtils.indexOf(this.state.data, obj);
         return index !== -1 ? this[index] : this.add(obj);
-    }
-
-    get(i) {
-        if (i == null) return this.state.data;
-        return this[i].get();
     }
 
     set(array) {

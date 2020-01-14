@@ -1,5 +1,5 @@
-import { defer } from "../methods/enqueueUpdate";
-import { getMemberName } from "../methods/connect";
+import { defer } from "./methods/enqueueUpdate";
+import { getMemberName } from "./methods/connect";
 
 let currentReaction;
 
@@ -148,7 +148,7 @@ if (process.env.NODE_ENV === 'development') {
 
     // observable object test
     setTimeout(() => {
-        const { observable } = require('../observable');
+        const { observable } = require('./observable');
 
         class B {
             @observable
@@ -252,11 +252,11 @@ if (process.env.NODE_ENV === 'development') {
     });
 
 
-    // observable reaction test
+    // dictionary reaction test
     setTimeout(() => {
-        const { observable } = require('../observable');
+        const { Dictionary } = require('./objects/Dictionary');
 
-        let a = observable({
+        let a = new Dictionary({
             name: 1
         });
 
@@ -288,4 +288,37 @@ if (process.env.NODE_ENV === 'development') {
 
     });
 
+    // model reaction test
+    setTimeout(() => {
+        const { Model } = require('./objects/Model');
+        const a = new Model({
+            name: 1
+        });
+
+        let count = -1;
+        let tmp = {};
+
+        const reaction = new Reaction(() => {
+            count++;
+
+            switch (count) {
+                case 0:
+                    console.assert(a.get('name') == 2, 'a.name must be 2!');
+                    break;
+            }
+        }, true);
+
+        reaction.track(() => {
+            tmp.name = a.get('name');
+        });
+
+        console.assert(tmp.name == 1, 'tmp.name must be 1!');
+
+        a.set({ name: 2 });
+        console.assert(count == 0, 'reaction is not emit!');
+
+        a.set({ name: 2, id: 1 });
+        console.assert(count == 0, 'id change can not emit reaction!');
+        console.assert(a.get('id') == 1, 'a.id must be 1!!');
+    });
 }

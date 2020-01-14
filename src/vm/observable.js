@@ -1,11 +1,10 @@
-import { readonlyObserver, Subject, IObservable } from "./Observer";
+import { readonlyObserver, Subject, IObservable, Observer } from "./objects/Observer";
 import { isObservable } from "./predicates";
 import { isPlainObject, isFunction, isString, isArray } from "../utils";
 import { SymbolFrom, SymbolRelObserver } from "./symbols";
 import * as attributes from "./attributes";
-import List from "./reaction/List";
-import { Dictionary } from "./reaction/Dictionary";
-import { Value } from "./reaction/Value";
+import List from "./objects/List";
+import { Model } from "./objects/Model";
 
 /**
  * 可观察对象
@@ -41,11 +40,11 @@ export const observable = (initalValue, execute, descriptor) => {
         initalValue = initalValue.get();
     }
     if (isPlainObject(initalValue)) {
-        return new Dictionary(initalValue);
+        return new Model(initalValue);
     } else if (isArray(initalValue)) {
         return new List(initalValue);
     } else {
-        return new Value(initalValue);
+        return new Observer(initalValue);
     }
 };
 

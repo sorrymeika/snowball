@@ -1,5 +1,5 @@
-import { readonlyObserver } from "../Observer";
-import State from "../State";
+import { readonlyObserver } from "../objects/Observer";
+import State from "../objects/State";
 
 /**
  * 监听多个Observer并处理

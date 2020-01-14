@@ -1,4 +1,4 @@
-import { Model } from "../Model";
+import { Model } from "../objects/Model";
 import { SymbolRelObserver } from "../symbols";
 import { isObservable } from "../predicates";
 

@@ -1,6 +1,6 @@
 import { Observer } from "./Observer";
-import { enqueueUpdate, nextTick } from "./methods/enqueueUpdate";
-import { TYPEOF } from "./predicates";
+import { enqueueUpdate, nextTick } from "../methods/enqueueUpdate";
+import { TYPEOF } from "../predicates";
 
 const resolvedPromise = Promise.resolve();
 
