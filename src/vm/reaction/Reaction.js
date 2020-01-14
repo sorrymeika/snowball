@@ -59,7 +59,11 @@ export class Reaction {
         if (!oldDispose) {
             const eventName = name != null ? 'change:' + name : 'change';
             const emit = () => {
-                this.emit();
+                if (currentReaction != this) {
+                    this.emit();
+                } else {
+                    console.warn('it will not emit when changes caused in reaction.track!');
+                }
             };
             const dispose = () => {
                 model.off(eventName, emit);
@@ -282,7 +286,6 @@ if (process.env.NODE_ENV === 'development') {
         console.assert(count == 0, 'id change can not emit reaction!');
         console.assert(a.get('id') == 1, 'a.id must be 1!!');
 
-        console.log(a);
     });
 
 }

@@ -101,7 +101,8 @@ export class Dictionary extends Observer {
         return this;
     }
 
-    set(data) {
+    set(key, val) {
+        const data = arguments.length == 2 ? { [key]: val } : key;
         const { state } = this;
         const attributes = this.state.data = Object.assign({}, state.data);
         const changes = [];
