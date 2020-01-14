@@ -1,16 +1,9 @@
-import { Observer } from "../Observer";
 import { isPlainObject, isArray } from '../../utils/is';
 import { Collection } from '../Collection';
-import { isObservable } from "../predicates";
+import { isObservable, TYPEOF } from "../predicates";
 import { Dictionary } from "./Dictionary";
+import { Value } from './Value';
 import { reactTo } from "./Reaction";
-
-class Value extends Observer {
-    get(keys) {
-        reactTo(this);
-        return super.get(keys);
-    }
-}
 
 export default class List extends Collection {
     static createItem(parent, index, data) {
@@ -36,3 +29,5 @@ export default class List extends Collection {
         return super.get(i);
     }
 }
+
+List.prototype[TYPEOF] = 'List';

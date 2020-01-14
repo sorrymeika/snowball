@@ -1,5 +1,5 @@
 import { ELEMENT_NODE, COMMENT_NODE, cloneElement, closestElement, insertElementAfter } from '../../utils/dom';
-import { value as valueOfObject } from '../../utils/object';
+import { get as valueOfObject } from '../../utils/object';
 import { castPath } from '../../utils/castPath';
 import { isNumber } from '../../utils/is';
 import compileExpression from './compileExpression';

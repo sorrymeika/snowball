@@ -1,7 +1,16 @@
-import { isObservable } from "../predicates";
+import { isObservable, isRenewSet } from "../predicates";
 import { Model } from "../Model";
 import { Collection } from "../Collection";
 import { freezeObject } from "./connect";
+
+export function renewSet(model, isRenew, val) {
+    if (isRenewSet(model)) {
+        model.set(isRenew, val);
+    } else {
+        model.set(val);
+    }
+    return model;
+}
 
 export function blindSet(model, renew, keys, val) {
     var tmp;

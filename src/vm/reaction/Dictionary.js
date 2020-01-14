@@ -2,7 +2,7 @@ import { Observer } from "../Observer";
 import { Model } from "../Model";
 import { updateRefs } from "../methods/updateRefs";
 import { enqueueUpdate } from "../methods/enqueueUpdate";
-import { isObservable } from "../predicates";
+import { isObservable, TYPEOF } from "../predicates";
 import { disconnect, connect, freezeObject } from "../methods/connect";
 import { getRelObserverOrSelf } from "../methods/getRelObserver";
 import { SymbolFrom } from "../symbols";
@@ -41,9 +41,6 @@ function addChange(attributes, key, value, originValue, changes) {
 }
 
 export class Dictionary extends Observer {
-    static isDictionary = (dictionary) => {
-        return dictionary instanceof Dictionary;
-    }
 
     constructor(data, key?, parent?) {
         super(undefined, key, parent);
@@ -102,7 +99,16 @@ export class Dictionary extends Observer {
     }
 
     set(key, val) {
-        const data = arguments.length == 2 ? { [key]: val } : key;
+        let data;
+        if (typeof key === 'boolean') {
+            if (key) {
+                return this.renew(val);
+            }
+            data = val;
+        } else {
+            data = arguments.length == 2 ? { [key]: val } : key;
+        }
+
         const { state } = this;
         const attributes = this.state.data = Object.assign({}, state.data);
         const changes = [];
@@ -162,3 +168,5 @@ Dictionary.prototype.off = Model.prototype.off;
 Dictionary.prototype.observe = Model.prototype.observe;
 Dictionary.prototype.unobserve = Model.prototype.unobserve;
 Dictionary.prototype.compute = Model.prototype.compute;
+
+Dictionary.prototype[TYPEOF] = 'Dictionary';

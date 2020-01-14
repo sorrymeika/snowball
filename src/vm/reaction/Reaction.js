@@ -91,7 +91,7 @@ export class Reaction {
         this._array.reduce((prev, current) => {
             if (prev) {
                 const [prevModel, prevName] = prev;
-                if (!current || !current[0].state.facade || getMemberName(prevModel, current[0]) !== prevName) {
+                if (!current || getMemberName(prevModel, current[0]) !== prevName) {
                     this._observe(prevModel, prevName);
                 }
             }

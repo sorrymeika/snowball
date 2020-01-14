@@ -10,6 +10,10 @@ export function isObservable(observer) {
     return !!(observer && observer[TYPEOF]);
 }
 
+export function isRenewSet(model) {
+    return isModel(model) || isDictionary(model);
+}
+
 export function isModel(model) {
     return model && (model[TYPEOF] === 'Model' || model[TYPEOF] === 'ViewModel');
 }
@@ -28,4 +32,8 @@ export function isCollection(collection) {
 
 export function isList(list) {
     return list && list[TYPEOF] === 'List';
+}
+
+export function isDictionary(list) {
+    return list && list[TYPEOF] === 'Dictionary';
 }

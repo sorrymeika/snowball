@@ -200,6 +200,19 @@ export function shallowEqual(objA: mixed, objB: mixed): boolean {
         return true;
     }
 
+    if (Array.isArray(objA) && Array.isArray(objB)) {
+        if (objA.length !== objB.length) {
+            return false;
+        }
+
+        for (let i = 0; i < objA.length; i++) {
+            if (!is(objA[i], objB[i])) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     if (typeof objA !== 'object' || objA === null ||
         typeof objB !== 'object' || objB === null) {
         return false;
@@ -373,12 +386,6 @@ export function hasKey(data, path) {
     }
 
     return true;
-}
-
-// Note: this method is deprecated
-export function value(data, paths) {
-    console.error('`util.value` is deprecated use `util.get` instead!!');
-    return get(data, paths);
 }
 
 export function at(data, paths) {

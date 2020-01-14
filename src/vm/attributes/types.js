@@ -1,5 +1,11 @@
-import { isNumber, isString, isObject, isBoolean } from "../../utils";
+import { isNumber, isString, isObject, isBoolean, isPlainObject, isArray } from "../../utils";
 import { createDescriptor } from "./createDescriptor";
+import { Dictionary } from "../reaction/Dictionary";
+import List from "../reaction/List";
+
+function defaultGetter(observer, name) {
+    return observer.get(name);
+}
 
 export const any = createDescriptor(
     (observer, name) => {
@@ -7,14 +13,19 @@ export const any = createDescriptor(
         return (prop && prop.state.facade) || observer.get(name);
     },
     (observer, name, val) => {
+        if (!observer.state.observableProps[name]) {
+            if (isPlainObject(val)) {
+                val = new Dictionary(val);
+            } else if (isArray(val)) {
+                val = new List(val);
+            }
+        }
         observer.set(true, name, val);
     }
 );
 
 export const string = createDescriptor(
-    (observer, name) => {
-        return observer.get(name);
-    },
+    defaultGetter,
     (observer, name, val) => {
         if (null != val && !isString(val)) {
             throw new Error('property value must be string!');
@@ -24,9 +35,7 @@ export const string = createDescriptor(
 );
 
 export const number = createDescriptor(
-    (observer, name) => {
-        return observer.get(name);
-    },
+    defaultGetter,
     (observer, name, val) => {
         if (null != val && !isNumber(val)) {
             throw new Error('property value must be number!');
@@ -49,9 +58,7 @@ export const object = createDescriptor(
 );
 
 export const array = createDescriptor(
-    (observer, name) => {
-        return observer.get(name);
-    },
+    defaultGetter,
     (observer, name, val) => {
         if (!Array.isArray(val)) {
             throw new Error('property value must be array!');
@@ -61,9 +68,7 @@ export const array = createDescriptor(
 );
 
 export const func = createDescriptor(
-    (observer, name) => {
-        return observer.get(name);
-    },
+    defaultGetter,
     (observer, name, val) => {
         if (typeof val !== 'function') {
             throw new Error('property value must be function!');
@@ -73,9 +78,7 @@ export const func = createDescriptor(
 );
 
 export const boolean = createDescriptor(
-    (observer, name) => {
-        return observer.get(name);
-    },
+    defaultGetter,
     (observer, name, val) => {
         if (null != val && !isBoolean(val)) {
             throw new Error('property value must be boolean!');

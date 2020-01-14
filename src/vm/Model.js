@@ -6,10 +6,10 @@ import { get } from '../utils/object';
 import { Observer } from './Observer';
 import { Collection } from './Collection';
 
-import { isModel, isCollection, isObservable, TYPEOF } from './predicates';
+import { isModel, isCollection, isObservable, TYPEOF, isDictionary, isList } from './predicates';
 
 import { enqueueUpdate } from './methods/enqueueUpdate';
-import { blindSet } from './methods/blindSet';
+import { blindSet } from './methods/set';
 import { updateRefs } from './methods/updateRefs';
 import { connect, disconnect, freezeObject } from './methods/connect';
 import { observeProp, unobserveProp } from './methods/observeProp';
@@ -391,7 +391,7 @@ function setAttribute(model, attr, newValue, renew, renewChild) {
             }
             connect(model, newValue, attr);
             return true;
-        } else if (isModel(oldValue)) {
+        } else if (isModel(oldValue) || isDictionary(oldValue)) {
             if (oldValue.state.facade && !isPlainObject(newValue)) {
                 throw new Error('不可改变' + attr + '的数据类型');
             }
@@ -402,8 +402,8 @@ function setAttribute(model, attr, newValue, renew, renewChild) {
                 changes.push(attr, oldValue.state.data, oldAttrValue);
                 return true;
             }
-        } else if (isCollection(oldValue)) {
-            if (!isArray(newValue)) {
+        } else if (isObservable(oldValue)) {
+            if ((isCollection(oldValue) || isList(oldValue)) && !isArray(newValue)) {
                 if (newValue == null) {
                     newValue = [];
                 } else {
@@ -411,14 +411,6 @@ function setAttribute(model, attr, newValue, renew, renewChild) {
                 }
             }
 
-            oldValue.set(newValue);
-            attributes[attr] = oldValue.state.data;
-
-            if (oldValue.state.changed) {
-                changes.push(attr, oldValue.state.data, oldAttrValue);
-                return true;
-            }
-        } else if (isObservable(oldValue)) {
             oldValue.set(newValue);
             attributes[attr] = oldValue.state.data;
 

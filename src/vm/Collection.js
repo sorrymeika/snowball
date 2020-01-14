@@ -5,13 +5,14 @@ import { contains } from '../utils/object';
 
 import { Observer } from './Observer';
 import { Model } from './Model';
-import { isModel, isObservable, isCollection, TYPEOF } from './predicates';
+import { isObservable, isCollection, TYPEOF } from './predicates';
 import { enqueueUpdate } from './methods/enqueueUpdate';
 import { updateRefs } from './methods/updateRefs';
 import { connect, setMapper, disconnect, freezeObject } from './methods/connect';
 import { observeProp, unobserveProp } from './methods/observeProp';
 import compute from './operators/compute';
 import { getRelObserverOrSelf } from './methods/getRelObserver';
+import { renewSet } from './methods/set';
 
 const RE_COLL_QUERY = /\[((?:'(?:\\'|[^'])*'|"(?:\\"|[^"])*"|[^\]])+)\](?:\[([+-]?)(\d+)?\])?(?:\.(.*))?/;
 
@@ -112,13 +113,8 @@ function update(collection, arr, comparator, appendUnmatched = true, renewItem =
         for (let j = 0; j < n; j++) {
             if ((arrItem = arr[j]) !== undefined) {
                 if (fn.call(collection, data, arrItem)) {
-                    const item = collection[i];
-                    if (isModel(item)) {
-                        item.set(renewItem, arrItem);
-                    } else {
-                        item.set(arrItem);
-                    }
-                    if (collection[i].state.changed) {
+                    const item = renewSet(collection[i], renewItem, arrItem);
+                    if (item.state.changed) {
                         collection.state.changed = true;
                     }
                     if (!updateAll) {
@@ -384,10 +380,7 @@ export class Collection extends Observer {
                         this.state.data[i] = item.state.data;
                     }
                 } else {
-                    isModel(model)
-                        ? model.set(true, item)
-                        : model.set(item);
-
+                    renewSet(model, true, item);
                     if (model.state.changed) {
                         isChange = true;
                     }
@@ -533,11 +526,7 @@ export class Collection extends Observer {
             if (index === -1) {
                 item = connectItem(this, arrItem, i);
             } else {
-                if (isModel(item)) {
-                    item.set(true, arrItem);
-                } else {
-                    item.set(arrItem);
-                }
+                renewSet(item, true, arrItem);
                 if (this[i].state.changed) {
                     this.state.changed = true;
                 }
