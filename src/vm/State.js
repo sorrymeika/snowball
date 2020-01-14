@@ -1,6 +1,6 @@
 import { Observer } from "./Observer";
 import { enqueueUpdate, defer } from "./methods/enqueueUpdate";
-
+import { TYPEOF } from "./predicates";
 
 export default class State extends Observer {
     /**
@@ -21,3 +21,5 @@ export default class State extends Observer {
         return this.state.next = defer(() => newData);
     }
 }
+
+State.prototype[TYPEOF] = 'State';
