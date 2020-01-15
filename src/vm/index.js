@@ -17,7 +17,7 @@ export { batch, compute } from './operators';
 export { findChildModel } from './methods/findChildModel';
 export { nextTick } from "./methods/enqueueUpdate";
 
-export { component } from './component';
+export * from './component';
 export { ViewModel, registerComponent } from './view-model';
 
 export { Operators };
