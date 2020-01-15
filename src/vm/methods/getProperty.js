@@ -1,4 +1,4 @@
-import { get, isString } from "../../utils";
+import { get, isString, isNumber } from "../../utils";
 import { reactTo } from "../Reaction";
 import { castPath } from "../../utils/castPath";
 import { isModel, isDictionary, isObservable } from "../predicates";
@@ -14,7 +14,7 @@ export function getProperty(model, path) {
         reactTo(model);
         return undefined;
     }
-    const keys = isString(path) ? castPath(path) : path;
+    const keys = isNumber(path) ? [path] : isString(path) ? castPath(path) : path;
 
     if (isModel(model) || isDictionary(model)) {
         const firstKey = keys.shift();
