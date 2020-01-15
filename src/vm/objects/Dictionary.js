@@ -6,6 +6,7 @@ import { isObservable, TYPEOF } from "../predicates";
 import { disconnect, connect, freezeObject } from "../methods/connect";
 import { getRelObserverOrSelf } from "../methods/getRelObserver";
 import { SymbolFrom } from "../symbols";
+import { isPlainObject, isArray } from "../../utils";
 
 const hasOwnProperty = Object.prototype.hasOwnProperty;
 const MARK_SWEEP = Symbol('mark and sweep');
@@ -33,6 +34,12 @@ function addChange(attributes, key, value, oldValue, changes) {
                 disconnect(this, oldValue);
             }
             connect(this, observer, key);
+        } else {
+            if (process.env.NODE_ENV !== 'production') {
+                if (isPlainObject(value) || isArray(value)) {
+                    Object.freeze(value);
+                }
+            }
         }
     }
 

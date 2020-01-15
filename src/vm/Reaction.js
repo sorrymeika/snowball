@@ -308,6 +308,9 @@ if (process.env.NODE_ENV === 'development') {
                 case 1:
                     console.assert(a.get('data.name') == 1, 'a.data.name must be 1!');
                     break;
+                case 2:
+                    console.assert(a.get('data.name') == 2, 'a.data.name must be 2!');
+                    break;
             }
         }, true);
 
@@ -334,5 +337,15 @@ if (process.env.NODE_ENV === 'development') {
             }
         });
         console.assert(count == 1, 'set a.data.name, reaction is not emit!');
+
+        a.set('data.name', 2);
+        console.assert(count == 2, 'set a.data.name, reaction is not emit!');
+
+        reaction.track(() => {
+            tmp.name = a.get('data.name');
+        });
+        a.set('data.id', 1);
+        console.assert(count == 2, 'set a.data.id, can not emit reaction!');
+        console.assert(a.get('data.id') == 1, 'a.data.id must be 1!');
     });
 }
