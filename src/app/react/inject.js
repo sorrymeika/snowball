@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/rules-of-hooks */
-import React, { createElement, useMemo, useState, useEffect, useContext } from 'react';
+import React, { createElement, useState, useMemo, useRef, useEffect, useContext } from 'react';
 import { isString, isArray, isFunction } from '../../utils';
 import { Reaction } from '../../vm';
 import { setCurrentCtx } from '../controller/controller';
@@ -90,13 +90,13 @@ function createInjector(mapDependenciesToProps, mergeProps = defaultMergeProps, 
 
     const Injector = React.forwardRef(makeStatelessComponentReacitve((ownProps, forwardRef) => {
         const context = useContext(PageContext);
-        const [injector] = useState({
+        const injector = useRef({
             factoryInstances: {},
         });
         let newProps;
 
         if (context) {
-            const additionalProps = mapDependenciesToProps(context, ownProps, injector);
+            const additionalProps = mapDependenciesToProps(context, ownProps, injector.current);
             newProps = mergeProps(additionalProps, ownProps);
         } else {
             newProps = Object.assign({}, ownProps);
