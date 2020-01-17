@@ -127,9 +127,9 @@ function createActivityFactory(Controller, componentClass, config, options) {
 
             if (reactivePropNames.length) {
                 const bind = (fn, ctx) => {
-                    const bindedFn = fn.bind(ctx);
-                    bindedFn._cb = fn;
-                    return bindedFn;
+                    const boundFn = fn.bind(ctx);
+                    boundFn._cb = fn;
+                    return boundFn;
                 };
                 const reaction = new Reaction(() => {
                     reaction.track(() => {

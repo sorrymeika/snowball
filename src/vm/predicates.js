@@ -15,15 +15,11 @@ export function isRenewSet(model) {
 }
 
 export function isModel(model) {
-    return model && (model[TYPEOF] === 'Model' || model[TYPEOF] === 'ViewModel');
+    return model && (model[TYPEOF] === 'Model');
 }
 
 export function isObservableObject(data) {
     return data && (data[SymbolFrom] || data[SymbolRelObserver]);
-}
-
-export function isViewModel(model) {
-    return model && model[TYPEOF] === 'ViewModel';
 }
 
 export function isCollection(collection) {

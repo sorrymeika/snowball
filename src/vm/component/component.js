@@ -6,8 +6,12 @@ import { nextTick } from "../methods/enqueueUpdate";
 
 const factories = {};
 
-export function createComponent(tagName, props) {
+export function createComponent(tagName, props, rootComponent) {
     return new factories[tagName](props);
+}
+
+export function isComponent(instance) {
+    return instance instanceof Component;
 }
 
 function nodeHandler(element, action) {
@@ -25,14 +29,18 @@ function nodeHandler(element, action) {
 }
 
 class Component {
-    constructor(state, rootVNode) {
+    constructor(state, rootVNode, ownComponent) {
         this.state = state;
         state.state.component = this;
 
+        this.ownComponent = ownComponent || this;
+        this._eventsDelegation = {};
+        this.refs = {};
+
         const rootElement = this.rootElement = createElement(rootVNode);
+        rootElement.component = this;
         rootElement.id = this.state.state.id;
         rootElement.components = [];
-        rootElement.boundEvents = {};
 
         this.state.on('destroy', () => {
             this.remove();
@@ -40,6 +48,48 @@ class Component {
                 item.destroy();
             });
         });
+    }
+
+    _delegateEvents() {
+        const { rootElement } = this;
+        const events = Object.keys(this._eventsDelegation);
+
+        if (events.length) {
+            const nodes = [];
+
+            rootElement.childElements.forEach((elem) => {
+                if (elem.vnode.type == 'node') {
+                    nodes.push(elem.node);
+                }
+            });
+
+            const eventFxMap = {
+                'transitionend': $.fx.transitionEnd,
+                'animationend': $.fx.animationEnd,
+            };
+
+            events.forEach((eventName) => {
+                nodes.forEach((el) => {
+                    if (!(el.boundEvents || (el.boundEvents = {}))[eventName]) {
+                        el.boundEvents[eventName] = true;
+                        const eventId = 'sn' + this.state.state.id + '-on' + eventName;
+                        const eventSelector = '[' + eventId + ']';
+                        const handleEvent = (e) => {
+                            invokeEvent(e.currentTarget.vElement, e.currentTarget.vElement.data, Number(e.currentTarget.getAttribute(eventId)), e);
+                        };
+                        const fxEventName = eventFxMap[eventName] || eventName;
+
+                        $(el).on(fxEventName, eventSelector, handleEvent)
+                            .filter(eventSelector)
+                            .on(fxEventName, handleEvent);
+                    }
+                });
+            });
+        }
+
+        if (this.ownComponent !== this && !this.ownComponent._rendering) {
+            this.ownComponent._delegateEvents();
+        }
     }
 
     appendTo(element) {
@@ -102,36 +152,20 @@ class Component {
 
 function componentRender() {
     const data = Object.create(this.state.data || null);
-    data.__state = this;
-    const { rootElement } = this.state.component;
-    const events = rootElement.events = {};
-    render(rootElement, this, data);
-    const nodes = [];
+    data.$state = this;
 
-    rootElement.childElements.forEach((elem) => {
-        if (elem.vnode.type == 'node') {
-            nodes.push(elem.node);
-        }
-    });
+    const componentInstance = this.state.component;
+    componentInstance.refs = {};
+    componentInstance._eventsDelegation = {};
+    componentInstance._rendering = true;
 
-    Object.keys(events)
-        .forEach((eventName) => {
-            nodes.forEach((el) => {
-                if (!(el.boundEvents || (el.boundEvents = {}))[eventName]) {
-                    el.boundEvents[eventName] = true;
-                    const eventId = 'sn' + this.state.id + '-on' + eventName;
-                    const eventSelector = '[' + eventId + ']';
-                    const handleEvent = (e) => {
-                        invokeEvent(e.currentTarget.vElement, e.currentTarget.vElement.data, Number(e.currentTarget.getAttribute(eventId)), e);
-                    };
-                    $(el).on(eventName, eventSelector, handleEvent)
-                        .filter(eventSelector)
-                        .on(eventName, handleEvent);
-                }
-            });
-        });
+    render(componentInstance.rootElement, this, data);
+
+    componentInstance._rendering = false;
+    componentInstance._delegateEvents();
     this.state.renderedVersion = this.state.version;
-    return this.state.component;
+
+    return componentInstance;
 }
 
 export function template(templateStr) {
@@ -159,9 +193,9 @@ export function component({
             };
         }
 
-        const componentFactory = function (data) {
+        const componentFactory = function (data, rootComponent) {
             const state = new State(data);
-            return new Component(state, rootVNode);
+            return new Component(state, rootVNode, rootComponent);
         };
 
         if (tagName) {

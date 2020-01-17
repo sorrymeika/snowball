@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import ReactDOM from 'react-dom';
-import { ViewModel, component, Model, observable, autorun } from './snowball';
+import { component, Model, observable, autorun } from './snowball';
 
 @component({
     tagName: 'Test',
@@ -32,15 +32,6 @@ class App extends Component {
 
     componentDidMount() {
         const root = ReactDOM.findDOMNode(this);
-
-        const viewModel = new ViewModel({
-            el: `<div>{name}</div>`,
-            attributes: {
-                name: 'xxx'
-            }
-        });
-        viewModel.appendTo(root);
-
         const test = new Test({
             a: ',,,',
             data: [{

@@ -172,7 +172,7 @@ function createEmitterFn(extend) {
             }
         };
 
-        emitter.$$typeof = 'EventEmitter';
+        emitter.$$typeof = 'snowball#EventEmitter';
 
         const props = extend(middlewares, funcs);
         Object.assign(emitter, props);

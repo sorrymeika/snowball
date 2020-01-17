@@ -836,7 +836,7 @@ setTimeout(() => {
 
 # sn-属性
 
-* `sn-[events]` dom事件
+* `on[event]` dom事件
 
 ```js
 
@@ -854,27 +854,13 @@ model.delegate = {
 
 ```html
 <div>
-    <button sn-tap="this.onButtonClick(user.userName)">Click 0</button>
-    <button sn-tap="delegate.onButtonClick(user)">Click 1</button>
+    <button onclick="this.onButtonClick(user.userName)">Click 0</button>
+    <button onclick="delegate.onButtonClick(user)">Click 1</button>
 </div>
 ```
 
 
 * `sn-repeat` 循环
-
-```js
-var model = new ViewModel(this.$el, {
-    title: '标题',
-    list: [{
-        name: 1,
-        children: [{
-            name: '子'
-        }]
-    }, {
-        name: 2
-    }]
-});
-```
 
 ```html
 <div class="item" sn-repeat="item,i in list|filter:like(item.name,'2')|orderBy:name asc,id desc,{orderByWhat} {ascOrDesc}">
@@ -906,66 +892,20 @@ var model = new ViewModel(this.$el, {
 ```
 
 
-* `sn-component` 引入其他组建
-
-```js
-
-var model = new ViewModel({
-
-    components: {
-        tab: require('widget/tab')
-    },
-
-    el: template,
-    
-    delegate: this,
-
-    attributes:  {
-        title: '标题',
-        list: [{
-            name: 1,
-            children: [{
-                name: '子'
-            }]
-        }, {
-            name: 2
-        }]
-    }
-});
-
-```
+* `sn-[componentName]` 或 `大写字母开头的标签` 引入其他组件
 
 ```html
-
-<div class="tab" sn-component="tab" sn-props="{{items:['生活服务','通信服务']}}"></div>
-或
 <sn-tab class="tab" props="{{items:['生活服务','通信服务']}}"></sn-tab>
+<Tab class="tab" props="{{items:['生活服务','通信服务']}}"></Tab>
 ```
 
 #### `vm.Observer` 类
 
 * 可观察对象，类的数据变化可被监听
-* `ViewModel`, `Model`, `Collection`, `List`, `Dictionary`, `DictionaryList`, `Subject`, `State` 都是 `Observer` 的子类，分别有不同的作用
+*  `Model`, `Collection`, `List`, `Dictionary`, `DictionaryList`, `Subject`, `State` 都是 `Observer` 的子类，分别有不同的作用
 
 ```js
-import { Observer, ViewModel, Model, Collection, List, Subject, State } from 'snowball';
-
-var viewModel = new ViewModel({
-    el: `<div>
-        <sn-template id="item"><li>{name}</li></sn-template>
-        <h1>{title}</h1>
-        <ul>
-            <li sn-repeat="item in list">{item.name}</li>
-            <sn-item props="{{ name: item.name }}" sn-repeat="item in list"></sn-item>
-        </ul>
-    </div>`,
-    attributes: {
-        title: '标题',
-        list: [{
-            name: '列表'
-        }]
-    }
-});
+import { Observer, Model, Collection, List, Subject, State } from 'snowball';
 
 var model = new Model({
     id: 1,

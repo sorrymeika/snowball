@@ -56,7 +56,7 @@ export function createVNode({ tagName, events, props, attributes }) {
             const key = attributes[i],
                 val = attributes[i + 1];
 
-            if (key === 'sn-repeat') {
+            if (key === 'sn-repeat' || key === 'sn-for') {
                 const match = val.match(RE_REPEAT);
                 const alias = match[1];
                 const indexAlias = match[2];

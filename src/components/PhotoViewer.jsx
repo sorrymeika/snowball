@@ -1,11 +1,25 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { $, reflow } from '../utils';
-import { ViewModel } from '../vm';
+import { Model, component } from '../vm';
 import { addOnBeforeBackListener, removeOnBeforeBackListener } from '../app';
 import { animate, computeFrame } from '../graphics/animation';
 
-export class PhotoViewer extends ViewModel {
+@component({
+    tagName: "PhotoViewer",
+    template: (
+        `<div class="app-photoviewer t_3" ontransitionend={this.transitionEnd()} onclick={this.resetSize()} ontouchstart={this.touchStart()} ontouchmove={this.touchMove()} ontouchend={this.touchEnd()}>
+        <div class="app-photoviewer-before" sn-if="{slots.length}" ref="before"></div>
+        <ul class="app-photoviewer-con" ref="content" style="-webkit-transform:translate({x}px,0px) translateZ(0);width:{(images.length + slots.length)*100}%">
+            <li class="app-photoviewer-item" sn-repeat="slot in slots"><div class="app-photoviewer-item-con" ref="slots"></div></li>
+            <li class="app-photoviewer-item" sn-repeat="item in images"><div class="app-photoviewer-item-con" ref="items"><p ref="bds" style="-webkit-transform:translate({item.x}px,{item.y}px) translateZ(0);-webkit-transform-origin: 0% 0%;"><img style="-webkit-transform:translate(-50%,-50%) scale({item.s});-webkit-transform-origin: 50% 50%;" src="{item.src}" ref="images" /></p></li>
+            <li class="app-photoviewer-after" sn-if="{images.length||slots.length}">{after&&after()}</li>
+        </ul>
+        <div class="app-photoviewer-indicator flex jc_c cl_fff" sn-if="{!(slots.length > 0 && index < slots.length)}">{index+1-slots.length}/{images.length}</div>
+    </div>`
+    )
+})
+export class PhotoViewer extends Model {
     static defaultAttributes = {
         card: 0,
         x: 0,
@@ -16,18 +30,6 @@ export class PhotoViewer extends ViewModel {
         images: [],
         after: null,
         slots: [],
-    }
-
-    get el() {
-        return `<div class= "app-photoviewer t_3" sn-transitionend="this.transitionEnd()" sn-click="this.resetSize()" sn-touchstart="this.touchStart()" sn-touchmove="this.touchMove()" sn-touchend="this.touchEnd()">
-        <div class="app-photoviewer-before" sn-if="{slots.length}" ref="before"></div>
-        <ul class="app-photoviewer-con" ref="content" style="-webkit-transform:translate({x}px,0px) translateZ(0);width:{(images.length + slots.length)*100}%">
-            <li class="app-photoviewer-item" sn-repeat="slot in slots"><div class="app-photoviewer-item-con" ref="slots"></div></li>        
-            <li class="app-photoviewer-item" sn-repeat="item in images"><div class="app-photoviewer-item-con" ref="items"><p ref="bds" style="-webkit-transform:translate({item.x}px,{item.y}px) translateZ(0);-webkit-transform-origin: 0% 0%;"><img style="-webkit-transform:translate(-50%,-50%) scale({item.s});-webkit-transform-origin: 50% 50%;" sn-image="{item.src}" ref="images" /></p></li>
-            <li class="app-photoviewer-after" sn-if="{images.length||slots.length}">{after&&after()}</li>
-        </ul>
-        <div class="app-photoviewer-indicator flex jc_c cl_fff" sn-if="{!(slots.length > 0 && index < slots.length)}">{index+1-slots.length}/{images.length}</div>
-    </div>`;
     }
 
     constructor(attributes) {

@@ -3,7 +3,7 @@ import { get as valueOfObject } from '../../utils/object';
 import { castPath } from '../../utils/castPath';
 import { isNumber } from '../../utils/is';
 import compileExpression from './compileExpression';
-import { findChildModel } from '../methods/findChildModel';
+import { findChildModel } from './findChildModel';
 import { Collection } from '../objects/Collection';
 import NodeUpdateResult from './NodeUpdateResult';
 import { cloneEvents } from './events';

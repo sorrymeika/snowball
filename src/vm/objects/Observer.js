@@ -137,7 +137,7 @@ const off = Observer.prototype.off;
 Observer.prototype.off = function (type, fn) {
     off.call(this, type, fn);
 
-    if (!this.__events['change'] || this.__events['change'].length == 0) {
+    if (!this.__events || !this.__events['change'] || this.__events['change'].length == 0) {
         this.state.hasOnChangeListener = false;
     }
 

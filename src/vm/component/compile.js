@@ -331,6 +331,9 @@ function readAttributes(input, cursor) {
                 }
                 break;
             case '{':
+                while (input[cursor] == ' ') {
+                    cursor++;
+                }
                 if (input[cursor] == '.' && input[cursor + 1] == '.' && input[cursor + 2] == '.') {
                     cursor += 3;
                 }
@@ -338,6 +341,14 @@ function readAttributes(input, cursor) {
                 props.push('...', match.value);
                 cursor = match.cursor;
                 break;
+            case 'o':
+                if (input[cursor] != 'n') {
+                    name += c;
+                    break;
+                } else {
+                    cursor++;
+                }
+            // eslint-disable-next-line no-fallthrough
             case '@':
                 name = '';
 

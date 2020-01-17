@@ -1,4 +1,4 @@
-import { isYes, isNumber } from '../../utils/is';
+import { isYes, isNumber, isFunction } from '../../utils/is';
 import { createComponent } from './component';
 import { Reaction } from '../Reaction';
 import { get } from '../../utils';
@@ -12,6 +12,7 @@ import {
     insertElementAfter,
     setAttribute
 } from './element';
+import { isString } from 'util';
 
 const UNPROPAGATIVE_EVENTS = ['scroll', 'scrollstop'];
 
@@ -84,21 +85,27 @@ export function render(element: IElement, state, data) {
 
     element.data = data;
 
+    if (vnode.refProps) {
+        setRef(element, data);
+    }
+
     const events = vnode.events;
     if (events) {
-        if (!element.bindEvent) {
-            element.bindEvent = true;
+        if (!element.boundEvent) {
+            element.boundEvent = true;
             for (let i = 0; i < events.length; i += 2) {
                 const fid = events[i + 1];
                 const eventName = events[i];
-                element.node.setAttribute('sn' + state.state.id + '-on' + eventName, fid);
                 if (!isPropagativeEvents(events[i])) {
+                    element.node.setAttribute('sn' + state.state.id + '-on' + eventName, fid);
                     element.node.addEventListener(events[i], (e) => {
                         return invokeEvent(element, element.data, fid, e);
                     });
                 } else {
+                    const { ownComponent } = element.root.component;
+                    element.node.setAttribute('sn' + ownComponent.state.state.id + '-on' + eventName, fid);
                     element.node.vElement = element;
-                    element.root.events[eventName] = true;
+                    ownComponent._eventsDelegation[eventName] = true;
                 }
             }
         }
@@ -167,6 +174,32 @@ export function render(element: IElement, state, data) {
     return element;
 }
 
+function setRef(element, data) {
+    const ref = element.component || element.node;
+    const { refProps } = element.vnode;
+    if (refProps.type === 'func') {
+        const refFn = invoke(element, data, refProps.fid);
+        if (isFunction(refFn)) {
+            refFn(ref);
+        } else if (isString(refFn)) {
+            setNamedRef(element.root.component.refs, refProps.name, ref, data.$for);
+        } else if (typeof refFn === 'object') {
+            setNamedRef(refFn, 'current', ref, data.$for);
+        }
+    } else if (refProps.type === 'string') {
+        setNamedRef(element.root.component.refs, refProps.name, ref, data.$for);
+    }
+}
+
+function setNamedRef(obj, name, ref, $for) {
+    if ($for) {
+        const refs = obj[name] || (obj[name] = []);
+        refs.push(ref);
+    } else {
+        obj[name] = ref;
+    }
+}
+
 function renderRepeat(element: IElement) {
     const {
         value
@@ -198,7 +231,7 @@ function renderRepeatItem(element: IElement, state, data) {
         collection = get(state, dataSourcePath.slice(1));
     } else {
         const source = data[dataSourceName];
-        let sourceState = source.__state;
+        let sourceState = source.$state;
         let paths;
 
         if (!sourceState) {
@@ -228,7 +261,11 @@ function renderRepeatItem(element: IElement, state, data) {
     collection.each(function (item) {
         const elementData = Object.create(data);
         elementData[alias] = Object.create(item.state.data);
-        elementData[alias].__state = item;
+        elementData[alias].$state = item;
+        elementData.$for = {
+            parent: data.$for,
+            data: collection
+        };
 
         if (filter == null || invoke(element, elementData, filter)) {
             let itemElement;
@@ -319,14 +356,11 @@ function renderRepeatItem(element: IElement, state, data) {
 
     insertElementAfter(cursorElement, element.closeNode);
 
-    const refs = [];
     // 移除过滤掉的element
     for (let i = 0; i < elements.length; i++) {
         const elem = elements[i];
         if (!visibleElements[i]) {
             removeElement(elem);
-        } else {
-            refs.push(elem.node);
         }
     }
 
@@ -334,7 +368,7 @@ function renderRepeatItem(element: IElement, state, data) {
 }
 
 function invoke(element, data, fid, arg1, arg2) {
-    return element.root.vnode.fns[fid](data, arg1, arg2);
+    return element.root.vnode.fns[fid].call(element.root.component, data, arg1, arg2);
 }
 
 export function invokeEvent(element, data, fid, $event) {
@@ -354,10 +388,10 @@ function $setter(key, data) {
             set(val) {
                 let source = data[key];
 
-                if (source && source.__state) {
-                    source.__state.set(val);
+                if (source && source.$state) {
+                    source.$state.set(val);
                 } else {
-                    data.__state.set({ [key]: val });
+                    data.$state.set({ [key]: val });
                 }
             }
         }

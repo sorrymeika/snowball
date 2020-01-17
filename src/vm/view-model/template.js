@@ -1,6 +1,5 @@
 import { isArray, isNo } from '../../utils/is';
 import { $, TEXT_NODE, ELEMENT_NODE, eachElement, insertElementAfter, fade } from '../../utils/dom';
-import { isViewModel } from '../predicates';
 import FunctionCompiler from './FunctionCompiler';
 import {
     createCompilerManager,
@@ -8,6 +7,11 @@ import {
     createAttributeHandler
 } from './factories';
 import getFunctionArg from './getFunctionArg';
+import { TYPEOF } from '../predicates';
+
+function isViewModel(model) {
+    return model && model[TYPEOF] === 'ViewModel';
+}
 
 function isExpression(val) {
     return val.indexOf("{") !== -1 && val.lastIndexOf("}") !== -1;

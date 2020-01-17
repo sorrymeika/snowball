@@ -1,10 +1,10 @@
 
 import { $ } from '../../utils';
-import { ViewModel } from '../../vm';
 import { ActivityOptions } from '../types';
 import ReactViewAdapter from '../react/ReactViewAdapter';
 import SnowballViewAdapter from './SnowballViewAdapter';
 import { Page } from './Page';
+import { isComponent } from '../../vm/component/component';
 
 const ACTIVITY_STATUS_INIT = 0;
 const ACTIVITY_STATUS_CREATE = 1;
@@ -43,7 +43,7 @@ export class Activity {
             this.transition = options.transition;
         }
 
-        const ViewHandler = viewFactory.prototype instanceof ViewModel
+        const ViewHandler = isComponent(viewFactory)
             ? SnowballViewAdapter
             : ReactViewAdapter;
 
