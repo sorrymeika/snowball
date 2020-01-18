@@ -4,9 +4,9 @@ import { loadProject } from "./resource";
 import loader from "../../widget/loader";
 
 class Route {
-    constructor(name, viewFactory) {
+    constructor(name, type) {
         this.name = name;
-        this.viewFactory = viewFactory;
+        this.type = type;
 
         const paths = name.split('/').map((item) => {
             return !item

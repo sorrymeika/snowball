@@ -1,179 +1,10 @@
-import { castStyle, Animation } from '../../graphics/animation';
-import { Toucher, loader } from '../../widget';
+import { castStyle, getTransition } from '../../graphics/animation';
+import { loader } from '../../widget';
 import { $, isThenable } from '../../utils';
 
 import { IApplication, IActivityManager, ToggleOptions } from '../types';
 
 import Activity from './Activity';
-
-export const ACTIVITY_FACTORY = Symbol('ACTIVITY_FACTORY');
-
-const DEFAULT_TRANSITION = {
-    openEnterZIndex: 2,
-    closeEnterZIndex: 1,
-    openExitZIndex: 1,
-    closeExitZIndex: 3,
-    openEnterAnimationFrom: {
-        translate: '99%,0%'
-    },
-    openEnterAnimationTo: {
-        translate: '0%,0%'
-    },
-    openExitAnimationFrom: {
-        translate: '0%,0%'
-    },
-    openExitAnimationTo: {
-        translate: '-50%,0%'
-    },
-    closeEnterAnimationTo: {
-        translate: '0%,0%'
-    },
-    closeEnterAnimationFrom: {
-        translate: '-50%,0%'
-    },
-    closeExitAnimationFrom: {
-        translate: '0%,0%'
-    },
-    closeExitAnimationTo: {
-        translate: '100%,0%'
-    }
-};
-
-function getTransition(isForward, animConfig) {
-    animConfig = {
-        ...DEFAULT_TRANSITION,
-        ...animConfig
-    };
-    const type = isForward ? "open" : "close",
-        enterFrom = Object.assign({}, animConfig[type + 'EnterAnimationFrom']),
-        exitFrom = Object.assign({}, animConfig[type + 'ExitAnimationFrom']);
-
-    enterFrom.zIndex = isForward ? animConfig.openEnterZIndex : animConfig.closeEnterZIndex;
-    enterFrom.display = 'block';
-    exitFrom.zIndex = isForward ? animConfig.openExitZIndex : animConfig.closeExitZIndex;
-    exitFrom.display = 'block';
-
-    return {
-        enterFrom,
-        enterTo: animConfig[type + 'EnterAnimationTo'],
-        exitFrom: exitFrom,
-        exitTo: animConfig[type + 'ExitAnimationTo']
-    };
-}
-
-function disposeActivity(activityManager, item) {
-    var { activitiesCache } = activityManager;
-    var index = activitiesCache.findIndex((one) => one === item);
-    if (index !== -1) {
-        activitiesCache.splice(index, 1);
-    }
-    item.destroy();
-}
-
-function disposeUselessActivities(activityManager, prevActivity, activity) {
-    disposeActivity(activityManager, prevActivity);
-
-    var nextActivity = activity._next;
-    var temp;
-
-    while (nextActivity && nextActivity !== activity) {
-        if (prevActivity !== nextActivity) {
-            disposeActivity(activityManager, nextActivity);
-        }
-        temp = nextActivity;
-        nextActivity = nextActivity._next;
-        temp._next = null;
-    }
-}
-
-function replaceActivityWithTransition(activityManager, prevActivity, activity, isForward, callback) {
-    const ease = 'cubic-bezier(.34,.86,.54,.99)';
-    const duration = 400;
-    const { enterFrom, enterTo, exitFrom, exitTo } = getTransition(isForward, isForward ? activity.transition : prevActivity.transition);
-
-    const { className: enterFromClassName, ...enterFromStyle } = enterFrom;
-    const { className: enterToClassName, ...enterToStyle } = enterTo;
-    const { className: exitFromClassName, ...exitFromStyle } = exitFrom;
-    const { className: exitToClassName, ...exitToStyle } = exitTo;
-
-    prevActivity.$el.removeClass('app-view-actived');
-
-    const outAnimTask = new Promise((resolve, reject) => {
-        const $prevElement = $(prevActivity.el).css(castStyle(exitFromStyle));
-        if (exitFromClassName) $prevElement.addClass(exitFromClassName);
-        prevActivity.page.trigger('beforehide');
-        $prevElement.animate(castStyle(exitToStyle), duration, ease, () => {
-            prevActivity.el.style.zIndex = '';
-            prevActivity.page.trigger('hide');
-            if (!isForward) {
-                disposeUselessActivities(activityManager, prevActivity, activity);
-            } else {
-                prevActivity.pause();
-
-                let prev = prevActivity._prev;
-                let count = 1;
-                while (prev) {
-                    if (count >= activityManager.options.maxActivePages) {
-                        disposeActivity(activityManager, prev);
-                    }
-                    prev = prev._prev;
-                    count++;
-                }
-            }
-            resolve();
-        });
-        if (exitToClassName) $prevElement.addClass(exitToClassName);
-    });
-
-    const inAnimTask = new Promise((resolve, reject) => {
-        const $currentElement = $(activity.el).css(castStyle(enterFromStyle));
-        if (enterFromClassName) $currentElement.addClass(enterFromClassName);
-        activity.page.trigger('beforeshow');
-        $currentElement.animate(castStyle(enterToStyle), duration, ease, () => {
-            activity.el.style.zIndex = '';
-            outAnimTask.then(() => {
-                activity.show();
-            });
-            activityManager.application.prevActivity = activity._prev;
-            resolve();
-            activity.scrollTop && window.scrollTo(0, activity.scrollTop);
-        });
-        if (enterToClassName) $currentElement.addClass(enterToClassName);
-    });
-
-    return Promise.all([outAnimTask, inAnimTask]).then(() => {
-        callback && callback();
-    });
-}
-
-/**
-* 根据url获取页面组件
-*
-* @param {Route} 页面路由
-*/
-function createActivity(route, location, application) {
-    let viewFactory = route.viewFactory;
-
-    if (isThenable(viewFactory)) {
-        loader.showLoader();
-        return viewFactory.then((res) => {
-            route.viewFactory = res;
-            loader.hideLoader();
-            return createActivityFromModule(res, location, application);
-        });
-    }
-
-    return createActivityFromModule(viewFactory, location, application);
-}
-
-function createActivityFromModule(viewFactory, location, application) {
-    viewFactory = viewFactory.default || viewFactory;
-
-    return viewFactory[ACTIVITY_FACTORY]
-        ? viewFactory[ACTIVITY_FACTORY](location, application)
-        : new Activity(viewFactory, location, application);
-}
-
 
 export default class ActivityManager implements IActivityManager {
 
@@ -183,106 +14,6 @@ export default class ActivityManager implements IActivityManager {
         this.activitiesCache = [];
         this.options = options;
         this.application = application;
-
-        if ('ontouchmove' in document.body) {
-            this.bindBackGesture(application.rootElement, application);
-        }
-    }
-
-    bindBackGesture(rootElement, application) {
-        var touch = new Toucher(rootElement, {
-            enableVertical: false,
-            enableHorizontal: true,
-            momentum: false
-        });
-
-        touch
-            .on('beforestart', function (e) {
-                if (application.navigating || touch.triggerGestureEnd || e.touchEvent.touches[0].pageY < 80 || touch.swiper) {
-                    return false;
-                }
-                touch.startX = touch.x = 0;
-                touch.currentActivity = null;
-            })
-            .on('start', function (e) {
-                var deltaX = touch.deltaX;
-                var currentActivity = application.currentActivity;
-
-                if (application.navigating || touch.isDirectionY || !currentActivity) {
-                    e.preventDefault();
-                    return;
-                }
-
-                if (touch.swiper) {
-                    return;
-                }
-
-                rootElement.classList.add('app-prevent-click');
-
-                touch.width = window.innerWidth;
-                touch.minX = touch.width * -1;
-                touch.maxX = 0;
-
-                var prevActivity = currentActivity._prev;
-                var leftToRight = touch.leftToRight = deltaX < 0;
-                var isForward = false;
-
-                if (prevActivity && leftToRight) {
-                    var anim = getTransition(isForward);
-
-                    touch.currentActivity = currentActivity;
-                    touch.swiper = new Animation([{
-                        el: currentActivity.el,
-                        start: anim.exitFrom,
-                        css: anim.exitTo,
-                        ease: 'ease-out'
-                    }, {
-                        el: prevActivity.el,
-                        start: anim.enterFrom,
-                        css: anim.enterTo,
-                        ease: 'ease-out'
-                    }]);
-                    const gestureEnd = new Promise((resolve) => {
-                        touch.triggerGestureEnd = () => {
-                            resolve();
-                            touch.triggerGestureEnd = null;
-                        };
-                    });
-                    application.whenNotNavigating(() => gestureEnd);
-                } else {
-                    touch.swiper = null;
-                }
-            })
-            .on('move', function (e) {
-                if (!touch.swiper || application.navigating) return;
-
-                var deltaX = touch.deltaX;
-
-                touch.swiper.progress((touch.leftToRight && deltaX > 0) || (!touch.leftToRight && deltaX < 0)
-                    ? 0
-                    : (Math.abs(deltaX) * 100 / touch.width));
-
-                e.preventDefault();
-            })
-            .on('stop', function () {
-                rootElement.classList.remove('app-prevent-click');
-
-                if (!touch.swiper) return;
-
-                var isCancelSwipe = touch.isMoveToLeft === touch.leftToRight || Math.abs(touch.deltaX) <= 10;
-                var backUrl = touch.currentActivity && touch.currentActivity._prev && touch.currentActivity._prev.location.url;
-
-                if (isCancelSwipe || !backUrl) {
-                    touch.swiper.animate(200, 0, touch.triggerGestureEnd);
-                } else {
-                    touch.swiper.animate(300, 100, () => {
-                        touch.triggerGestureEnd();
-                        application.navigation.back(backUrl, null, false);
-                    });
-                }
-
-                touch.swiper = null;
-            });
     }
 
     findLatest(path) {
@@ -391,9 +122,118 @@ export default class ActivityManager implements IActivityManager {
     }
 }
 
+/**
+* 根据url获取页面组件
+*
+* @param {Route} 页面路由
+*/
+function createActivity(route, location, application) {
+    let type = route.type;
+
+    if (isThenable(type)) {
+        loader.showLoader();
+        return type.then((res) => {
+            route.viewFactory = res;
+            loader.hideLoader();
+            return createActivityFromModule(res, location, application);
+        });
+    }
+
+    return createActivityFromModule(type, location, application);
+}
+
+function createActivityFromModule(type, location, application) {
+    return new Activity(type.default || type, location, application);
+}
+
+function replaceActivityWithTransition(activityManager, prevActivity, activity, isForward, callback) {
+    const ease = 'cubic-bezier(.34,.86,.54,.99)';
+    const duration = 400;
+    const { enterFrom, enterTo, exitFrom, exitTo } = getTransition(isForward, isForward ? activity.transition : prevActivity.transition);
+
+    const { className: enterFromClassName, ...enterFromStyle } = enterFrom;
+    const { className: enterToClassName, ...enterToStyle } = enterTo;
+    const { className: exitFromClassName, ...exitFromStyle } = exitFrom;
+    const { className: exitToClassName, ...exitToStyle } = exitTo;
+
+    prevActivity.$el.removeClass('app-view-actived');
+
+    const outAnimTask = new Promise((resolve, reject) => {
+        const $prevElement = $(prevActivity.el).css(castStyle(exitFromStyle));
+        if (exitFromClassName) $prevElement.addClass(exitFromClassName);
+        prevActivity.page.trigger('beforehide');
+        $prevElement.animate(castStyle(exitToStyle), duration, ease, () => {
+            prevActivity.el.style.zIndex = '';
+            prevActivity.page.trigger('hide');
+            if (!isForward) {
+                disposeUselessActivities(activityManager, prevActivity, activity);
+            } else {
+                prevActivity.pause();
+
+                let prev = prevActivity._prev;
+                let count = 1;
+                while (prev) {
+                    if (count >= activityManager.options.maxActivePages) {
+                        disposeActivity(activityManager, prev);
+                    }
+                    prev = prev._prev;
+                    count++;
+                }
+            }
+            resolve();
+        });
+        if (exitToClassName) $prevElement.addClass(exitToClassName);
+    });
+
+    const inAnimTask = new Promise((resolve, reject) => {
+        const $currentElement = $(activity.el).css(castStyle(enterFromStyle));
+        if (enterFromClassName) $currentElement.addClass(enterFromClassName);
+        activity.page.trigger('beforeshow');
+        $currentElement.animate(castStyle(enterToStyle), duration, ease, () => {
+            activity.el.style.zIndex = '';
+            outAnimTask.then(() => {
+                activity.show();
+            });
+            activityManager.application.prevActivity = activity._prev;
+            resolve();
+            activity.scrollTop && window.scrollTo(0, activity.scrollTop);
+        });
+        if (enterToClassName) $currentElement.addClass(enterToClassName);
+    });
+
+    return Promise.all([outAnimTask, inAnimTask]).then(() => {
+        callback && callback();
+    });
+}
+
+function disposeActivity(activityManager, item) {
+    var { activitiesCache } = activityManager;
+    var index = activitiesCache.findIndex((one) => one === item);
+    if (index !== -1) {
+        activitiesCache.splice(index, 1);
+    }
+    item.destroy();
+}
+
+function disposeUselessActivities(activityManager, prevActivity, activity) {
+    disposeActivity(activityManager, prevActivity);
+
+    var nextActivity = activity._next;
+    var temp;
+
+    while (nextActivity && nextActivity !== activity) {
+        if (prevActivity !== nextActivity) {
+            disposeActivity(activityManager, nextActivity);
+        }
+        temp = nextActivity;
+        nextActivity = nextActivity._next;
+        temp._next = null;
+    }
+}
+
 export const renderActivity = function (controllerClass, props, container, cb) {
     const location = (props && props.location) || {};
-    const activity = controllerClass[ACTIVITY_FACTORY](location, {
+    const activity = createActivityFromModule(controllerClass, location, {
         rootElement: container
     })
         .setTransitionTask(Promise.resolve())

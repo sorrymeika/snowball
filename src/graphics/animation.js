@@ -6,6 +6,59 @@ import Matrix2D from "./Matrix2D";
 import tween from "./tween";
 import CubicBezier from "./CubicBezier";
 
+const DEFAULT_TRANSITION = {
+    openEnterZIndex: 2,
+    closeEnterZIndex: 1,
+    openExitZIndex: 1,
+    closeExitZIndex: 3,
+    openEnterAnimationFrom: {
+        translate: '99%,0%'
+    },
+    openEnterAnimationTo: {
+        translate: '0%,0%'
+    },
+    openExitAnimationFrom: {
+        translate: '0%,0%'
+    },
+    openExitAnimationTo: {
+        translate: '-50%,0%'
+    },
+    closeEnterAnimationTo: {
+        translate: '0%,0%'
+    },
+    closeEnterAnimationFrom: {
+        translate: '-50%,0%'
+    },
+    closeExitAnimationFrom: {
+        translate: '0%,0%'
+    },
+    closeExitAnimationTo: {
+        translate: '100%,0%'
+    }
+};
+
+export function getTransition(isForward, animConfig) {
+    animConfig = {
+        ...DEFAULT_TRANSITION,
+        ...animConfig
+    };
+    const type = isForward ? "open" : "close",
+        enterFrom = Object.assign({}, animConfig[type + 'EnterAnimationFrom']),
+        exitFrom = Object.assign({}, animConfig[type + 'ExitAnimationFrom']);
+
+    enterFrom.zIndex = isForward ? animConfig.openEnterZIndex : animConfig.closeEnterZIndex;
+    enterFrom.display = 'block';
+    exitFrom.zIndex = isForward ? animConfig.openExitZIndex : animConfig.closeExitZIndex;
+    exitFrom.display = 'block';
+
+    return {
+        enterFrom,
+        enterTo: animConfig[type + 'EnterAnimationTo'],
+        exitFrom: exitFrom,
+        exitTo: animConfig[type + 'ExitAnimationTo']
+    };
+}
+
 const TRANSFORM = $.fx.cssPrefix + 'transform';
 const eachAccessor = (data, fn) => {
     for (let key in data) {

@@ -83,8 +83,8 @@ export interface IPage {
 }
 
 export interface IViewAdapter {
-    ready(callback: () => never): any;
-    update(attributes: any, callback: () => never): any;
+    init(props: any, callback: () => never): any;
+    update(props: any, callback: () => never): any;
     destroy(): any
 }
 

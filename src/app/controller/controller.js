@@ -1,16 +1,14 @@
-import { isFunction, isString, getOwnPropertyDescriptors, getPropertyDescriptors } from "../../utils";
-import { Reaction, Model } from "../../vm";
+import { isFunction, isString } from "../../utils";
+import { Model } from "../../vm";
 import { ActivityOptions } from '../types';
 import { getApplicationCtx } from "../core/createApplication";
 import { registerRoutes } from "../core/registerRoutes";
-import Activity from "../core/Activity";
-import { ACTIVITY_FACTORY } from "../core/ActivityManager";
-import { getAutowiredCtx, isAutowired } from "./autowired";
-import { buildConfiguration } from "./configuration";
+import { getAutowiredCtx } from "./autowired";
 
 export const INJECTABLE_PROPS = Symbol('INJECTABLE_PROPS');
 
 let currentCtx = null;
+let isCreating = false;
 
 export function setCurrentCtx(ctx) {
     currentCtx = ctx;
@@ -69,8 +67,6 @@ export function controller(cfg: ControllerCfg) {
     }
 
     return function (Controller) {
-        Controller[INJECTABLE_PROPS] = filterInjectableProps(getPropertyDescriptors(Controller.prototype));
-
         Object.defineProperty(Controller.prototype, 'ctx', {
             get() {
                 return this._ctx;
@@ -83,164 +79,36 @@ export function controller(cfg: ControllerCfg) {
         });
         Model.neverConnectToModel(Controller.prototype);
 
-        Controller[ACTIVITY_FACTORY] = createActivityFactory(Controller, componentClass, config, options);
+        function controllerFactory(props, ctx) {
+            if (isCreating) {
+                throw new Error('不能同时初始化化两个controller');
+            }
+            isCreating = true;
+            currentCtx = ctx;
+
+            Controller.prototype._ctx = ctx;
+
+            const controllerInstance = new Controller(props, ctx);
+            controllerInstance._ctx = ctx;
+            Controller.prototype._ctx = null;
+
+            isCreating = false;
+            currentCtx = null;
+
+            return controllerInstance;
+        }
+
+        controllerFactory.$$typeof = 'snowball/app#controller';
+        controllerFactory.componentClass = componentClass;
+        controllerFactory.config = config;
+        controllerFactory.options = options;
 
         if (route) {
             registerRoutes({
-                [route]: Controller
+                [route]: controllerFactory
             });
         }
-        return Controller;
+
+        return controllerFactory;
     };
-}
-
-function createActivityFactory(Controller, componentClass, config, options) {
-    const configs = config ? [].concat(config) : [];
-
-    let Configuration;
-
-    return (location, application) => new Activity(componentClass, location, application, (props, page) => {
-        const { ctx } = page;
-        if (!Configuration) {
-            Configuration = buildConfiguration(ctx.app._configuration.concat(configs));
-        }
-        ctx.Configuration = Configuration;
-        const controllerInstance = createController(Controller, props, ctx);
-
-        return (setState) => {
-            const protoProps = Controller[INJECTABLE_PROPS];
-            const injectableProps = Object.assign({}, protoProps, getOwnPropertyDescriptors(controllerInstance));
-            const reactivePropNames = [];
-            const store = {
-                '[[Controller]]': controllerInstance
-            };
-
-            for (let propName in injectableProps) {
-                if (isInjectableProp(propName)) {
-                    if (isAutowired(controllerInstance, propName)) {
-                        store[propName] = controllerInstance[propName];
-                    } else {
-                        reactivePropNames.push(propName);
-                    }
-                }
-            }
-
-            if (reactivePropNames.length) {
-                const bind = (fn, ctx) => {
-                    const boundFn = fn.bind(ctx);
-                    boundFn._cb = fn;
-                    return boundFn;
-                };
-                const reaction = new Reaction(() => {
-                    reaction.track(() => {
-                        const newState = {};
-                        reactivePropNames.forEach((propName) => {
-                            const old = store[propName];
-                            let newProp = controllerInstance[propName];
-                            if (old !== newProp) {
-                                if (typeof newProp === 'function') {
-                                    if (old && old._cb === newProp) {
-                                        return;
-                                    } else {
-                                        newProp = bind(newProp, controllerInstance);
-                                    }
-                                }
-                                newState[propName] = store[propName] = newProp;
-                            }
-                        });
-                        setState(newState);
-                    });
-                }, true)
-                    .track(() => {
-                        reactivePropNames.forEach((propName) => {
-                            const prop = controllerInstance[propName];
-                            store[propName] = typeof prop === 'function' && protoProps[propName]
-                                ? bind(prop, controllerInstance)
-                                : prop;
-                        });
-                    });
-                page.on('destroy', () => reaction.destroy());
-
-                reactivePropNames
-                    .forEach((propName) => {
-                        const descriptor = injectableProps[propName];
-                        const newDescriptor = {
-                            enumerable: descriptor.enumerable,
-                            configurable: descriptor.configurable,
-                        };
-
-                        if (descriptor.get === undefined && descriptor.set === undefined) {
-                            newDescriptor.get = function () {
-                                return store[propName];
-                            };
-                            if (descriptor.writable) {
-                                newDescriptor.set = function (val) {
-                                    store[propName] = val;
-                                    setState(store);
-                                };
-                            }
-                        } else {
-                            newDescriptor.get = descriptor.get;
-                            if (descriptor.set) {
-                                newDescriptor.set = function (val) {
-                                    descriptor.set.call(this, val);
-                                    store[propName] = descriptor.get.call(this);
-                                    setState(store);
-                                };
-                            }
-                        }
-                        Object.defineProperty(controllerInstance, propName, newDescriptor);
-                    });
-            }
-            setState(store);
-        };
-    }, options);
-}
-
-
-let isCreating = false;
-const lifecycleNames = ['onInit', 'onQsChange', 'onShow', 'onCreate', 'onResume', 'onPause', 'onDestroy', 'shouldRender'];
-
-function createController(Controller, props, ctx) {
-    if (isCreating) {
-        throw new Error('不能同时初始化化两个controller');
-    }
-    isCreating = true;
-    currentCtx = ctx;
-
-    Controller.prototype._ctx = ctx;
-
-    const controllerInstance = new Controller(props, ctx);
-    controllerInstance._ctx = ctx;
-    Controller.prototype._ctx = null;
-
-    const lifecycle = {};
-
-    lifecycleNames.forEach((lifecycleName) => {
-        controllerInstance[lifecycleName] && (lifecycle[lifecycleName] = controllerInstance[lifecycleName].bind(controllerInstance));
-    });
-
-    ctx.page.setLifecycleDelegate(lifecycle);
-
-    isCreating = false;
-    currentCtx = null;
-
-    return controllerInstance;
-}
-
-
-const excludeProps = [...lifecycleNames, 'constructor', 'ctx', 'app'];
-
-function filterInjectableProps(descriptors) {
-    const injectableProps = {};
-    for (let propName in descriptors) {
-        if (isInjectableProp(propName)) {
-            injectableProps[propName] = descriptors[propName];
-        }
-    }
-    return injectableProps;
-}
-
-function isInjectableProp(propName) {
-    return typeof propName === 'string' && !excludeProps.includes(propName) && /^[a-z]/.test(propName);
 }

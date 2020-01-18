@@ -5,6 +5,8 @@
 import * as resource from './core/resource';
 import { Page as _P } from './core/Page';
 
+import './react/ReactViewAdapter';
+
 export { createApplication, appCtx as app } from './core/createApplication';
 export { registerRoutes } from './core/registerRoutes';
 export { default as lazy } from './core/lazy';
@@ -23,7 +25,3 @@ export { default as Module } from './controller/Module';
 export { inject, PageContext, AppContextProvider } from './react/inject';
 export { observer } from './react/observer';
 export { ref } from './react/ref';
-
-export function injectable() {
-    throw new Error('`injectable` is deprecated');
-}

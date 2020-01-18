@@ -4,6 +4,7 @@ import { popup } from '../../widget';
 
 import { IApplication, IRouter, IActivityManager, INavigation } from '../types';
 import { withAutowired } from '../controller/autowired';
+import { bindBackGesture } from './gesture';
 
 export default class Application implements IApplication {
 
@@ -36,6 +37,10 @@ export default class Application implements IApplication {
      */
     start(callback) {
         this.navigation.startNavigateListener();
+
+        if ('ontouchmove' in document.body) {
+            bindBackGesture(this);
+        }
 
         if (history.length == 1) {
             store('SNOWBALL_LAST_PAGE_CACHE', null);

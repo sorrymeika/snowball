@@ -10,10 +10,6 @@ export function createComponent(tagName, props, rootComponent) {
     return new factories[tagName](props);
 }
 
-export function isComponent(instance) {
-    return instance instanceof Component;
-}
-
 function nodeHandler(element, action) {
     const { rootElement } = this;
     const handle = () => {
@@ -29,7 +25,7 @@ function nodeHandler(element, action) {
 }
 
 class Component {
-    constructor(state, rootVNode, ownComponent) {
+    constructor(state, rootVNode, ownComponent?) {
         this.state = state;
         state.state.component = this;
 
@@ -193,10 +189,11 @@ export function component({
             };
         }
 
-        const componentFactory = function (data, rootComponent) {
+        const componentFactory = function (data, ownComponent?) {
             const state = new State(data);
-            return new Component(state, rootVNode, rootComponent);
+            return new Component(state, rootVNode, ownComponent);
         };
+        componentFactory.$$typeof = 'snowball#component';
 
         if (tagName) {
             if (factories[tagName]) {

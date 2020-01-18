@@ -2,28 +2,22 @@
 import React, { Component, createElement } from 'react';
 import ReactDOM from 'react-dom';
 import { IViewAdapter } from "../types";
-import { Model } from '../../vm';
-import { SymbolFrom } from '../../vm/symbols';
-import { PageContext, makeComponentReacitve } from './inject';
+import { PageContext, inject } from './inject';
+import ViewAdapter from '../core/ViewAdapter';
 
 export default class ReactViewAdapter implements IViewAdapter {
-    constructor({ el, page, activity, viewFactory, mapStoreToProps }) {
+    static match(type) {
+        return typeof type === 'function';
+    }
+
+    constructor(type, { el, page, activity, store }) {
         this.el = el;
         this.page = page;
         this.activity = activity;
-        this.model = new Model({
-            app: page.ctx.app,
-            ctx: page.ctx,
-            location: activity.location
-        });
-        this.state = {};
-        this._defineProps(['app', 'ctx']);
-        this.isReady = false;
-        this.readyActions = [];
-        this.mapStoreToProps = mapStoreToProps;
+        this.store = store;
 
-        const viewHandler = this;
-        const reactiveView = viewFactory.isSnowballInjector === true ? viewFactory : makeComponentReacitve(viewFactory);
+        const reactiveView = type.isSnowballInjector === true ? type : inject((store) => Object.assign({}, store))(type);
+        const adapter = this;
 
         class PageProvider extends Component {
             constructor() {
@@ -39,10 +33,10 @@ export default class ReactViewAdapter implements IViewAdapter {
             }
 
             shouldComponentUpdate() {
-                if (viewHandler.activity.transitionTask) {
+                if (activity.transitionTask) {
                     if (!this.isRenderingPending) {
                         this.isRenderingPending = true;
-                        viewHandler.activity.transitionTask.then(() => {
+                        activity.transitionTask.then(() => {
                             this.forceUpdate();
                         });
                     }
@@ -55,112 +49,36 @@ export default class ReactViewAdapter implements IViewAdapter {
                 this.isRenderingPending = false;
                 return (
                     <PageContext.Provider
-                        value={viewHandler.state}
-                    >{createElement(reactiveView, viewHandler.model.attributes)}</PageContext.Provider>
+                        value={adapter.store}
+                    >{createElement(reactiveView, adapter._reactProps)}</PageContext.Provider>
                 );
             }
         }
-        this.renderPage = PageProvider;
+        this.PageProvider = PageProvider;
     }
 
-    setState(data, cb) {
-        const keys = Object.keys(data);
-        this._defineProps(keys);
-        this.model.set(keys.reduce((newData, key) => {
-            const item = data[key];
-            newData[key] = (item && item[SymbolFrom]) || item;
-            return newData;
-        }, {}));
-
-        if (this.componentInstance) {
-            this.syncStateToView(cb);
-        } else if (cb) {
-            this.ready(cb);
-        }
-    }
-
-    syncStateToView(cb) {
-        const data = this.model.attributes;
-        if (data !== this.lastData) {
-            this.lastData = data;
-            if (this.activity.transitionTask) {
-                this.componentInstance.setState(() => ({
-                    data
-                }));
-                cb && cb();
-            } else {
-                this.componentInstance.setState({
-                    data
-                }, cb);
-            }
-        } else {
-            cb && cb();
-        }
-    }
-
-    ready(fn) {
-        if (this.isReady) {
-            fn();
-        } else {
-            this.readyActions.push(fn);
-        }
-    }
-
-    setup(attributes, cb) {
-        if (!this.isSetup) {
-            this.isSetup = true;
-            this.setState(attributes);
-
-            const { model } = this;
-            if (this.mapStoreToProps) {
-                const data = this.mapStoreToProps(model.attributes, this.page);
-                if (typeof data === 'function') {
-                    data((newData) => {
-                        this.setState(newData);
-                    });
-                } else {
-                    this.setState(data);
-                }
-                this.mapStoreToProps = null;
-            }
-
-            this.render(() => {
-                this.isReady = true;
-                this.readyActions.forEach((fn) => {
-                    fn();
-                });
-                this.readyActions = null;
-                cb && cb();
-            });
-
-            this.ready(() => {
-                this.model.on('change', () => {
-                    this.syncStateToView();
-                });
-            });
-        }
+    init(attributes, cb) {
+        this.render(attributes, cb);
     }
 
     update(attributes, cb) {
-        if (!this.isSetup) {
-            this.setup(attributes, cb);
-        } else {
-            this.setState(attributes, cb);
-        }
+        this.render(attributes, cb);
     }
 
     /**
      * 渲染当前页面
      * @param {function} [callback] 渲染成功回调函数
      */
-    render(callback) {
-        var lifecycle = this.activity.lifecycle;
-        if (lifecycle.shouldRender && !lifecycle.shouldRender(this.model.attributes)) {
+    render(props, callback) {
+        this._reactProps = { ...props };
+
+        const lifecycle = this.activity.lifecycle;
+        if (lifecycle.shouldRender && !lifecycle.shouldRender(this._reactProps)) {
             callback && callback();
             return;
         }
 
-        var timer,
+        let timer,
             now;
 
         if (process.env.NODE_ENV !== 'test') {
@@ -169,7 +87,7 @@ export default class ReactViewAdapter implements IViewAdapter {
             console.time(timer);
         }
 
-        this.componentInstance = ReactDOM.render(createElement(this.renderPage), this.el, () => {
+        ReactDOM.render(createElement(this.PageProvider, this._reactProps), this.el, () => {
             callback && callback();
             if (process.env.NODE_ENV !== 'test') {
                 console.timeEnd(timer);
@@ -183,24 +101,7 @@ export default class ReactViewAdapter implements IViewAdapter {
 
     destroy() {
         ReactDOM.unmountComponentAtNode(this.el);
-        this.model.destroy();
-    }
-
-    async _defineProps(names) {
-        if (!this._definedProps)
-            this._definedProps = {};
-
-        const { model } = this;
-
-        names.forEach((name) => {
-            if (!this._definedProps[name]) {
-                this._definedProps[name] = true;
-                Object.defineProperty(this.state, name, {
-                    get() {
-                        return model.state.data[name];
-                    }
-                });
-            }
-        });
     }
 }
+
+ViewAdapter.push(ReactViewAdapter);

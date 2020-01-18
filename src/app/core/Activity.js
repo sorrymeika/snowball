@@ -1,10 +1,8 @@
 
-import { $ } from '../../utils';
+import { $, getPropertyNames } from '../../utils';
 import { ActivityOptions } from '../types';
-import ReactViewAdapter from '../react/ReactViewAdapter';
-import SnowballViewAdapter from './SnowballViewAdapter';
 import { Page } from './Page';
-import { isComponent } from '../../vm/component/component';
+import ViewAdapter from './ViewAdapter';
 
 const ACTIVITY_STATUS_INIT = 0;
 const ACTIVITY_STATUS_CREATE = 1;
@@ -12,16 +10,23 @@ const ACTIVITY_STATUS_RESUME = 2;
 const ACTIVITY_STATUS_PAUSE = 3;
 const ACTIVITY_STATUS_DESTROY = 4;
 
+const lifecycleNames = ['onInit', 'onQsChange', 'onShow', 'onCreate', 'onResume', 'onPause', 'onDestroy', 'shouldRender'];
+const excludeProps = [...lifecycleNames, 'constructor'];
+
+function isInjectableProp(propName) {
+    return typeof propName === 'string' && !excludeProps.includes(propName) && /^[a-z]/.test(propName);
+}
+
 /**
  * 页面控制器
  * @param {*} viewClass 视图类
  * @param {*} location 地址信息
  * @param {Application} application 应用
- * @param {*} mapStoreToProps 转换props的方法
+ * @param {*} configs 转换props的方法
  */
 export class Activity {
 
-    constructor(viewFactory, location, application, mapStoreToProps, options?: ActivityOptions) {
+    constructor(controllerFactory: Function & { options: ActivityOptions, config: any }, location, application) {
         this.application = application;
         this.isActive = true;
         this.status = ACTIVITY_STATUS_INIT;
@@ -37,28 +42,84 @@ export class Activity {
         }
         this.location = location;
         this.el = this.$el[0];
-        this.page = new Page(this, application.ctx);
+        this.controllerFactory = controllerFactory;
+
+        const { config, options } = controllerFactory;
+        this.page = new Page(this, this.application.ctx, config);
 
         if (options) {
             this.transition = options.transition;
         }
 
-        const ViewHandler = isComponent(viewFactory)
-            ? SnowballViewAdapter
-            : ReactViewAdapter;
+        this._inited = false;
+        this._isReady = false;
+        this._onReadyCallbacks = [];
+    }
 
-        this.view = new ViewHandler({
+    _init(props, cb) {
+        this._inited = true;
+        const store = {};
+
+        let type = this.controllerFactory;
+
+        if (type.$$typeof === 'snowball/app#controller') {
+            const controllerInstance = type(props, this.page.ctx);
+            const lifecycle = {};
+
+            lifecycleNames.forEach((lifecycleName) => {
+                controllerInstance[lifecycleName] && (lifecycle[lifecycleName] = controllerInstance[lifecycleName].bind(controllerInstance));
+            });
+
+            this.page.setLifecycleDelegate(lifecycle);
+
+            const propertyNames = getPropertyNames(controllerInstance);
+            propertyNames.forEach((propertyName) => {
+                if (isInjectableProp(propertyName)) {
+                    Object.defineProperty(store, propertyName, {
+                        get() {
+                            return controllerInstance[propertyName];
+                        }
+                    });
+                }
+            });
+            type = type.componentClass;
+        }
+
+        this.view = ViewAdapter.create(type, {
+            page: this.page,
+            ctx: this.page.ctx,
             el: this.el,
-            viewFactory,
-            mapStoreToProps,
-            activity: this,
-            page: this.page
+            store,
+            activity: this
         });
 
-        this.view.ready(() => {
+        this.view.init(props, () => {
             this.lifecycle.onInit && this.lifecycle.onInit(this.page.ctx);
             this.page.trigger('init');
+
+            this._isReady = true;
+            this._onReadyCallbacks.forEach((fn) => fn());
+            this._onReadyCallbacks = null;
+
+            cb && cb();
         });
+    }
+
+    setProps(props, cb) {
+        if (this._inited) {
+            this.view.update(props, cb);
+        } else {
+            this._init(props, cb);
+        }
+        return this;
+    }
+
+    ready(fn) {
+        if (this._isReady) {
+            fn();
+        } else {
+            this._onReadyCallbacks.push(fn);
+        }
     }
 
     setTransitionTask(transitionTask) {
@@ -76,11 +137,6 @@ export class Activity {
         return this;
     }
 
-    setProps(props, cb) {
-        this.view.update(props, cb);
-        return this;
-    }
-
     qsChange() {
         if (typeof this.lifecycle.onQsChange === 'function') {
             this.lifecycle.onQsChange(this.page.ctx);
@@ -94,7 +150,7 @@ export class Activity {
      * @param {*} callback
      */
     show(callback) {
-        this.view.ready(() => {
+        this.ready(() => {
             this.isActive = true;
             this.$el.addClass('app-view-actived');
             if (typeof this.lifecycle.onShow === 'function') {
