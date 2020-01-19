@@ -2,6 +2,8 @@ import React, { Component } from 'react';
 import ReactDOM from 'react-dom';
 import { component, Model, observable, autorun, $, customComponent } from './snowball';
 
+import './sass/app.scss';
+
 @customComponent('Custom')
 export class Custom {
     constructor() {
@@ -28,6 +30,7 @@ export class Custom {
     </ul>
     <Test1 data={data} />
     <Custom />
+    <Slider loop data={data} />
     `
 })
 class Test extends Model {

@@ -6,7 +6,7 @@ import { $, isFunction } from "../../utils";
 import { nextTick } from "../methods/enqueueUpdate";
 import { _isObservableClass } from "../reaction/initializer";
 import { Model } from "../objects/Model";
-import { asObservable } from "../reaction";
+import { asObservable } from "../observable";
 
 const factories = {};
 

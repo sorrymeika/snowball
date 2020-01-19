@@ -1,6 +1,7 @@
 import * as util from '../utils';
 import { encodeHTML, $ } from '../utils';
 import Toucher from './Toucher';
+import { customComponent } from '../vm';
 
 function Slider(options) {
     options = Object.assign({
@@ -19,7 +20,6 @@ function Slider(options) {
     Object.assign(this, util.pick(options, ['width', 'loop', 'renderItem', 'template', 'itemTemplate', 'navTemplate']));
 
     let self = this,
-        data = options.data,
         $slider;
 
     if (typeof self.itemTemplate === 'string') self.itemTemplate = util.template(self.itemTemplate);
@@ -77,8 +77,6 @@ function Slider(options) {
                 self.startAutoLoop();
             }
         });
-
-    self.set(data);
 
     $(window).on('ortchange', self.adjustWidth.bind(self));
 
@@ -170,7 +168,7 @@ Object.assign(Slider.prototype, {
         this.set(this._data);
     },
 
-    set: function (data) {
+    set: function ({ data }) {
         if (!Array.isArray(data)) data = data ? [data] : [];
         this._data = data;
 
@@ -300,14 +298,4 @@ Object.assign(Slider.prototype, {
     }
 });
 
-
-export function SliderComponent(options) {
-    this.slider = new Slider(options);
-    this.$el = this.slider.$el;
-}
-
-SliderComponent.prototype.set = function (data) {
-    this.slider.set(data.data);
-};
-
-export default Slider;
+export default customComponent('Slider')(Slider);

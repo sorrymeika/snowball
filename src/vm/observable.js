@@ -1,11 +1,11 @@
-import { readonlyObserver, Subject, IObservable, Observer } from "../objects/Observer";
-import { isObservable } from "../predicates";
-import { isPlainObject, isFunction, isString, isArray } from "../../utils";
-import { SymbolFrom, SymbolRelObserver } from "../symbols";
-import List from "../objects/List";
-import { Model } from "../objects/Model";
+import { readonlyObserver, Subject, IObservable, Observer } from "./objects/Observer";
+import { isObservable } from "./predicates";
+import { isPlainObject, isFunction, isString, isArray } from "../utils";
+import { SymbolFrom, SymbolRelObserver } from "./symbols";
+import List from "./objects/List";
+import { Model } from "./objects/Model";
 
-import * as attributes from "./types";
+import * as attributes from "./reaction/types";
 
 /**
  * 可观察对象

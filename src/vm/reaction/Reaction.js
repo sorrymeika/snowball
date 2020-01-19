@@ -148,7 +148,7 @@ if (process.env.NODE_ENV === 'development') {
 
     // observable object test
     setTimeout(() => {
-        const { observable } = require('./observable');
+        const { observable } = require('../observable');
 
         class B {
             @observable

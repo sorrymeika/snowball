@@ -12,6 +12,8 @@ export { Dictionary } from './objects/Dictionary';
 
 export * from './reaction';
 
+export { observable, asObservable, action } from './observable';
+
 export { batch, compute } from './operators';
 export { Operators };
 
