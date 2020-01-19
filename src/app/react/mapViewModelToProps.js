@@ -3,7 +3,7 @@ import { getPropertyNames, defineProxyProperty } from "../../utils";
 
 const excludeProps = ['ctx', 'app', 'constructor'];
 
-function isInjectableProp(propName) {
+function isPublicProp(propName) {
     return typeof propName === 'string' && !excludeProps.includes(propName) && /^[a-z]/.test(propName);
 }
 
@@ -22,7 +22,7 @@ function _mapViewModelToProps(viewModelName) {
     storeMap.set(vm, store);
 
     propertyNames.forEach((propertyName) => {
-        if (isInjectableProp(propertyName)) {
+        if (isPublicProp(propertyName)) {
             defineProxyProperty(store, propertyName, vm);
         }
     });
