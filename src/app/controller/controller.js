@@ -100,7 +100,7 @@ export function controller(cfg: ControllerCfg) {
 
         controllerFactory.$$typeof = 'snowball/app#controller';
         controllerFactory.componentClass = componentClass;
-        controllerFactory.config = config;
+        controllerFactory.config = config || [];
         controllerFactory.options = options;
 
         if (route) {
