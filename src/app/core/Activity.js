@@ -1,5 +1,5 @@
 
-import { $, getPropertyNames } from '../../utils';
+import { $, getPropertyNames, isFunction } from '../../utils';
 import { ActivityOptions } from '../types';
 import { Page } from './Page';
 import ViewAdapter from './ViewAdapter';
@@ -76,8 +76,17 @@ export class Activity {
             propertyNames.forEach((propertyName) => {
                 if (isInjectableProp(propertyName)) {
                     Object.defineProperty(store, propertyName, {
+                        configurable: true,
                         get() {
-                            return controllerInstance[propertyName];
+                            let val = controllerInstance[propertyName];
+                            if (isFunction(val) && !Object.prototype.hasOwnProperty.call(controllerInstance, propertyName)) {
+                                val = val.bind(controllerInstance);
+                                Object.defineProperty(this, propertyName, {
+                                    configurable: false,
+                                    value: val
+                                });
+                            }
+                            return val;
                         }
                     });
                 }

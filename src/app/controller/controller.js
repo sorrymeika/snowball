@@ -3,7 +3,7 @@ import { Model } from "../../vm";
 import { ActivityOptions } from '../types';
 import { getApplicationCtx } from "../core/createApplication";
 import { registerRoutes } from "../core/registerRoutes";
-import { getAutowiredCtx } from "./autowired";
+import { getAutowiredCtx } from "../core/autowired";
 
 export const INJECTABLE_PROPS = Symbol('INJECTABLE_PROPS');
 

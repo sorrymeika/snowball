@@ -4,8 +4,8 @@ import Router from './Router';
 import Navigation from './Navigation';
 import Application from './Application';
 import { EventEmitter, createEmitter, createAsyncEmitter } from '../../core/event';
-import { withAutowired } from '../controller/autowired';
-import { buildConfiguration } from '../controller/configuration';
+import { withAutowired } from './autowired';
+import { buildConfiguration } from './configuration';
 
 // 当前启动的应用的实例
 let application;

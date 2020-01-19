@@ -133,7 +133,7 @@ function createActivity(route, location, application) {
     if (isThenable(type)) {
         loader.showLoader();
         return type.then((res) => {
-            route.viewFactory = res;
+            route.type = res;
             loader.hideLoader();
             return createActivityFromModule(res, location, application);
         });

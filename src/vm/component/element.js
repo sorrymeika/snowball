@@ -14,6 +14,7 @@ export type IElement = {
 
 export function createElement(vnode: IVNode, root: IElement): IElement {
     const result = {
+        type: vnode.type,
         vnode
     };
     result.root = root || (root = result);
@@ -64,8 +65,8 @@ export function prependElement(parentElement, element) {
     if (element.vnode) {
         if (isComponentElement(element)) {
             element.component.prependTo(parentNode);
-        } else if (element.type === 'root') {
-            prependNode(parentNode, element.firstChild);
+        } else if (element.vnode.type === 'root') {
+            prependNode(parentNode, element.firstNode);
             syncRootChildElements(element);
         } else {
             prependNode(parentNode, element.node);
@@ -91,8 +92,8 @@ export function insertElementAfter(destElement, element) {
     if (element.vnode) {
         if (isComponentElement(element)) {
             element.component.insertAfter(destNode);
-        } else if (element.type === 'root') {
-            insertAfter(destNode, element.firstChild);
+        } else if (element.vnode.type === 'root') {
+            insertAfter(destNode, element.firstNode);
             syncRootChildElements(element);
         } else {
             insertAfter(destNode, element.node);
@@ -113,13 +114,10 @@ function insertAfter(destNode, newNode) {
 function getInsertAfterNode(element) {
     if (element.vnode) {
         if (isComponentElement(element)) {
-            element = element.component.rootElement;
+            return element.component.lastNode;
         }
-        if (element.type === 'root') {
-            const childElements = element.childElements;
-            return childElements && childElements.length
-                ? getInsertAfterNode(childElements[childElements.length - 1])
-                : element.firstChild;
+        if (element.vnode.type === 'root') {
+            return element.lastNode;
         } else {
             return element.node;
         }
@@ -131,11 +129,12 @@ function getInsertAfterNode(element) {
 export function syncRootChildElements(element) {
     const childElements = element.childElements;
     if (childElements) {
-        let prevChild = element.firstChild;
+        let prevChild = element.firstNode;
         for (let i = 0; i < childElements.length; i++) {
             insertElementAfter(prevChild, childElements[i]);
             prevChild = childElements[i];
         }
+        insertElementAfter(prevChild, element.lastNode);
     }
 }
 
@@ -150,7 +149,8 @@ export function removeElement(element) {
                     removeElement(childElements[i]);
                 }
             }
-            removeNode(element.firstChild);
+            removeNode(element.firstNode);
+            removeNode(element.lastNode);
         } else {
             removeNode(element.node);
         }
@@ -262,10 +262,7 @@ function setTextNode(element, val) {
         const newTails = [];
 
         val
-            .reduce((res, item) => {
-                Array.isArray(item) ? res.push(...item) : res.push(item);
-                return res;
-            }, [])
+            .reduce((res, item) => res.concat(item), [])
             .forEach(function (item) {
                 let tail = isString(item)
                     ? findStringTail(tails, item)

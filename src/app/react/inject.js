@@ -5,8 +5,8 @@ import { Reaction } from '../../vm';
 import { setCurrentCtx } from '../controller/controller';
 import { observer } from './observer';
 import { _getApplication, getApplicationCtx } from '../core/createApplication';
-import { withAutowired, autowired } from '../controller/autowired';
-import { buildConfiguration } from '../controller/configuration';
+import { withAutowired, autowired } from '../core/autowired';
+import { buildConfiguration } from '../core/configuration';
 
 export const PageContext = React.createContext();
 

@@ -1,6 +1,6 @@
 import { observable, autorun } from '../../vm';
 import { EventEmitter, createAsyncEmitter, createEmitter, EventDelegate } from '../../core/event';
-import { buildConfiguration } from '../controller/configuration';
+import { buildConfiguration } from './configuration';
 
 export default class PageCtx extends EventEmitter {
     constructor(page, app, configs) {

@@ -3,7 +3,7 @@ import { store, isThenable } from '../../utils';
 import { popup } from '../../widget';
 
 import { IApplication, IRouter, IActivityManager, INavigation } from '../types';
-import { withAutowired } from '../controller/autowired';
+import { withAutowired } from './autowired';
 import { bindBackGesture } from './gesture';
 
 export default class Application implements IApplication {

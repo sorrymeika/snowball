@@ -55,17 +55,19 @@ export function render(element: IElement, state, data) {
         return renderRepeat(element);
     }
 
+    const { ownComponent } = element.root.component;
     const isComponent = vnode.type === 'component';
     if (isComponent) {
         if (!element.component) {
-            element.component = createComponent(vnode.tagName);
+            element.component = createComponent(vnode.tagName, ownComponent);
             element.root.components.push(element.component);
         }
     } else if (!element.node) {
         if (vnode.type === 'root') {
             element.node = document.createDocumentFragment();
-            element.firstChild = document.createComment('component');
-            element.node.appendChild(element.firstChild);
+            element.firstNode = document.createComment('component');
+            element.lastNode = document.createComment('component end');
+            element.node.appendChild(element.firstNode);
         } else if (vnode.type === 'textNode') {
             element.node = document.createTextNode(vnode.nodeValue || '');
         } else {
@@ -81,6 +83,7 @@ export function render(element: IElement, state, data) {
                 }
             }
         }
+        element.node.vElement = element;
     }
 
     element.data = data;
@@ -102,9 +105,7 @@ export function render(element: IElement, state, data) {
                         return invokeEvent(element, element.data, fid, e);
                     });
                 } else {
-                    const { ownComponent } = element.root.component;
                     element.node.setAttribute('sn' + ownComponent.state.state.id + '-on' + eventName, fid);
-                    element.node.vElement = element;
                     ownComponent._eventsDelegation[eventName] = true;
                 }
             }
@@ -115,7 +116,7 @@ export function render(element: IElement, state, data) {
     if (children) {
         let prevSibling;
         if (vnode.type === 'root') {
-            prevSibling = element.firstChild;
+            prevSibling = element.firstNode;
         }
         element.childElements = [];
         for (let i = 0; i < children.length; i++) {

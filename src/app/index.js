@@ -15,8 +15,8 @@ export const Page = { extentions: _P.extentions };
 export * from './core/backEventHandlers';
 
 export { controller } from './controller/controller';
-export { configuration } from './controller/configuration';
-export { autowired, param } from './controller/autowired';
+export { configuration } from './core/configuration';
+export { autowired, param } from './core/autowired';
 export { emitter, asyncEmitter } from './controller/emitter';
 export { singleton } from './controller/singleton';
 export { Service } from './controller/Service';

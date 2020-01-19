@@ -441,22 +441,6 @@ var User = function (props) {
 }
 ```
 
-### `provide` 方法
-
-* 创建数据提供者
-
-```js
-class Component {
-}
-
-// 尽量把逻辑放在 `controller` 里，除非逻辑非常独立
-provide((props)=>{
-    return {
-        child:'xxx'
-    }
-})(Component)
-```
-
 ### `inject` 方法
 
 * `controller`的属性和方法以及`provide`提供的属性和方法，可通过inject方法跨组件注入到子组件的props中

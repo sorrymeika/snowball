@@ -1,6 +1,19 @@
 import React, { Component } from 'react';
 import ReactDOM from 'react-dom';
-import { component, Model, observable, autorun } from './snowball';
+import { component, Model, observable, autorun, $, customComponent } from './snowball';
+
+@customComponent('Custom')
+export class Custom {
+    constructor() {
+        this.el = $('<div>Custom Component</div>');
+    }
+
+    set() {
+    }
+
+    render() {
+    }
+}
 
 @component({
     tagName: 'Test',
@@ -13,7 +26,9 @@ import { component, Model, observable, autorun } from './snowball';
     <ul sn-if={Date.now()%2}>
         <li sn-repeat="item,i in data">b:{i},{item.name}</li>
     </ul>
-    <Test1 data={data} />`
+    <Test1 data={data} />
+    <Custom />
+    `
 })
 class Test extends Model {
 }
@@ -27,6 +42,7 @@ component({
     </div>`
 })(class extends Model {
 });
+
 
 class App extends Component {
 

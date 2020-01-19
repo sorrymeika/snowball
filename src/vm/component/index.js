@@ -1,1 +1,1 @@
-export { component, template } from './component';
+export { component, template, customComponent } from './component';

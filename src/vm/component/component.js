@@ -6,18 +6,22 @@ import { nextTick } from "../methods/enqueueUpdate";
 
 const factories = {};
 
-export function createComponent(tagName, props, rootComponent) {
-    return new factories[tagName](props);
+export function createComponent(tagName, props, ownComponent?) {
+    return new factories[tagName](props, ownComponent);
+}
+
+export function isComponent(obj) {
+    return obj && obj instanceof Component;
 }
 
 function nodeHandler(element, action) {
     const { rootElement } = this;
     const handle = () => {
-        $(rootElement.firstChild)[action](element);
+        $(rootElement.firstNode)[action](element);
         syncRootChildElements(rootElement);
     };
 
-    rootElement.firstChild
+    rootElement.firstNode
         ? handle()
         : nextTick(handle);
 
@@ -88,6 +92,10 @@ class Component {
         }
     }
 
+    get lastNode() {
+        return this.rootElement.lastNode;
+    }
+
     appendTo(element) {
         return nodeHandler.call(this, element, 'appendTo');
     }
@@ -115,7 +123,7 @@ class Component {
     remove() {
         const { rootElement } = this;
         const handle = () => {
-            $(rootElement.firstChild).remove();
+            $(rootElement.firstNode).remove();
             const childElements = rootElement.childElements;
             if (childElements) {
                 for (let i = 0; i < childElements.length; i++) {
@@ -124,7 +132,7 @@ class Component {
             }
         };
 
-        rootElement.firstChild
+        rootElement.firstNode
             ? handle()
             : nextTick(handle);
 
@@ -203,6 +211,65 @@ export function component({
         }
 
         return componentFactory;
+    };
+}
+
+interface ICustumComponent {
+    el: any;
+    render(): any;
+    set(): any;
+}
+
+interface CustumComponentConstructor {
+    new(props: any): ICustumComponent;
+}
+
+class CustomComponent {
+    constructor(component, ownComponent) {
+        this.component = component;
+        this.ownComponent = ownComponent;
+    }
+
+    get lastNode() {
+        const els = $(this.component.el);
+        return els[els.length - 1];
+    }
+
+    set(data) {
+        this.component.set(data);
+    }
+
+    render() {
+        this.component.render();
+    }
+}
+
+['appendTo', 'prependTo', 'before', 'after', 'insertAfter', 'insertBefore', 'remove'].forEach((name) => {
+    CustomComponent.prototype[name] = function (node) {
+        if (node && node.vElement && node.vElement.vnode.type === 'component') {
+            switch (name) {
+                case 'insertAfter':
+                    node = node.vElement.lastNode;
+                    break;
+                case 'insertBefore':
+                    node = node.vElement.firstNode;
+                    break;
+            }
+        }
+        $(this.component.el)[name](node);
+    };
+});
+
+export function customComponent(tagName) {
+    return (CustomComponentCtor: CustumComponentConstructor) => {
+        if (factories[tagName]) {
+            throw new Error('`' + tagName + '` is already registered!');
+        }
+        const componentFactory = function (props, ownComponent) {
+            return new CustomComponent(new CustomComponentCtor(), ownComponent);
+        };
+        componentFactory.$$typeof = 'snowball#customComponent';
+        factories[tagName] = componentFactory;
     };
 }
 
