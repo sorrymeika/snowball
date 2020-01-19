@@ -9,13 +9,12 @@ export { default as State } from './objects/State';
 
 export { default as List } from './objects/List';
 export { Dictionary } from './objects/Dictionary';
-export { Reaction, autorun } from './Reaction';
 
-export { observable, asObservable } from './observable';
+export * from './reaction';
 
 export { batch, compute } from './operators';
+export { Operators };
+
 export { nextTick } from "./methods/enqueueUpdate";
 
 export * from './component';
-
-export { Operators };

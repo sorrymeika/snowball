@@ -1,6 +1,6 @@
 import { isYes, isNumber, isFunction } from '../../utils/is';
 import { createComponent } from './component';
-import { Reaction } from '../Reaction';
+import { Reaction } from '../reaction/Reaction';
 import { get } from '../../utils';
 import { isModel, isCollection } from '../predicates';
 import List from '../objects/List';
@@ -59,7 +59,8 @@ export function render(element: IElement, state, data) {
     const isComponent = vnode.type === 'component';
     if (isComponent) {
         if (!element.component) {
-            element.component = createComponent(vnode.tagName, ownComponent);
+            element.attributes = mapAttributes(vnode.attributes);
+            element.component = createComponent(vnode.tagName, { ...element.attributes }, ownComponent);
             element.root.components.push(element.component);
         }
     } else if (!element.node) {
@@ -146,7 +147,8 @@ export function render(element: IElement, state, data) {
             if (!element.reaction) {
                 const autorun = () => {
                     const nextProps = {
-                        children: element.childElements
+                        children: element.childElements,
+                        ...element.attributes
                     };
                     for (let i = 0; i < props.length; i += 2) {
                         nextProps[props[i]] = invoke(element, element.data, props[i + 1]);
@@ -173,6 +175,17 @@ export function render(element: IElement, state, data) {
     }
 
     return element;
+}
+
+function mapAttributes(attributes) {
+    if (attributes) {
+        const res = {};
+        for (let i = 0; i < attributes.length; i += 2) {
+            res[attributes[i]] = attributes[i + 1];
+        }
+        return res;
+    }
+    return null;
 }
 
 function setRef(element, data) {

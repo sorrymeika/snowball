@@ -301,6 +301,11 @@ function flushViews() {
 }
 
 export function nextTick(cb) {
+    if (cb == null) {
+        return new Promise((resolve) => {
+            nextTick(resolve);
+        });
+    }
     if (rendering) {
         nextCallbacks.push(cb);
     } else {

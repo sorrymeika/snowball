@@ -57,7 +57,6 @@ class App extends Component {
             }]
         });
         test.appendTo(root);
-        console.log(test);
 
         setTimeout(() => {
             // test.destroy();

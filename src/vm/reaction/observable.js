@@ -1,10 +1,11 @@
-import { readonlyObserver, Subject, IObservable, Observer } from "./objects/Observer";
-import { isObservable } from "./predicates";
-import { isPlainObject, isFunction, isString, isArray } from "../utils";
-import { SymbolFrom, SymbolRelObserver } from "./symbols";
-import * as attributes from "./attributes";
-import List from "./objects/List";
-import { Model } from "./objects/Model";
+import { readonlyObserver, Subject, IObservable, Observer } from "../objects/Observer";
+import { isObservable } from "../predicates";
+import { isPlainObject, isFunction, isString, isArray } from "../../utils";
+import { SymbolFrom, SymbolRelObserver } from "../symbols";
+import List from "../objects/List";
+import { Model } from "../objects/Model";
+
+import * as attributes from "./types";
 
 /**
  * 可观察对象
@@ -50,10 +51,13 @@ export const observable = (initalValue, execute, descriptor) => {
 
 observable.number = attributes.number;
 observable.string = attributes.string;
-observable.func = attributes.func;
 observable.object = attributes.object;
 observable.array = attributes.array;
 observable.boolean = attributes.boolean;
+
+// TODO: @action
+export const action = attributes.func;
+observable.func = attributes.func;
 
 function throwIsNotObservableError() {
     throw new Error('data is not an observable array, you can use `observable(data)` to create a new observable object!');

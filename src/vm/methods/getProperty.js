@@ -1,5 +1,5 @@
 import { get, isString, isNumber } from "../../utils";
-import { reactTo } from "../Reaction";
+import { reactTo } from "../reaction/Reaction";
 import { castPath } from "../../utils/castPath";
 import { isModel, isDictionary, isObservable } from "../predicates";
 

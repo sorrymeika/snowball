@@ -1,6 +1,7 @@
 import { IVNode } from "./createVNode";
 import { isNo, isString } from '../../utils/is';
 import { $, fade, TEXT_NODE } from '../../utils/dom';
+import { isComponent } from "./component";
 
 export type IElement = {
     vnode: IVNode,
@@ -89,7 +90,9 @@ function prependNode(parentNode, childNode) {
 
 export function insertElementAfter(destElement, element) {
     let destNode = getInsertAfterNode(destElement);
-    if (element.vnode) {
+    if (isComponent(element)) {
+        element.insertAfter(destNode);
+    } else if (element.vnode) {
         if (isComponentElement(element)) {
             element.component.insertAfter(destNode);
         } else if (element.vnode.type === 'root') {
@@ -103,16 +106,10 @@ export function insertElementAfter(destElement, element) {
     }
 }
 
-function insertAfter(destNode, newNode) {
-    if (destNode.nextSibling != newNode) {
-        destNode.nextSibling
-            ? destNode.parentNode.insertBefore(newNode, destNode.nextSibling)
-            : destNode.parentNode.appendChild(newNode);
-    }
-}
-
 function getInsertAfterNode(element) {
-    if (element.vnode) {
+    if (isComponent(element)) {
+        return element.lastNode;
+    } else if (element.vnode) {
         if (isComponentElement(element)) {
             return element.component.lastNode;
         }
@@ -123,6 +120,14 @@ function getInsertAfterNode(element) {
         }
     } else {
         return element;
+    }
+}
+
+function insertAfter(destNode, newNode) {
+    if (destNode.nextSibling != newNode) {
+        destNode.nextSibling
+            ? destNode.parentNode.insertBefore(newNode, destNode.nextSibling)
+            : destNode.parentNode.appendChild(newNode);
     }
 }
 
@@ -154,6 +159,8 @@ export function removeElement(element) {
         } else {
             removeNode(element.node);
         }
+    } else if (isComponent(element)) {
+        element.remove();
     } else {
         removeNode(element);
     }
@@ -257,7 +264,7 @@ export function setAttribute(element, attrName, val) {
 function setTextNode(element, val) {
     const tails = element.tails || [];
 
-    if (Array.isArray(val) || (typeof val === 'object' && (val.nodeType || val.vnode) && (val = [val]))) {
+    if (Array.isArray(val) || (typeof val === 'object' && (val.nodeType || val.vnode || isComponent(val)) && (val = [val]))) {
         let cursor = element.node;
         const newTails = [];
 

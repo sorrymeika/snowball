@@ -1,5 +1,5 @@
-import { defer } from "./methods/enqueueUpdate";
-import { getMemberName } from "./methods/connect";
+import { defer } from "../methods/enqueueUpdate";
+import { getMemberName } from "../methods/connect";
 
 let currentReaction;
 
@@ -254,7 +254,7 @@ if (process.env.NODE_ENV === 'development') {
 
     // dictionary reaction test
     setTimeout(() => {
-        const { Dictionary } = require('./objects/Dictionary');
+        const { Dictionary } = require('../objects/Dictionary');
 
         let a = new Dictionary({
             name: 1
@@ -290,7 +290,7 @@ if (process.env.NODE_ENV === 'development') {
 
     // model reaction test
     setTimeout(() => {
-        const { Model } = require('./objects/Model');
+        const { Model } = require('../objects/Model');
         const a = new Model({
             name: 1
         });

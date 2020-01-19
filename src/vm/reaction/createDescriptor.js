@@ -1,6 +1,6 @@
-import initializer from "./initializer";
 import { SymbolRelObserver } from "../symbols";
-import { reactTo } from "../Reaction";
+import initializer from "./initializer";
+import { reactTo } from "./Reaction";
 
 export function createDescriptor(get, set) {
     return (target, name, descriptor) => {

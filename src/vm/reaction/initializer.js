@@ -43,6 +43,10 @@ function hoistStaticMethods(obj) {
     obj.from = _from;
 }
 
+export function _isObservableClass(obsCtor) {
+    return obsCtor && obsCtor.prototype[reactiveProps];
+}
+
 export default function initializer(obj, name, descriptor) {
     if (!initedClasses.has(obj)) {
         initedClasses.set(obj, true);
@@ -83,7 +87,7 @@ export default function initializer(obj, name, descriptor) {
                     initProperties = {};
                 }
 
-                const model = new Model(initProperties);
+                const model = new (this.constructor.Model || Model)(initProperties);
                 model.state.facade = this;
 
                 instanceStore.add(this);

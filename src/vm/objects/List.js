@@ -1,9 +1,9 @@
 import { isPlainObject, isArray } from '../../utils/is';
-import { Collection } from './Collection';
 import { isObservable, TYPEOF } from "../predicates";
-import { Dictionary } from "./Dictionary";
-import { reactTo } from "../Reaction";
+import { reactTo } from "../reaction/Reaction";
 import { Observer } from './Observer';
+import { Collection } from './Collection';
+import { Dictionary } from "./Dictionary";
 
 export default class List extends Collection {
     static createItem(parent, index, data) {
