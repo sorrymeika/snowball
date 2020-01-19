@@ -25,3 +25,4 @@ export { default as Module } from './controller/Module';
 export { inject, PageContext, AppContextProvider } from './react/inject';
 export { observer } from './react/observer';
 export { ref } from './react/ref';
+export { default as mapViewModelToProps } from './react/mapViewModelToProps';

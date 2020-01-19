@@ -1,5 +1,5 @@
 
-import { $, getPropertyNames, isFunction } from '../../utils';
+import { $, getPropertyNames, defineProxyProperty } from '../../utils';
 import { ActivityOptions } from '../types';
 import { Page } from './Page';
 import ViewAdapter from './ViewAdapter';
@@ -75,20 +75,7 @@ export class Activity {
             const propertyNames = getPropertyNames(controllerInstance);
             propertyNames.forEach((propertyName) => {
                 if (isInjectableProp(propertyName)) {
-                    Object.defineProperty(store, propertyName, {
-                        configurable: true,
-                        get() {
-                            let val = controllerInstance[propertyName];
-                            if (isFunction(val) && !Object.prototype.hasOwnProperty.call(controllerInstance, propertyName)) {
-                                val = val.bind(controllerInstance);
-                                Object.defineProperty(this, propertyName, {
-                                    configurable: false,
-                                    value: val
-                                });
-                            }
-                            return val;
-                        }
-                    });
+                    defineProxyProperty(store, propertyName, controllerInstance);
                 }
             });
             type = type.componentClass;

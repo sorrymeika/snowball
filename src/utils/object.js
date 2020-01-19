@@ -1,4 +1,4 @@
-import { isArray, isString } from './is';
+import { isArray, isString, isFunction } from './is';
 import { castPath } from './castPath';
 import { unique } from './array';
 
@@ -149,6 +149,25 @@ export function getPropertyNames(proto) {
     }
 
     return unique(propertyNames);
+}
+
+export function defineProxyProperty(proxy, propertyName, source) {
+    Object.defineProperty(proxy, propertyName, {
+        configurable: true,
+        enumerable: true,
+        get() {
+            let val = source[propertyName];
+            if (isFunction(val) && !Object.prototype.hasOwnProperty.call(source, propertyName)) {
+                val = val.bind(source);
+                Object.defineProperty(this, propertyName, {
+                    configurable: false,
+                    enumerable: true,
+                    value: val
+                });
+            }
+            return val;
+        }
+    });
 }
 
 class MixinBuilder {

@@ -57,10 +57,13 @@ observable.boolean = attributes.boolean;
 
 // TODO: @action
 export const action = attributes.func;
-observable.func = attributes.func;
 
 function throwIsNotObservableError() {
-    throw new Error('data is not an observable array, you can use `observable(data)` to create a new observable object!');
+    throw new Error(
+        process.env.NODE_ENV === 'production'
+            ? 'IsNotObservable'
+            : 'data is not an observable array, you can use `observable(data)` to create a new observable object!'
+    );
 }
 
 export function asObservable(data): IObservable {
