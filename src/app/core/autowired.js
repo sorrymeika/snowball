@@ -23,12 +23,14 @@ function formatWiredName(resourceType: string, resourceName: string) {
 }
 
 let pageCtx;
-
-export function getAutowiredCtx() {
-    return pageCtx;
-}
-
 let wiringCaller;
+
+export function getWiringInfo() {
+    return {
+        ctx: pageCtx,
+        caller: wiringCaller
+    };
+}
 
 export function withAutowired(instance, fn) {
     const prevInstance = wiringCaller;

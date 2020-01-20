@@ -3,7 +3,7 @@ import { Model } from "../../vm";
 import { ActivityOptions } from '../types';
 import { getApplicationCtx } from "../core/createApplication";
 import { registerRoutes } from "../core/registerRoutes";
-import { getAutowiredCtx } from "../core/autowired";
+import { getWiringInfo } from "../core/autowired";
 
 export const INJECTABLE_PROPS = Symbol('INJECTABLE_PROPS');
 
@@ -15,7 +15,7 @@ export function setCurrentCtx(ctx) {
 }
 
 export function initWithContext(fn) {
-    const ctx = currentCtx || getAutowiredCtx();
+    const ctx = currentCtx || getWiringInfo().ctx;
     if (!ctx) {
         console.error('ctx 不能为空!');
     }

@@ -1,4 +1,4 @@
-import { getAutowiredCtx, autowired } from "../core/autowired";
+import { getWiringInfo, autowired } from "../core/autowired";
 import { getPropertyNames, defineProxyProperty, isString } from "../../utils";
 
 const excludeProps = ['ctx', 'app', 'constructor'];
@@ -32,8 +32,8 @@ function _mapViewModelToProps(provider, viewModelName, options?) {
 }
 
 export default function mapViewModelToProps(viewModelName, options?) {
-    const ctx = getAutowiredCtx();
-    return ctx
-        ? _mapViewModelToProps(ctx._config._caller, viewModelName, options)
+    const wiringInfo = getWiringInfo();
+    return wiringInfo.caller || wiringInfo.ctx
+        ? _mapViewModelToProps(wiringInfo.caller || wiringInfo.ctx._config._caller, viewModelName, options)
         : (provider) => _mapViewModelToProps(provider, viewModelName, options);
 }
