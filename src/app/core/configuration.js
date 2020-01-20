@@ -19,7 +19,7 @@ export function buildConfiguration(configurations) {
                 if (ClassType.prototype) {
                     return new ClassType(this.ctx, this.app);
                 } else {
-                    return ClassType.call(this._autowiredFrom, this.ctx, this.app);
+                    return ClassType.call(this._caller, this.ctx, this.app);
                 }
             }
         });
@@ -31,7 +31,7 @@ export function buildConfiguration(configurations) {
         Object.defineProperty(params, name, {
             get() {
                 const { __configuration__ } = this;
-                return paramType.call(__configuration__._autowiredFrom, __configuration__.ctx, __configuration__.app);
+                return paramType.call(__configuration__._caller, __configuration__.ctx, __configuration__.app);
             }
         });
     }

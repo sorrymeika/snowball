@@ -1,5 +1,5 @@
 import { getAutowiredCtx, autowired } from "../core/autowired";
-import { getPropertyNames, defineProxyProperty } from "../../utils";
+import { getPropertyNames, defineProxyProperty, isString } from "../../utils";
 
 const excludeProps = ['ctx', 'app', 'constructor'];
 
@@ -9,8 +9,10 @@ function isPublicProp(propName) {
 
 const storeMap = new WeakMap();
 
-function _mapViewModelToProps(viewModelName) {
-    const vm = autowired(viewModelName);
+function _mapViewModelToProps(provider, viewModelName, options?) {
+    const vm = isString(viewModelName)
+        ? provider[viewModelName] || autowired(viewModelName, options)
+        : viewModelName;
     const propertyNames = getPropertyNames(vm);
 
     if (storeMap.has(vm)) {
@@ -29,8 +31,9 @@ function _mapViewModelToProps(viewModelName) {
     return store;
 }
 
-export default function mapViewModelToProps(viewModelName) {
-    return getAutowiredCtx()
-        ? _mapViewModelToProps(viewModelName)
-        : () => _mapViewModelToProps(viewModelName);
+export default function mapViewModelToProps(viewModelName, options?) {
+    const ctx = getAutowiredCtx();
+    return ctx
+        ? _mapViewModelToProps(ctx._config._caller, viewModelName, options)
+        : (provider) => _mapViewModelToProps(provider, viewModelName, options);
 }

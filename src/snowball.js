@@ -23,6 +23,5 @@ export {
     _nativeSdk
 };
 
-
 export * from "./vm";
 export * from "./core/event";

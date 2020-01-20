@@ -4,10 +4,13 @@ import ReactDOM from 'react-dom';
 import { IViewAdapter } from "../types";
 import { PageContext, inject } from './inject';
 import ViewAdapter from '../core/ViewAdapter';
+import { isFunction } from '../../utils';
+
+const reactForwardRefTypeOf = React.forwardRef(() => null).$$typeof;
 
 export default class ReactViewAdapter implements IViewAdapter {
     static match(type) {
-        return typeof type === 'function';
+        return isFunction(type) || (type.$$typeof && (type.$$typeof == reactForwardRefTypeOf));
     }
 
     constructor(type, { el, page, activity, store }) {

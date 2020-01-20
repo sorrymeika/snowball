@@ -86,7 +86,6 @@ export function createApplication({
 
     const conf = configuration ? [].concat(configuration) : [];
     appCtx._configuration = conf;
-    appCtx.Configuration = buildConfiguration(conf);
 
     application = new Application(
         new Router(projects, routes),
@@ -116,14 +115,20 @@ export function createApplication({
             application.start(cb);
         }
     });
+    application.ctx = appCtx;
+
+    application.__autowired__ = {
+        ctx: {
+            Configuration: buildConfiguration(conf)
+        },
+        app: appCtx
+    };
 
     if (extend) {
-        withAutowired(application, () => {
+        withAutowired(application.__autowired__, () => {
             extendCtx(extend);
         });
     }
-
-    application.ctx = appCtx;
 
     if (options.autoStart) {
         appCtx.start(callback);

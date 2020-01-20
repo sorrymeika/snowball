@@ -70,10 +70,12 @@ export default class Application implements IApplication {
             })
             .then(() => {
                 if (callback) {
-                    withAutowired(this, () => {
+                    withAutowired(this.__autowired__, () => {
                         callback(this.ctx);
                     });
                 }
+                // 清除依赖注入，避免内存泄露
+                this.__autowired__ = null;
             });
 
         if (cache) {

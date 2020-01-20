@@ -55,7 +55,7 @@ export function controller(cfg: ControllerCfg) {
         route = cfg;
         componentClass = arguments[1];
         options = arguments[2];
-    } else if (isFunction(cfg)) {
+    } else if (isFunction(cfg) || !cfg.component) {
         componentClass = cfg;
         options = arguments[1];
         route = undefined;

@@ -22,7 +22,6 @@ function formatWiredName(resourceType: string, resourceName: string) {
     return ('@' + resourceType + '#' + formatResourceName(resourceType, resourceName)).toLowerCase();
 }
 
-
 let pageCtx;
 
 export function getAutowiredCtx() {
@@ -42,25 +41,25 @@ export function isAutowired(proto, name) {
     return !!proto[AUTOWIRED_PROPS] && !!proto[AUTOWIRED_PROPS][name];
 }
 
-function getAutowiredConfiguration(classInstance, fn) {
+function getConfiguration(classInstance, fn) {
     const { app, ctx } = classInstance;
-    let config = ctx._autowiredConfig;
+    let config = ctx._config;
     if (!config) {
         const { Configuration } = ctx;
         Configuration.prototype.ctx = ctx;
         Configuration.prototype.app = app;
-        config = ctx._autowiredConfig = new Configuration();
+        config = ctx._config = new Configuration();
         Configuration.prototype.ctx = Configuration.prototype.app = null;
         config.ctx = ctx;
         config.app = app;
     }
-    config._autowiredFrom = classInstance;
+    config._caller = classInstance;
     pageCtx = classInstance.ctx;
 
     const res = fn(config);
 
     pageCtx = null;
-    config._autowiredFrom = null;
+    config._caller = null;
 
     return res;
 }
@@ -68,7 +67,7 @@ function getAutowiredConfiguration(classInstance, fn) {
 const wiringNames = {};
 
 function wire(classInstance, resourceType, resourceName, options) {
-    return getAutowiredConfiguration(classInstance, (config) => {
+    return getConfiguration(classInstance, (config) => {
         let val;
         let wiredName = formatWiredName(resourceType, resourceName);
         let callerInstance;
@@ -162,7 +161,7 @@ export function autowired(resourceType, options?: { name?: 'string', level: 'ctx
 }
 
 function wireParam(classInstance, paramName, options) {
-    return getAutowiredConfiguration(classInstance, (config) => {
+    return getConfiguration(classInstance, (config) => {
         if (paramName in config.__params__) {
             return config.__params__[paramName];
         } else {
