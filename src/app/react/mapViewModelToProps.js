@@ -13,7 +13,6 @@ function _mapViewModelToProps(viewModelName) {
     const vm = autowired(viewModelName);
     const propertyNames = getPropertyNames(vm);
 
-
     if (storeMap.has(vm)) {
         return storeMap.get(vm);
     }

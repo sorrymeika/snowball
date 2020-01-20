@@ -20,6 +20,7 @@ export { autowired, param } from './core/autowired';
 export { emitter, asyncEmitter } from './controller/emitter';
 export { singleton } from './controller/singleton';
 export { Service } from './controller/Service';
+export { ViewModel } from './controller/ViewModel';
 export { default as Module } from './controller/Module';
 
 export { inject, PageContext, AppContextProvider } from './react/inject';

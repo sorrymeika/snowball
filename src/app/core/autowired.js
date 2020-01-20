@@ -85,7 +85,11 @@ function wire(classInstance, resourceType, resourceName, options) {
                 throw new Error('circular reference: ' + wiredName);
             }
             wiringNames[wiredName] = true;
-            val = callerInstance[wiredName] = config[resourceType];
+            try {
+                val = callerInstance[wiredName] = config[resourceType];
+            } catch (error) {
+                console.error(error);
+            }
             delete wiringNames[wiredName];
             if (val === undefined)
                 throw new Error(

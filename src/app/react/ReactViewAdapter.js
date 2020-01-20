@@ -16,7 +16,7 @@ export default class ReactViewAdapter implements IViewAdapter {
         this.activity = activity;
         this.store = store;
 
-        const reactiveView = type.isSnowballInjector === true ? type : inject((store) => Object.assign({}, store))(type);
+        const reactiveView = type.isSnowballInjector === true ? type : inject((store) => store)(type);
         const adapter = this;
 
         class PageProvider extends Component {
