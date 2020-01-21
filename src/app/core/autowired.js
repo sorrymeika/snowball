@@ -142,6 +142,9 @@ function configAutowired(proto, resourceType, name, descriptor, options) {
 }
 
 export function autowired(resourceType, options?: { name?: 'string', level: 'ctx' | 'instance' }, descriptor?) {
+    if (isString(resourceType) && isString(options)) {
+        options = { name: options };
+    }
     if (wiringCaller) {
         if (isString(resourceType)) {
             return wire(wiringCaller, resourceType, (options && options.name) || resourceType, options);
