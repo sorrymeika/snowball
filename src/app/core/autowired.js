@@ -87,7 +87,9 @@ function wire(classInstance, resourceType, resourceName, options) {
             }
             wiringNames[wiredName] = true;
             try {
-                val = callerInstance[wiredName] = config[resourceType];
+                const mapName = (formatResourceName(resourceType, resourceName) + resourceType).toLowerCase();
+                const moduleNamesMap = config.__modules__;
+                val = callerInstance[wiredName] = config[moduleNamesMap[mapName] || moduleNamesMap[resourceType.toLowerCase()]];
             } catch (error) {
                 console.error(error);
             }

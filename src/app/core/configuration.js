@@ -10,8 +10,13 @@ export function buildConfiguration(configurations) {
         Object.assign(parameters, conf.parameters);
     }
 
-    const proto = {};
+    const moduleNamesMap = {};
+    const proto = {
+        __modules__: moduleNamesMap
+    };
     for (let name in modules) {
+        moduleNamesMap[name.toLowerCase()] = name;
+
         const ClassType = modules[name];
         Object.defineProperty(proto, name, {
             configurable: true,
@@ -25,21 +30,20 @@ export function buildConfiguration(configurations) {
         });
     }
 
-    const params = proto.__params__ = {};
-    for (let name in parameters) {
-        const paramType = parameters[name];
-        Object.defineProperty(params, name, {
-            get() {
-                const { __configuration__ } = this;
-                return paramType.call(__configuration__._caller, __configuration__.ctx, __configuration__.app);
-            }
-        });
-    }
-
     function Configuration(ctx, app) {
         this.ctx = ctx;
         this.app = app;
-        this.__params__.__configuration__ = this;
+
+        const params = {};
+        for (let name in parameters) {
+            const paramType = parameters[name];
+            Object.defineProperty(params, name, {
+                get: () => {
+                    return paramType.call(this._caller, this.ctx, this.app);
+                }
+            });
+        }
+        this.__params__ = params;
     }
     Configuration.prototype = proto;
     return Configuration;
