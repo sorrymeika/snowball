@@ -1,3 +1,5 @@
+import { isPlainObject } from "../utils";
+
 function returnFalse() {
     return false;
 }
@@ -235,10 +237,14 @@ function createEmitterFn(extend) {
     };
 }
 
+function eventFromState(state) {
+    return new Event(isPlainObject(state) && state.type ? state.type : 'emit');
+}
+
 export const createEmitter = createEmitterFn((middlewares, funcs) => {
     return {
         emit(state) {
-            const event = new Event('emit');
+            const event = eventFromState(state);
 
             if (middlewares.length == 0) {
                 funcs.every(nextFunc => {
@@ -281,7 +287,7 @@ export const createEmitter = createEmitterFn((middlewares, funcs) => {
 export const createAsyncEmitter = createEmitterFn((middlewares, funcs) => {
     return {
         emit: async (state) => {
-            const event = new Event('emit');
+            const event = eventFromState(state);
 
             if (middlewares.length == 0) {
                 for (let i = 0; i < funcs.length; i++) {
