@@ -4,6 +4,7 @@ import { ActivityOptions } from '../types';
 import { Page } from './Page';
 import ViewAdapter from './ViewAdapter';
 
+const ACTIVITY_STATUS_PREPARE = -1;
 const ACTIVITY_STATUS_INIT = 0;
 const ACTIVITY_STATUS_CREATE = 1;
 const ACTIVITY_STATUS_RESUME = 2;
@@ -29,7 +30,7 @@ export class Activity {
     constructor(controllerFactory: Function & { options: ActivityOptions, config: any }, location, application) {
         this.application = application;
         this.isActive = true;
-        this.status = ACTIVITY_STATUS_INIT;
+        this.status = ACTIVITY_STATUS_PREPARE;
 
         this.$el = $('[route-path="' + location.path + '"][ssr]');
         if (!this.$el.length) {
@@ -90,6 +91,7 @@ export class Activity {
         });
 
         this.view.init(props, () => {
+            this.status = ACTIVITY_STATUS_INIT;
             this.lifecycle.onInit && this.lifecycle.onInit(this.page.ctx);
             this.page.trigger('init');
 

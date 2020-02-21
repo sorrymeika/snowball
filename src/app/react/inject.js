@@ -10,11 +10,11 @@ import { buildConfiguration } from '../core/configuration';
 
 export const PageContext = React.createContext();
 
-export function AppContextProvider({ children, configurations = [] }) {
+export function AppContextProvider({ children, configurations }) {
     const app = getApplicationCtx();
     const ctx = useMemo(() => {
         return {
-            Configuration: buildConfiguration(app._configuration.concat(configurations))
+            Configuration: buildConfiguration(app._configuration.concat(configurations || []))
         };
     }, [app._configuration, configurations]);
 

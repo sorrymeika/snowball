@@ -185,6 +185,7 @@ class Component {
 function componentRender() {
     const data = Object.create(this.state.data || null);
     data.$state = this;
+    data.delegate = this.state.facade;
 
     const componentInstance = this.state.component;
     componentInstance.refs = {};

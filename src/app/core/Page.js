@@ -63,6 +63,10 @@ export class Page extends EventEmitter implements IPage {
         });
     }
 
+    get status() {
+        return this._activity.status;
+    }
+
     get el() {
         return this._activity.el;
     }
