@@ -188,7 +188,7 @@ class Component {
 function componentRender() {
     const data = Object.create(this.state.data || null);
     data.$state = this;
-    data.delegate = this.state.facade;
+    data.delegate = this.state.facade || this.state.delegate;
 
     const componentInstance = this.state.component;
     componentInstance.refs = {};
@@ -206,8 +206,9 @@ function componentRender() {
 
 export function template(templateStr) {
     const rootVNode = compile(templateStr);
-    return (state) => {
+    return (state, delegate) => {
         state.render = componentRender;
+        state.state.delegate = delegate;
         return new Component(state, rootVNode);
     };
 }
@@ -287,6 +288,9 @@ class CustomComponent {
 
     render() {
         this.component.render && this.component.render();
+    }
+
+    destroy() {
     }
 }
 

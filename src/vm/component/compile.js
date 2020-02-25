@@ -82,6 +82,67 @@ export function compile(htmlString) {
 }
 
 export function readExpression(input, cursor) {
+    return readExpressionScope(() => {
+        let match = readBlock(input, cursor, '}');
+        if (match) {
+            match.value = match.value.slice(0, -1);
+        }
+        return match;
+    });
+}
+
+function readStringExpression(input, cursor, quot) {
+    let c;
+    let code = '\'';
+    let text = '';
+    let isExpression = false;
+
+    const match = readExpressionScope(() => {
+        while (cursor < input.length) {
+            c = input[cursor++];
+            if (quot == c) {
+                return isExpression
+                    ? {
+                        value: code + '\'',
+                        cursor
+                    }
+                    : null;
+            }
+            text += c;
+            if (c === '{') {
+                try {
+                    let match = readBlock(input, cursor, '}');
+                    if (match) {
+                        code += '\'+(' + match.value.slice(0, -1) + ')+\'';
+                        cursor = match.cursor;
+                        isExpression = true;
+                        continue;
+                    }
+                } catch (error) {
+                }
+            } else if (c === '\\') {
+                c = '\\\\';
+            } else if (c === '\r') {
+                c = '\\r';
+            } else if (c === '\n') {
+                c = '\\n';
+            } else if (c === '\t') {
+                c = '\\t';
+            }
+            code += c;
+        }
+        throw new Error('string expression has no end quot!!');
+    });
+
+    return isExpression && match
+        ? match
+        : {
+            cursor,
+            value: text
+        };
+}
+
+function readExpressionScope(fn) {
     if (functions == null) {
         throw new Error('必须在compile中调用readExpression!');
     }
@@ -90,14 +151,17 @@ export function readExpression(input, cursor) {
     tempVars = [];
 
     let code = 'try{';
-    let match = readBlock(input, cursor, '}');
+    let match = fn();
+    if (!match) {
+        return null;
+    }
     if (!match.hasReturn) {
         code += 'return ';
     }
     if (tempVars.length) {
         code = 'var ' + tempVars.join(',') + ';' + code;
     }
-    code += match.value.slice(0, -1) + ';}catch(e){';
+    code += match.value + ';}catch(e){';
 
     if (process.env.NODE_ENV === 'development') {
         code += 'console.error(e);';
@@ -404,7 +468,6 @@ function readEvent(input, cursor) {
 function readAttributeValue(input, cursor) {
     let c;
     let value = '';
-    let match;
 
     while (cursor < input.length) {
         c = input[cursor++];
@@ -425,12 +488,8 @@ function readAttributeValue(input, cursor) {
                 };
             case '\'':
             case '"':
-                // 读取string
-                match = readString(input, cursor, c);
-                if (match) {
-                    match.value = match.value.slice(1, -1);
-                }
-                return match;
+                // 读取value
+                return readStringExpression(input, cursor, c);
             default:
                 value += c;
                 break;
@@ -673,8 +732,6 @@ function parseValue(str) {
         return str;
     } else {
         switch (alias) {
-            case 'delegate':
-                return 'this.' + str;
             case 'srcElement':
             case 'util':
             case '$filter':

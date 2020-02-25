@@ -245,21 +245,25 @@ function renderRepeatItem(element: IElement, state, data) {
         collection = get(state, dataSourcePath.slice(1));
     } else {
         const source = data[dataSourceName];
-        let sourceState = source.$state;
-        let paths;
-
-        if (!sourceState) {
-            sourceState = state;
-            paths = dataSourcePath;
+        if (!source) {
+            collection = [];
         } else {
-            paths = dataSourcePath.slice(1);
-        }
+            let sourceState = source.$state;
+            let paths;
 
-        collection = !paths
-            ? source
-            : isModel(sourceState)
-                ? sourceState._(paths)
-                : get(sourceState.state.data, paths);
+            if (!sourceState) {
+                sourceState = state;
+                paths = dataSourcePath;
+            } else {
+                paths = dataSourcePath.slice(1);
+            }
+
+            collection = !paths
+                ? source
+                : isModel(sourceState)
+                    ? sourceState._(paths)
+                    : get(sourceState.state.data, paths);
+        }
     }
 
     if (!isCollection(collection)) {
