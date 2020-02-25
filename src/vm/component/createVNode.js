@@ -77,6 +77,10 @@ export function createVNode({ tagName, events, props, attributes }) {
                     type: 'string',
                     name: val
                 };
+            } else if (key === 'sn-else') {
+                vnode.visibleProps = {
+                    type: 'else'
+                };
             } else {
                 vnodeAttrs.push(key, val);
             }

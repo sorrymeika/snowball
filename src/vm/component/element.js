@@ -34,6 +34,7 @@ export function createElement(vnode: IVNode, root: IElement): IElement {
                     const visibleProps = vchildren[j].visibleProps;
                     if (visibleProps && (visibleProps.type == 'else-if' || visibleProps.type == 'else')) {
                         elem.elses.push(createElement(vchildren[j], root));
+                        j++;
                         i++;
                     } else {
                         break;
