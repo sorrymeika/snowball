@@ -342,7 +342,7 @@ function readAttributes(input, cursor) {
                 cursor = match.cursor;
                 break;
             case 'o':
-                if (input[cursor] != 'n') {
+                if (input[cursor] != 'n' || name) {
                     name += c;
                     break;
                 } else {

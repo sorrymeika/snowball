@@ -11,6 +11,9 @@ import { asObservable } from "../observable";
 const factories = {};
 
 export function createComponent(tagName, props, ownComponent?) {
+    if (!factories[tagName]) {
+        throw new Error(tagName + ' is not register!');
+    }
     return new factories[tagName](props, ownComponent);
 }
 
