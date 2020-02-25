@@ -11,29 +11,29 @@ import { isPlainObject, isArray } from "../../utils";
 const hasOwnProperty = Object.prototype.hasOwnProperty;
 const MARK_SWEEP = Symbol('mark and sweep');
 
-function emitChanges(changes) {
-    freezeObject(this.state.data, this);
-    enqueueUpdate(this);
-    updateRefs(this);
+function emitChanges(dictionary, changes) {
+    freezeObject(dictionary.state.data, dictionary);
+    enqueueUpdate(dictionary);
+    updateRefs(dictionary);
 
-    if (this.state.hasOnAttrChangeListener && changes.length) {
+    if (dictionary.state.hasOnAttrChangeListener && changes.length) {
         for (var i = 0, length = changes.length; i < length; i += 3) {
-            this.trigger("change:" + changes[i], changes[i + 1], changes[i + 2]);
+            dictionary.trigger("change:" + changes[i], changes[i + 1], changes[i + 2]);
         }
     }
-    this.state.changed = true;
+    dictionary.state.changed = true;
 }
 
-function addChange(attributes, key, value, oldValue, changes) {
+function addChange(dictionary, attributes, key, value, oldValue, changes) {
     changes.push(key, value, oldValue);
 
     if (value) {
         const observer = getRelObserverOrSelf(value);
         if (isObservable(observer)) {
             if (isObservable(oldValue)) {
-                disconnect(this, oldValue);
+                disconnect(dictionary, oldValue);
             }
-            connect(this, observer, key);
+            connect(dictionary, observer, key);
         } else {
             if (process.env.NODE_ENV !== 'production') {
                 if (isPlainObject(value) || isArray(value)) {
@@ -88,18 +88,18 @@ export class Dictionary extends Observer {
 
             if (value === MARK_SWEEP) {
                 changes.push(key, undefined, attributes[key]);
-
                 if (isObservable(oldValue)) {
                     disconnect(this, oldValue);
                 }
             } else if (oldValue !== value) {
-                addChange.call(this, attributes, key, value, oldValue, changes);
+                addChange(this, attributes, key, value, oldValue, changes);
+            } else {
+                attributes[key] = value;
             }
         }
 
         this.state.setting = false;
-
-        emitChanges.call(this, changes);
+        emitChanges(this, changes);
 
         return this;
     }
@@ -132,13 +132,13 @@ export class Dictionary extends Observer {
                 const oldValue = attributes[key];
 
                 if (oldValue !== value) {
-                    addChange.call(this, attributes, key, value, oldValue, changes);
+                    addChange(this, attributes, key, value, oldValue, changes);
                 }
             }
         }
         state.setting = false;
 
-        emitChanges.call(this, changes);
+        emitChanges(this, changes);
 
         return this;
     }
@@ -167,7 +167,7 @@ export class Dictionary extends Observer {
             state.data = newData;
 
             if (oldValue !== undefined) {
-                emitChanges.call(this, [key, undefined, oldValue]);
+                emitChanges(this, [key, undefined, oldValue]);
             }
             return true;
         }
