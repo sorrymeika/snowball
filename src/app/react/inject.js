@@ -203,6 +203,7 @@ export function inject(mapDependenciesToPropsFactories, mergeProps, options) {
         mapDependenciesToProps = compose([].concat(mapDependenciesToPropsFactories));
     } else if (isString(mapDependenciesToPropsFactories)) {
         mapDependenciesToProps = mapByNames([].slice.call(arguments));
+        options = mergeProps = undefined;
     } else if (isArray(mapDependenciesToPropsFactories)) {
         const deps = mapDependenciesToPropsFactories;
         const map = mapByNames(deps);
