@@ -2,6 +2,7 @@
 import { compile } from "./compile";
 import { createElement, syncRootChildElements, removeElement } from "./element";
 import { render, invokeEvent } from "./render";
+import * as util from "../../utils";
 import { $, isFunction } from "../../utils";
 import { nextTick } from "../methods/enqueueUpdate";
 import { _isObservableClass } from "../reaction/initializer";
@@ -21,18 +22,16 @@ export function isComponent(obj) {
     return obj && (obj instanceof Component || obj instanceof CustomComponent);
 }
 
-function nodeHandler(element, action) {
-    const { rootElement } = this;
-    const handle = () => {
-        $(rootElement.firstNode)[action](element);
-        syncRootChildElements(rootElement);
-    };
-
-    rootElement.firstNode
-        ? handle()
-        : nextTick(handle);
-
-    return this;
+function insertElement(componentInstance, element, action) {
+    const { rootElement } = componentInstance;
+    $(rootElement.firstNode)[action](element);
+    syncRootChildElements(rootElement);
+    if (componentInstance._rendered) {
+        componentInstance._handleDOMMutations(action);
+    } else {
+        componentInstance._lastMutation = action;
+    }
+    return componentInstance;
 }
 
 function getAllRealNodes(element) {
@@ -61,10 +60,17 @@ class Component {
         $state.state.component = this;
 
         this.ownComponent = ownComponent || this;
+        this._rendered = false;
         this._eventsDelegation = {};
+        this._domMutations = [];
+        this._domNodeHasParentNode = false;
         this.refs = {};
 
         const rootElement = this.rootElement = createElement(rootVNode);
+        rootElement.node = document.createDocumentFragment();
+        rootElement.firstNode = document.createComment('component');
+        rootElement.lastNode = document.createComment('component end');
+        rootElement.node.appendChild(rootElement.firstNode);
         rootElement.component = this;
         rootElement.id = $state.state.id;
         rootElement.components = [];
@@ -94,24 +100,22 @@ class Component {
         const events = Object.keys(this._eventsDelegation);
 
         if (events.length) {
-            const nodes = getAllRealNodes(this.rootElement);
+            const nodes = getAllRealNodes(this.ownComponent.rootElement);
             if (nodes && nodes.length) {
                 const eventFxMap = {
                     'transitionend': $.fx.transitionEnd,
                     'animationend': $.fx.animationEnd,
                 };
-
                 events.forEach((eventName) => {
                     nodes.forEach((el) => {
-                        if (el.nodeType == 1 && !(el.boundEvents || (el.boundEvents = {}))[eventName]) {
-                            el.boundEvents[eventName] = true;
-                            const eventId = 'sn' + this.$state.state.id + '-on' + eventName;
+                        const eventId = 'sn' + this.$state.state.id + '-on' + eventName;
+                        if (el.nodeType == 1 && !(el.boundEvents || (el.boundEvents = {}))[eventId]) {
+                            el.boundEvents[eventId] = true;
+                            const fxEventName = eventFxMap[eventName] || eventName;
                             const eventSelector = '[' + eventId + ']';
                             const handleEvent = (e) => {
                                 invokeEvent(e.currentTarget.vElement, e.currentTarget.vElement.data, Number(e.currentTarget.getAttribute(eventId)), e);
                             };
-                            const fxEventName = eventFxMap[eventName] || eventName;
-
                             $(el).on(fxEventName, eventSelector, handleEvent)
                                 .filter(eventSelector)
                                 .on(fxEventName, handleEvent);
@@ -127,27 +131,83 @@ class Component {
     }
 
     appendTo(element) {
-        return nodeHandler.call(this, element, 'appendTo');
+        return insertElement(this, element, 'appendTo');
     }
 
     prependTo(element) {
-        return nodeHandler.call(this, element, 'prependTo');
+        return insertElement(this, element, 'prependTo');
     }
 
     before(element) {
-        return nodeHandler.call(this, element, 'before');
+        return insertElement(this, element, 'before');
     }
 
     after(element) {
-        return nodeHandler.call(this, element, 'after');
+        return insertElement(this, element, 'after');
     }
 
     insertAfter(element) {
-        return nodeHandler.call(this, element, 'insertAfter');
+        return insertElement(this, element, 'insertAfter');
     }
 
     insertBefore(element) {
-        return nodeHandler.call(this, element, 'insertBefore');
+        return insertElement(this, element, 'insertBefore');
+    }
+
+    isDOMNodeInRoot() {
+        return this._domNodeHasParentNode && (this.ownComponent == this || this.ownComponent._domNodeHasParentNode);
+    }
+
+    onDOMNodeInserted(func, options) {
+        this.ownComponent._domMutations.push({
+            ...options,
+            type: 'DOMNodeInserted',
+            target: this,
+            func
+        });
+    }
+
+    whenDOMNodeInserted(func) {
+        if (this.isDOMNodeInRoot()) {
+            func();
+        } else {
+            this.onDOMNodeInserted(func, { once: true });
+        }
+    }
+
+    onDOMNodeRemoved(func, options) {
+        this.ownComponent._domMutations.push({
+            ...options,
+            type: 'DOMNodeRemoved',
+            target: this,
+            func
+        });
+    }
+
+    whenDOMNodeRemoved(func) {
+        if (!this.isDOMNodeInRoot()) {
+            func();
+        } else {
+            this.onDOMNodeRemoved(func, { once: true });
+        }
+    }
+
+    _handleDOMMutations(type) {
+        this._domNodeHasParentNode = type !== 'removed';
+        const isDOMNodeInRoot = this.isDOMNodeInRoot();
+        const elseMutations = [];
+        const filterMutationType = isDOMNodeInRoot ? 'DOMNodeInserted' : 'DOMNodeRemoved';
+        this.ownComponent._domMutations.forEach(mutation => {
+            if (mutation.type == filterMutationType && mutation.target.isDOMNodeInRoot == isDOMNodeInRoot) {
+                mutation.func();
+                if (!mutation.once) {
+                    elseMutations.push(mutation);
+                }
+            } else {
+                elseMutations.push(mutation);
+            }
+        });
+        this.ownComponent._domMutations = elseMutations;
     }
 
     remove() {
@@ -161,6 +221,7 @@ class Component {
                 }
             }
             $(rootElement.lastNode).remove();
+            this._handleDOMMutations('remove');
         };
 
         rootElement.firstNode
@@ -188,7 +249,8 @@ class Component {
 function componentRender() {
     const data = Object.create(this.state.data || null);
     data.$state = this;
-    data.delegate = this.state.facade || this.state.delegate;
+    data.delegate = this.state.facade || this.state.delegate || this;
+    data.util = util;
 
     const componentInstance = this.state.component;
     componentInstance.refs = {};
@@ -196,6 +258,15 @@ function componentRender() {
     componentInstance._rendering = true;
 
     render(componentInstance.rootElement, this, data);
+
+    if (!componentInstance._rendered) {
+        componentInstance._rendered = true;
+        syncRootChildElements(componentInstance.rootElement);
+        if (componentInstance._lastMutation) {
+            componentInstance._handleDOMMutations(componentInstance._lastMutation);
+            componentInstance._lastMutation = null;
+        }
+    }
 
     componentInstance._rendering = false;
     componentInstance._delegateEvents();
@@ -265,7 +336,9 @@ interface CustumComponentConstructor {
 class CustomComponent {
     constructor(component, ownComponent) {
         this.component = component;
-        this.ownComponent = ownComponent;
+        this.ownComponent = ownComponent || this;
+        this._domMutations = [];
+        this._domNodeHasParentNode = false;
     }
 
     $(selector) {
@@ -291,13 +364,13 @@ class CustomComponent {
     }
 
     destroy() {
+        this.component.destroy && this.component.destroy();
     }
 }
-
-['appendTo', 'prependTo', 'before', 'after', 'insertAfter', 'insertBefore', 'remove'].forEach((name) => {
-    CustomComponent.prototype[name] = function (node) {
+['appendTo', 'prependTo', 'before', 'after', 'insertAfter', 'insertBefore', 'remove'].forEach((type) => {
+    CustomComponent.prototype[type] = function (node) {
         if (node && node.vElement && node.vElement.vnode.type === 'component') {
-            switch (name) {
+            switch (type) {
                 case 'insertAfter':
                     node = node.vElement.lastNode;
                     break;
@@ -306,8 +379,13 @@ class CustomComponent {
                     break;
             }
         }
-        this.$el[name](node);
+        this.$el[type](node);
+        this._handleDOMMutations(type);
     };
+});
+
+['isDOMNodeInRoot', 'whenDOMNodeInserted', 'whenDOMNodeRemoved', '_handleDOMMutations'].forEach(funcName => {
+    CustomComponent.prototype[funcName] = Component.prototype[funcName];
 });
 
 function registerFactory(tagName, componentFactory) {

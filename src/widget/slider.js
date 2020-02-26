@@ -289,11 +289,13 @@ Object.assign(Slider.prototype, {
             $slider.append(self.$items.eq(0).clone());
             self.$items = $slider.children();
         }
+
+        this.adjustWidth();
     },
 
     destroy: function () {
         $(window).off('ortchange', this.adjustWidth);
-        self.$el.off('tap');
+        this.$el.off('tap');
         this.touch.destroy();
     }
 });

@@ -169,11 +169,9 @@ export default class Application implements IApplication {
 
         if (prevActivity) {
             popup.hideAllPopups();
-
             if (isForward) {
                 newActivity._prev && (newActivity._prev._next = newActivity._next);
                 newActivity._next && (newActivity._next._prev = newActivity._prev);
-
                 newActivity._prev = prevActivity;
                 prevActivity._next = newActivity;
             }
@@ -182,10 +180,6 @@ export default class Application implements IApplication {
             isForward = true;
         }
         newActivity.location = location;
-
-        this.navigation.url = location.url;
-        this.navigation.referrer = location.referrer;
-        this.navigation.isForward = newActivity.isForward = isForward;
 
         this.prevActivity = prevActivity;
         this.currentActivity = newActivity;

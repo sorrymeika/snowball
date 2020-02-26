@@ -91,7 +91,6 @@ export interface IViewAdapter {
 export interface IActivity {
     _prev: IActivity,
     _next: IActivity,
-    isForward: boolean,
     location: Location,
     page: IPage,
 }

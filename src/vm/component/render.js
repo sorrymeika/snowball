@@ -1,7 +1,5 @@
-import { isYes, isNumber, isFunction } from '../../utils/is';
-import { createComponent } from './component';
+import { get, isYes, isNumber, isFunction, isString } from '../../utils';
 import { Reaction } from '../reaction/Reaction';
-import { get } from '../../utils';
 import { isModel, isCollection } from '../predicates';
 import List from '../objects/List';
 import {
@@ -12,7 +10,7 @@ import {
     insertElementAfter,
     setAttribute
 } from './element';
-import { isString } from 'util';
+import { createComponent } from './component';
 
 const UNPROPAGATIVE_EVENTS = ['scroll', 'scrollstop'];
 
@@ -21,6 +19,10 @@ export function isPropagativeEvents(eventName) {
 }
 
 export function render(element: IElement, state, data) {
+    return _render(element, state, data);
+}
+
+function _render(element: IElement, state, data, insertElementFn) {
     const { vnode } = element;
 
     if (vnode.visibleProps && vnode.visibleProps.type == 'if') {
@@ -36,11 +38,11 @@ export function render(element: IElement, state, data) {
                 if (visible) {
                     removeElement(el);
                 } else if (el.vnode.visibleProps.type == 'else') {
-                    return render(el, state, data);
+                    return _render(el, state, data, insertElementFn);
                 } else {
                     visible = invoke(el, data, el.vnode.visibleProps.fid);
                     if (visible) {
-                        return render(el, state, data);
+                        return _render(el, state, data, insertElementFn);
                     }
                 }
             }
@@ -52,7 +54,7 @@ export function render(element: IElement, state, data) {
         if (element.parent.vnode.type === 'root') {
             throw new Error('repeat element must has a parentElement!');
         }
-        return renderRepeat(element);
+        return insertElementFn(renderRepeat(element));
     }
 
     const { ownComponent } = element.root.component;
@@ -64,19 +66,12 @@ export function render(element: IElement, state, data) {
             element.root.components.push(element.component);
         }
     } else if (!element.node) {
-        if (vnode.type === 'root') {
-            element.node = document.createDocumentFragment();
-            element.firstNode = document.createComment('component');
-            element.lastNode = document.createComment('component end');
-            element.node.appendChild(element.firstNode);
-        } else if (vnode.type === 'textNode') {
+        if (vnode.type === 'textNode') {
             element.node = document.createTextNode(vnode.nodeValue || '');
         } else {
             const nodeName = vnode.tagName;
             const node = vnode.isSvg ? document.createElementNS('http://www.w3.org/2000/svg', nodeName) : document.createElement(nodeName);
-
             element.node = node;
-
             const attributes = vnode.attributes;
             if (attributes) {
                 for (let i = 0; i < attributes.length; i += 2) {
@@ -113,6 +108,8 @@ export function render(element: IElement, state, data) {
         }
     }
 
+    insertElementFn && insertElementFn(element);
+
     const children = element.children;
     if (children) {
         let prevSibling;
@@ -121,8 +118,7 @@ export function render(element: IElement, state, data) {
         }
         element.childElements = [];
         for (let i = 0; i < children.length; i++) {
-            const child = render(children[i], state, data);
-            if (child) {
+            _render(children[i], state, data, (child) => {
                 if (!isComponent) {
                     if (!prevSibling) {
                         prependElement(element, child);
@@ -137,7 +133,8 @@ export function render(element: IElement, state, data) {
                     prevSibling = child;
                 }
                 element.childElements.push(child);
-            }
+                return child;
+            });
         }
     }
 
@@ -386,11 +383,11 @@ function renderRepeatItem(element: IElement, state, data) {
 }
 
 function invoke(element, data, fid, arg1, arg2) {
-    return element.root.vnode.fns[fid].call(element.root.component, data, arg1, arg2);
+    return element.root.vnode.fns[fid].call(element.root.component, data, element.node, arg1, arg2);
 }
 
 export function invokeEvent(element, data, fid, $event) {
-    return element.root.vnode.fns[fid](data, $setter, $event);
+    return element.root.vnode.fns[fid](data, $setter, $event, element.node);
 }
 
 function autoSet(element, name, fid) {

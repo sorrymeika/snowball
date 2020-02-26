@@ -7,12 +7,12 @@ export function neverConnectToModel(obj) {
     return obj;
 }
 
-function isNeverConnectToModel(obj) {
-    return !!obj[SymbolNeverConnect];
+function canConnectToModel(obj) {
+    return !obj[SymbolNeverConnect];
 }
 
 export function getRelObserver(obj) {
-    return obj && !isNeverConnectToModel(obj) && obj[SymbolRelObserver];
+    return obj && canConnectToModel(obj) && obj[SymbolRelObserver];
 }
 
 export function getRelObserverOrSelf(obj) {

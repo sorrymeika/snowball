@@ -27,6 +27,7 @@ const GLOBAL_VARS = {
     '$': true,
     '$data': true,
     '$event': true,
+    '$element': true,
     '$setter': true,
     'Object': true,
     'Array': true,
@@ -169,7 +170,7 @@ function readExpressionScope(fn) {
 
     code += 'return \'\';}';
 
-    functions += 'function($data,$setter,$event){' + code + '},';
+    functions += 'function($data,$setter,$event,$element){' + code + '},';
 
     const vars = variables;
     variables = null;
@@ -732,7 +733,6 @@ function parseValue(str) {
         return str;
     } else {
         switch (alias) {
-            case 'srcElement':
             case 'util':
             case '$filter':
                 return gb + '.' + str;
