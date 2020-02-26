@@ -136,11 +136,13 @@ export function syncRootChildElements(element) {
     const childElements = element.childElements;
     if (childElements) {
         let prevChild = element.firstNode;
-        for (let i = 0; i < childElements.length; i++) {
-            insertElementAfter(prevChild, childElements[i]);
-            prevChild = childElements[i];
+        if (prevChild.parentNode) {
+            for (let i = 0; i < childElements.length; i++) {
+                insertElementAfter(prevChild, childElements[i]);
+                prevChild = childElements[i];
+            }
+            insertElementAfter(prevChild, element.lastNode);
         }
-        insertElementAfter(prevChild, element.lastNode);
     }
 }
 

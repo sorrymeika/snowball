@@ -4,7 +4,6 @@ import { createElement, syncRootChildElements, removeElement } from "./element";
 import { render, invokeEvent } from "./render";
 import * as util from "../../utils";
 import { $, isFunction } from "../../utils";
-import { nextTick } from "../methods/enqueueUpdate";
 import { _isObservableClass } from "../reaction/initializer";
 import { Model } from "../objects/Model";
 import { asObservable } from "../observable";
@@ -212,22 +211,16 @@ class Component {
 
     remove() {
         const { rootElement } = this;
-        const handle = () => {
-            $(rootElement.firstNode).remove();
-            const childElements = rootElement.childElements;
-            if (childElements) {
-                for (let i = 0; i < childElements.length; i++) {
-                    removeElement(childElements[i]);
-                }
+        $(rootElement.firstNode).remove();
+        const childElements = rootElement.childElements;
+        if (childElements) {
+            for (let i = 0; i < childElements.length; i++) {
+                removeElement(childElements[i]);
             }
-            $(rootElement.lastNode).remove();
-            this._handleDOMMutations('remove');
-        };
-
-        rootElement.firstNode
-            ? handle()
-            : nextTick(handle);
-
+        }
+        $(rootElement.lastNode).remove();
+        this._lastMutation = null;
+        this._handleDOMMutations('remove');
         return this;
     }
 
