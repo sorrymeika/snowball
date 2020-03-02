@@ -322,6 +322,10 @@ import Home from "../containers/Home";
     configuration: HomeConfiguration
 })
 export default class HomeController {
+    // 将url上的参数或configuration.parameters的配置自动注入到this.type上
+    // 同等于 @param('type', { 
+    //    type: 'number' // 数据类型
+    // });
     @param
     type;
 
