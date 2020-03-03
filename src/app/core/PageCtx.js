@@ -6,7 +6,7 @@ export default class PageCtx extends EventEmitter {
     constructor(page, app, configs) {
         super();
 
-        this.Configuration = buildConfiguration(app._configuration.concat(configs));
+        this.Configuration = buildConfiguration(app._configuration.concat(configs || []));
 
         this.page = page;
         this.app = app;

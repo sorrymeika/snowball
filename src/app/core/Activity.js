@@ -48,8 +48,10 @@ export class Activity {
         const { config, options } = controllerFactory;
         this.page = new Page(this, this.application.ctx, config);
 
-        if (options) {
+        if (options && options.transition) {
             this.transition = options.transition;
+        } else {
+            this.transition = application.options.defaultTransition;
         }
 
         this._inited = false;
