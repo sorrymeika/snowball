@@ -920,23 +920,26 @@ window.$ === undefined && (window.$ = Zepto);
         };
 
     function compatible(event, source) {
-        if (source || !event.isDefaultPrevented) {
-            source || (source = event);
+        var oldIsDefaultPrevented = event.isDefaultPrevented;
+        var force = !!source;
+        source || (source = event);
 
-            $.each(eventMethods, function (name, predicate) {
+        $.each(eventMethods, function (name, predicate) {
+            if (force || !event[predicate]) {
                 var sourceMethod = source[name];
                 event[name] = function () {
                     this[predicate] = returnTrue;
                     return sourceMethod && sourceMethod.apply(source, arguments);
                 };
                 event[predicate] = returnFalse;
-            });
+            }
+        });
 
-            if (source.defaultPrevented !== undefined ? source.defaultPrevented :
-                'returnValue' in source ? source.returnValue === false :
-                    source.getPreventDefault && source.getPreventDefault())
-                event.isDefaultPrevented = returnTrue;
-        }
+        if (force || oldIsDefaultPrevented === undefined || (source.defaultPrevented !== undefined ? source.defaultPrevented :
+            'returnValue' in source ? source.returnValue === false :
+                source.getPreventDefault && source.getPreventDefault()))
+            event.isDefaultPrevented = returnTrue;
+
         return event;
     }
 
