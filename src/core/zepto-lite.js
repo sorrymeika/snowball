@@ -935,7 +935,7 @@ window.$ === undefined && (window.$ = Zepto);
             }
         });
 
-        if (force || oldIsDefaultPrevented === undefined || (source.defaultPrevented !== undefined ? source.defaultPrevented :
+        if ((force || oldIsDefaultPrevented === undefined) && (source.defaultPrevented !== undefined ? source.defaultPrevented :
             'returnValue' in source ? source.returnValue === false :
                 source.getPreventDefault && source.getPreventDefault()))
             event.isDefaultPrevented = returnTrue;
