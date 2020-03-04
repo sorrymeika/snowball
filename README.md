@@ -887,13 +887,13 @@ model.delegate = {
 <Tab class="tab" props="{{items:['生活服务','通信服务']}}"></Tab>
 ```
 
-#### `vm.Observer` 类
+#### `Observer` 类
 
 * 可观察对象，类的数据变化可被监听
-*  `Model`, `Collection`, `List`, `Dictionary`, `DictionaryList`, `Subject`, `State` 都是 `Observer` 的子类，分别有不同的作用
+*  `Model`, `Collection`, `List`, `Dictionary`, `Frame`, `State` 都是 `Observer` 的子类，分别有不同的作用
 
 ```js
-import { Observer, Model, Collection, List, Subject, State } from 'snowball';
+import { Observer, Model, Collection, List, Frame, State } from 'snowball';
 
 var model = new Model({
     id: 1,
@@ -913,15 +913,17 @@ viewModel.set({
     list: collection
 })
 ```
-#### `vm.Model|vm.Dictionary` 类
+#### `Model|Dictionary` 类
 
 * `Observer` 的属性变化不能被监听，`Model|Dictionary` 的属性变化可被监听
 * `Model` 是深拷贝，且是 `immutable` 的，`Dictionary` 浅拷贝对象，`Observer` 不拷贝对象可接收值类型
 
-#### `vm.List|vm.Collection|vm.DictionaryList` 类
+#### `List|Collection` 类
 
-* `List` 的子项是 `Observer`，`Collection` 的子项是 `Model`，`DictionaryList` 的子项是 `Dictionary`
-* `List` 性能优于 `Dictionary` 优于 `Collection`
+* List和Collection都是集合类，类实例及其子项的变化都可被监听
+* `List` 的子项如果是Plain Object,会使用`Dictionary`存储,非Plain Object使用`Observer`存储
+* `Collection` 的子项是 `Model`
+* `List` 性能优于 `Collection`
 
 ```js
 var collection = new Collection([{
@@ -1280,7 +1282,7 @@ const observer = observable((fn)=>{
 });
 ```
 
-### `vm.State` 类
+### `State` 类
 
 ```js
 const state = new State();
@@ -1294,12 +1296,12 @@ console.log(state.get());
 // undefined
 ```
 
-### `vm.Subject` 类
+### `Frame` 类
 
 ```js
-const emitter = new Subject();
+const emitter = new Frame();
 
-// 同步触发事件，并且会触发3次
+// 每次界面渲染完成之后触发事件，并且会触发3次
 emitter.set(1);
 emitter.set(2);
 emitter.set(3);
@@ -1308,7 +1310,7 @@ console.log(emitter.get());
 // 3
 ```
 
-### `vm.observable`
+### `observable`
 
 ```js
 class User {
