@@ -3,7 +3,6 @@ import { store, isThenable } from '../../utils';
 import { popup } from '../../widget';
 
 import { IApplication, IRouter, IActivityManager, INavigation } from '../types';
-import { withAutowired } from './autowired';
 import { bindBackGesture } from './gesture';
 
 export default class Application implements IApplication {
@@ -67,15 +66,9 @@ export default class Application implements IApplication {
             })
             .then(() => {
                 this.pageCache = null;
-            })
-            .then(() => {
                 if (callback) {
-                    withAutowired(this.__autowired__, () => {
-                        callback(this.ctx);
-                    });
+                    callback(this.ctx);
                 }
-                // 清除依赖注入，避免内存泄露
-                this.__autowired__ = null;
             });
 
         if (cache) {

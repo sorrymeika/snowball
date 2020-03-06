@@ -4,7 +4,7 @@ import Router from './Router';
 import Navigation from './Navigation';
 import Application from './Application';
 import { EventEmitter, createEmitter, createAsyncEmitter } from '../../core/event';
-import { withAutowired } from './autowired';
+import { withAutowired, autowired } from './autowired';
 import { buildConfiguration } from './configuration';
 
 // 当前启动的应用的实例
@@ -97,6 +97,9 @@ export function createApplication({
     application.setNavigation(navigation)
         .setActivityManager(new ActivityManager(application, options));
 
+    const Configuration = buildConfiguration(conf);
+    let autowiredCache;
+    let autowiredCount = 0;
     let isStart = false;
     Object.assign(appCtx, {
         navigation: ['forward', 'back', 'replace', 'transitionTo', 'home'].reduce((nav, prop) => {
@@ -113,21 +116,31 @@ export function createApplication({
 
             this.trigger('beforestart');
             application.start(cb);
+        },
+        autowired(...args) {
+            let instance;
+            withAutowired(autowiredCache || (autowiredCache = {
+                ctx: {
+                    Configuration
+                },
+                app: appCtx
+            }), () => {
+                instance = autowired(...args);
+            });
+            autowiredCount++;
+            Promise.resolve().then(() => {
+                autowiredCount--;
+                if (autowiredCount == 0) {
+                    autowiredCache = null;
+                }
+            });
+            return instance;
         }
     });
     application.ctx = appCtx;
 
-    application.__autowired__ = {
-        ctx: {
-            Configuration: buildConfiguration(conf)
-        },
-        app: appCtx
-    };
-
     if (extend) {
-        withAutowired(application.__autowired__, () => {
-            extendCtx(extend);
-        });
+        extendCtx(extend);
     }
 
     if (options.autoStart) {
