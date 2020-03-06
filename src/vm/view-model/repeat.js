@@ -120,13 +120,14 @@ function updateRepeatView(template, nodeData) {
         var pass = !repeatCompiler.filter || repeatCompiler.filter.call(viewModel, getFunctionArg(elem, snData));
         if (pass) {
             if (!elem) {
-                elem = cloneRepeatElement(viewModel, repeatCompiler.source, snData);
+                elem = cloneRepeatElement(viewModel, repeatCompiler.source);
 
                 elem.snRepeatCompiler = repeatCompiler;
                 elem.snModel = model;
 
                 elements.push(elem);
             }
+            elem.snData = snData;
 
             list.push({
                 el: elem,
@@ -216,9 +217,9 @@ function updateRepeatView(template, nodeData) {
     return cursorElem;
 }
 
-function cloneRepeatElement(viewModel, source, snData) {
+function cloneRepeatElement(viewModel, source, rootCloneNode) {
     return cloneElement(source, function (node, clone) {
-        clone.snData = snData;
+        clone.snRepeatRoot = rootCloneNode || (rootCloneNode = clone);
         clone.snIsRepeat = true;
 
         if (node.snAttributes) clone.snAttributes = node.snAttributes;
@@ -229,7 +230,7 @@ function cloneRepeatElement(viewModel, source, snData) {
 
         if (node.snRepeatCompiler) clone.snRepeatCompiler = node.snRepeatCompiler;
         if (node.snIfSource) {
-            var snIfSource = cloneRepeatElement(viewModel, node.snIfSource, snData);
+            var snIfSource = cloneRepeatElement(viewModel, node.snIfSource, rootCloneNode);
             clone.snIfSource = snIfSource;
             clone.snIfType = snIfSource.snIfType = node.snIfSource.snIfType;
             clone.snIfFid = snIfSource.snIfFid = node.snIfSource.snIfFid;

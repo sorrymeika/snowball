@@ -60,7 +60,7 @@ function eachElement(el, data, fn, { stack = [], firstLoop = true } = {}) {
     if (!el) return;
 
     while (el) {
-        const res = fn(el, el.snData || data);
+        const res = fn(el, el.snData || (el.snRepeatRoot && el.snRepeatRoot.snData) || data);
         if (res && res.return === true) {
             return {
                 firstLoop,
@@ -304,10 +304,11 @@ export class ViewModel extends Model {
         var model;
         var name = attrs[0];
         var aliaName = '__alias__' + name + '__';
+        var snData = el.snData || (el.snRepeatRoot && el.snRepeatRoot.snData);
 
-        if (el.snData && aliaName in el.snData) {
+        if (snData && aliaName in snData) {
             attrs.shift();
-            model = el.snData[aliaName];
+            model = snData[aliaName];
         } else {
             model = this;
         }
@@ -341,11 +342,13 @@ export class ViewModel extends Model {
             const result = eachElement(root, data, (el, data) => {
                 if ((el.snViewModel && el.snViewModel != this)) return false;
 
-                if (!shouldContinueFlushingViews()) {
+                if (fiber && !shouldContinueFlushingViews()) {
                     return {
                         return: true
                     };
                 }
+
+                console.log(data);
 
                 return compiler.updateNode(el, data);
             }, cache);
@@ -360,7 +363,7 @@ export class ViewModel extends Model {
 
                 return false;
             } else {
-                fiber.current = null;
+                fiber && (fiber.current = null);
                 rendered.push(root);
             }
         };

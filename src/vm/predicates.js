@@ -15,7 +15,7 @@ export function isRenewSet(model) {
 }
 
 export function isModel(model) {
-    return model && (model[TYPEOF] === 'Model');
+    return model && (model[TYPEOF] === 'Model' || model[TYPEOF] === 'ViewModel');
 }
 
 export function isObservableObject(data) {

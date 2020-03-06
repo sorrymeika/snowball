@@ -514,11 +514,11 @@ module.exports = function (webpackEnv) {
           test: /\.(js|mjs|jsx|ts|tsx)$/,
           include: paths.appSrc,
           loader: require.resolve('snowball/webpack-extentions/snowball-loader'),
+          exclude: [path.resolve(paths.appSrc, 'index.dev.js')],
           options: {
             modules: {
               // 'your-module': 'window.YourModlue',
             },
-            excludes: ['src/index.dev.js']
           },
         },
       ],

@@ -1,6 +1,6 @@
 {
   "name": "snowball-all",
-  "version": "0.3.5",
+  "version": "0.3.7",
   "main": "./src/index",
   "repository": {
     "type": "git",

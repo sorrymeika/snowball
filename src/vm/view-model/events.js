@@ -74,7 +74,7 @@ function getEventProxy(viewModel) {
         if (eventCode == 'false') {
             return false;
         } else if (+eventCode) {
-            var proto = target.snData || viewModel.scope || null;
+            var proto = target.snData || (target.snRepeatRoot && target.snRepeatRoot.snData) || viewModel.scope || null;
             var args = getFunctionArg(target, Object.create(proto));
             args.e = e;
 
