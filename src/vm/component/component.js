@@ -58,6 +58,14 @@ class Component {
 
         $state.state.component = this;
 
+        if (!ownComponent) {
+            this.setContext = (context) => {
+                $state.set({
+                    context
+                });
+                return this;
+            };
+        }
         this.ownComponent = ownComponent || this;
         this._rendered = false;
         this._eventsDelegation = {};
@@ -80,6 +88,10 @@ class Component {
                 item.destroy();
             });
         });
+    }
+
+    get context() {
+        return util.get(this.ownComponent.$state.get(), 'context');
     }
 
     $(selector) {
@@ -240,15 +252,16 @@ class Component {
 }
 
 function componentRender() {
-    const data = Object.create(this.state.data || null);
-    data.$state = this;
-    data.delegate = this.state.facade || this.state.delegate || this;
-    data.util = util;
-
     const componentInstance = this.state.component;
     componentInstance.refs = {};
     componentInstance._eventsDelegation = {};
     componentInstance._rendering = true;
+
+    const data = Object.create(this.state.data || null);
+    data.$state = this;
+    data.delegate = this.state.facade || this.state.delegate || this;
+    data.util = util;
+    data.context = componentInstance.context;
 
     render(componentInstance.rootElement, this, data);
 
@@ -305,7 +318,7 @@ export function component({
 
         const componentFactory = function (data, ownComponent?) {
             const state = new State(data);
-            return new Component(state, rootVNode, ownComponent);
+            return state.component = new Component(state, rootVNode, ownComponent);
         };
         componentFactory.$$typeof = 'snowball#component';
         componentFactory.Class = State;
@@ -332,6 +345,10 @@ class CustomComponent {
         this.ownComponent = ownComponent || this;
         this._domMutations = [];
         this._domNodeHasParentNode = false;
+    }
+
+    get context() {
+        return util.get(this.ownComponent.$state.get(), 'context');
     }
 
     $(selector) {
