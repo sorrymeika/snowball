@@ -347,9 +347,6 @@ export class ViewModel extends Model {
                         return: true
                     };
                 }
-
-                console.log(data);
-
                 return compiler.updateNode(el, data);
             }, cache);
 
