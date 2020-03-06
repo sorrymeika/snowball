@@ -462,8 +462,12 @@ export class Collection extends Observer {
         return update(this, arr, comparator, true, renewItem);
     }
 
+    mergeBy(comparator, data, renewItem = false) {
+        return update(this, data, comparator, true, renewItem);
+    }
+
     /**
-     * 根据 comparator 更新Model
+     * 根据 comparator 更新Model，不在collection中的不会追加
      * collection.updateBy('id', { id: 123 name: '更新掉name' })
      * collection.updateBy('id', [{ id: 123 name: '更新掉name' }])
      *
