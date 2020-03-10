@@ -32,11 +32,12 @@ export function getWiringInfo() {
     };
 }
 
-export function withAutowired(instance, fn) {
+export function withAutowiredScope(caller, fn) {
     const prevInstance = wiringCaller;
-    wiringCaller = instance;
-    fn();
+    wiringCaller = caller;
+    const instance = fn();
     wiringCaller = prevInstance;
+    return instance;
 }
 
 export function isAutowired(proto, name) {

@@ -1,6 +1,7 @@
 import { observable, autorun } from '../../vm';
 import { EventEmitter, createAsyncEmitter, createEmitter, EventDelegate } from '../../core/event';
 import { buildConfiguration } from './configuration';
+import { withAutowiredScope, autowired } from './autowired';
 
 export default class PageCtx extends EventEmitter {
     constructor(page, app, configs) {
@@ -18,6 +19,10 @@ export default class PageCtx extends EventEmitter {
 
     get location() {
         return this.page.location;
+    }
+
+    autowired(...args) {
+        return withAutowiredScope(this.page, () => autowired(...args));
     }
 
     delegate(eventEmitter, type, listener) {

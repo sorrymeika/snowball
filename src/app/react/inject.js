@@ -5,7 +5,7 @@ import { Reaction } from '../../vm';
 import { setCurrentCtx } from '../controller/controller';
 import { observer } from './observer';
 import { _getApplication, getApplicationCtx } from '../core/createApplication';
-import { withAutowired, autowired } from '../core/autowired';
+import { withAutowiredScope, autowired } from '../core/autowired';
 import { buildConfiguration } from '../core/configuration';
 
 export const PageContext = React.createContext();
@@ -121,7 +121,7 @@ function compose(mapDependenciesToPropsFactories) {
     return function (dependencies, ownProps, injector) {
         setCurrentCtx(dependencies.ctx);
         const newProps = {};
-        withAutowired(dependencies, () => {
+        withAutowiredScope(dependencies, () => {
             mapDependenciesToPropsFactories.forEach(function (mapDependenciesToProps, i) {
                 const processerName = 'PROCESSER_' + i;
                 let additionalProps = !injector[processerName]
@@ -148,7 +148,7 @@ function compose(mapDependenciesToPropsFactories) {
 function createMapDependenciesToPropsFn(depNames, mapNames) {
     return (dependencies, ownProps, injector) => {
         const injectionProps = {};
-        withAutowired(dependencies, () => {
+        withAutowiredScope(dependencies, () => {
             depNames.forEach((depName, i) => {
                 injectionProps[mapNames[i]] = depName in ownProps
                     ? ownProps[depName]

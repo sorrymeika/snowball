@@ -44,12 +44,13 @@ export class Page extends EventEmitter implements IPage {
         }
     }
 
-    constructor(activity, ctx, configs) {
+    constructor(activity, app, configs) {
         super();
         this._activity = activity;
         this._cache = new Model();
         this._title = defaultTitle;
-        this.ctx = createPageCtx(this, ctx, configs);
+        this.app = app;
+        this.ctx = createPageCtx(this, app, configs);
 
         extentions.forEach(({ initialize, onCreate, onShow, onDestroy }) => {
             if (initialize) initialize.call(this);

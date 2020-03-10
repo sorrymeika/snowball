@@ -4,7 +4,7 @@ import Router from './Router';
 import Navigation from './Navigation';
 import Application from './Application';
 import { EventEmitter, createEmitter, createAsyncEmitter } from '../../core/event';
-import { withAutowired, autowired } from './autowired';
+import { withAutowiredScope, autowired } from './autowired';
 import { buildConfiguration } from './configuration';
 
 // 当前启动的应用的实例
@@ -118,15 +118,12 @@ export function createApplication({
             application.start(cb);
         },
         autowired(...args) {
-            let instance;
-            withAutowired(autowiredCache || (autowiredCache = {
+            let instance = withAutowiredScope(autowiredCache || (autowiredCache = {
                 ctx: {
                     Configuration
                 },
                 app: appCtx
-            }), () => {
-                instance = autowired(...args);
-            });
+            }), () => autowired(...args));
             autowiredCount++;
             Promise.resolve().then(() => {
                 autowiredCount--;
