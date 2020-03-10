@@ -1,13 +1,11 @@
 
-require('./sass/style.dev.scss');
-require('snowball');
-require('nuclear');
+import './sass/style.dev.scss';
+import 'snowball';
+import { createApplication } from "snowball/app";
+import router from "./app/router";
 
-const { createApplication } = require("snowball/app");
-const router = require("./app/router");
-
-createApplication({
-    routes: router.default,
+const app = createApplication({
+    routes: router,
     autoStart: true,
     extend() {
         return {
@@ -16,3 +14,5 @@ createApplication({
 }, document.getElementById('root'), () => {
     console.log('application start!');
 });
+
+window.SNOWBALL_MAIN_APP = app;
