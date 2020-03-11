@@ -15,6 +15,8 @@ export function Event(type, props) {
     return this;
 }
 
+export default Event;
+
 Event.prototype = {
     isDefaultPrevented: returnFalse,
 
@@ -166,13 +168,9 @@ function createEmitterFn(extend) {
         let middlewares = [];
         let funcs = [];
 
-        const emitter = (fn) => {
-            if (typeof fn === 'function') {
-                return emitter.on(fn);
-            } else {
-                return emitter.emit(fn);
-            }
-        };
+        const emitter = (fn) => typeof fn === 'function'
+            ? emitter.on(fn)
+            : emitter.emit(fn);
 
         emitter.$$typeof = 'snowball#EventEmitter';
 
@@ -219,11 +217,11 @@ function createEmitterFn(extend) {
             };
         };
 
-        emitter.clear = () => {
-            middlewares = [];
-            funcs = [];
-            return emitter;
-        };
+        // emitter.clear = () => {
+        //     middlewares = [];
+        //     funcs = [];
+        //     return emitter;
+        // };
 
         emitter.destroy = () => {
             middlewares = funcs = null;
@@ -238,10 +236,10 @@ function createEmitterFn(extend) {
 }
 
 function eventFromState(state) {
-    return new Event(isPlainObject(state) && state.type ? state.type : 'emit');
+    return new Event(isPlainObject(state) && state.type && typeof state.type == 'string' ? state.type : 'do');
 }
 
-export const createEmitter = createEmitterFn((middlewares, funcs) => {
+const createEmitter = createEmitterFn((middlewares, funcs) => {
     return {
         emit(state) {
             const event = eventFromState(state);
@@ -284,7 +282,7 @@ export const createEmitter = createEmitterFn((middlewares, funcs) => {
     };
 });
 
-export const createAsyncEmitter = createEmitterFn((middlewares, funcs) => {
+const createAsyncEmitter = createEmitterFn((middlewares, funcs) => {
     return {
         emit: async (state) => {
             const event = eventFromState(state);
@@ -334,14 +332,7 @@ export const createAsyncEmitter = createEmitterFn((middlewares, funcs) => {
     };
 });
 
-export const Emitter = {
-    create: createEmitter,
-    async: createAsyncEmitter
-};
-
-export default Event;
-
-export function EventDelegate(eventEmitter, type, listener) {
+function createEventDelegate(eventEmitter, type, listener) {
     let delegate;
 
     if (typeof eventEmitter === 'function') {
@@ -382,7 +373,11 @@ export function EventDelegate(eventEmitter, type, listener) {
     return delegate;
 }
 
-EventDelegate.create = EventDelegate;
+export const Emitter = {
+    create: createEmitter,
+    async: createAsyncEmitter,
+    delegate: createEventDelegate,
+};
 
 
 // var event = new EventEmitter();

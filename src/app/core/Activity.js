@@ -106,6 +106,9 @@ export class Activity {
     }
 
     setProps(props, cb) {
+        if (props.location && this.location != props.location) {
+            this.location = props.location;
+        }
         if (this._inited) {
             this.view.update(props, cb);
         } else {

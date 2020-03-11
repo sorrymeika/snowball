@@ -3,7 +3,7 @@ import ActivityManager from './ActivityManager';
 import Router from './Router';
 import Navigation from './Navigation';
 import Application from './Application';
-import { EventEmitter, createEmitter, createAsyncEmitter } from '../../core/event';
+import { EventEmitter, Emitter } from '../../core/event';
 import { withAutowiredScope, autowired } from './autowired';
 import { buildConfiguration } from './configuration';
 
@@ -30,11 +30,11 @@ Object.defineProperties(appCtx, {
     currentCtx: currentCtxProperty,
     current: currentCtxProperty,
     createEmitter: {
-        value: createEmitter,
+        value: Emitter.create,
         writable: false
     },
     createAsyncEmitter: {
-        value: createAsyncEmitter,
+        value: Emitter.async,
         writable: false
     },
     emit: {
