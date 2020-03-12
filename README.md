@@ -1025,20 +1025,6 @@ model.observe('user.userName', function(e) {
 
 * 移除监听
 
-#### `(Observer|...).prototype.compute` 方法
-
-* 计算
-
-```js
-// 计算
-var computed = model.compute(({ user, id, homePageId }) => {
-    return user + id + homePageId;
-});
-computed.observe((value) => {
-});
-computed.get();
-```
-
 #### `Model.prototype.collection(key)` 方法
 
 * 获取属性名为key的collection，不存在即创建
@@ -1337,7 +1323,7 @@ asObservable(user).observe('userId', ()=>{
 });
 
 // 计算user.userId
-asObservable(user).compute('userId', (userId)=>{
+compute(asObservable(user).observe('userId'), (userId) => {
     return 'userId:' + userId;
 });
 

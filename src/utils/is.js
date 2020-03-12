@@ -7,7 +7,7 @@ function is(type) {
     };
 }
 
-const notObjectTypes = 'Symbol Boolean Number String Function Array Date RegExp Error'.split(' ')
+const notObjectTypes = 'Symbol Boolean Number String Array Date RegExp Error'.split(' ')
     .reduce((types, name) => {
         types["[object " + name + "]"] = true;
         return types;
@@ -45,6 +45,10 @@ export function isBoolean(str) {
 
 export function isFunction(fn) {
     return typeof fn === 'function';
+}
+
+export function isAsyncFunction(fn) {
+    return isFunction(fn) && toString.call(fn) == "[object AsyncFunction]";
 }
 
 // 来自redux，性能差

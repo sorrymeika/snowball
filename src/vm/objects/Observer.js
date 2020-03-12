@@ -4,7 +4,6 @@ import { identify } from '../../utils/guid';
 import { enqueueUpdate, nextTick, enqueueInit, emitUpdate } from '../methods/enqueueUpdate';
 import { updateRefs } from '../methods/updateRefs';
 import { connect, disconnect } from '../methods/connect';
-import compute from '../operators/compute';
 import { TYPEOF } from '../predicates';
 import { getProperty } from '../methods/getProperty';
 
@@ -14,7 +13,6 @@ export interface IObservable {
     observe: (cb: (value: any) => any) => boolean,
     unobserve: (cb: (value: any) => any) => any,
     destroy: () => never,
-    compute: (fn: (value: any) => any) => IObservable,
     state: {
         updated: boolean
     }
@@ -69,15 +67,6 @@ export class Observer implements IObservable {
 
     unobserve(fn) {
         return this.off('datachanged', fn);
-    }
-
-    compute(cacl) {
-        const computed = compute((cb) => {
-            this.observe(cb);
-            return () => this.unobserve(cb);
-        }, cacl, this.get());
-        this.on('destroy', () => computed.destroy());
-        return computed;
     }
 
     contains(observer) {

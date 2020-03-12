@@ -320,16 +320,6 @@ export class Model extends Observer {
         return super.unobserve(attribute);
     }
 
-    compute(attribute, calc) {
-        if (isString(attribute)) {
-            return compute((cb) => {
-                this.observe(attribute, cb);
-                return () => this.unobserve(attribute, cb);
-            }, calc, this.get(attribute));
-        }
-        return super.compute(attribute);
-    }
-
     getJSON(key) {
         return deepClone(this.get(key));
     }

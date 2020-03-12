@@ -303,16 +303,6 @@ export class Collection extends Observer {
         return super.unobserve(attribute, fn);
     }
 
-    compute(attribute, calc) {
-        if (isString(attribute) || isNumber(attribute)) {
-            return compute((cb) => {
-                this.observe(attribute, cb);
-                return () => this.unobserve(attribute, cb);
-            }, calc, this.get(attribute));
-        }
-        return super.compute(attribute);
-    }
-
     size() {
         return this.state.data.length;
     }

@@ -1,5 +1,4 @@
 import { isString } from "../../utils";
-import { SymbolRelObserver } from "../../vm/symbols";
 
 function decorate(target, key, { value: fn, configurable, enumerable, initializer }, type) {
     if ((fn !== undefined && typeof fn !== 'function') || initializer) {
@@ -18,9 +17,6 @@ function decorate(target, key, { value: fn, configurable, enumerable, initialize
             const boundFn = fn ? fn.bind(this) : undefined;
             const emitterFn = this.ctx[type === 'async' ? 'createAsyncEmitter' : 'createEmitter'](boundFn);
 
-            if (this[SymbolRelObserver]) {
-                this[SymbolRelObserver].set(key, emitterFn);
-            }
             Object.defineProperty(this, key, {
                 configurable: true,
                 writable: true,
@@ -46,3 +42,4 @@ function createEmitterDecorator(type) {
 
 export const emitter = createEmitterDecorator();
 export const asyncEmitter = createEmitterDecorator("async");
+emitter.async = asyncEmitter;
