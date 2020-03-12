@@ -5,6 +5,13 @@ import { $, isThenable } from '../../utils';
 import { IApplication, IActivityManager, ToggleOptions } from '../types';
 
 import Activity from './Activity';
+import { _getApplication } from './createApplication';
+
+const ACTIVED_STYLE = {
+    opacity: 1,
+    display: 'block',
+    '-webkit-transform': 'translate3d(0%,0%,0)'
+};
 
 export default class ActivityManager implements IActivityManager {
 
@@ -96,11 +103,7 @@ export default class ActivityManager implements IActivityManager {
         if (prevActivity && withTransition && !disableTransition) {
             replaceActivityWithTransition(this, prevActivity, activity, isForward, resolveTransition);
         } else {
-            activity.$el.css({
-                opacity: 1,
-                display: 'block',
-                '-webkit-transform': 'translate3d(0%,0%,0)'
-            });
+            activity.$el.css(ACTIVED_STYLE);
             activity.page.trigger('beforeshow');
             activity.show(!prevActivity
                 ? resolveTransition
@@ -233,20 +236,19 @@ function disposeUselessActivities(activityManager, prevActivity, activity) {
 
 export const renderActivity = function (controllerClass, props, container, cb) {
     const location = (props && props.location) || {};
-    const activity = createActivityFromModule(controllerClass, location, {
-        rootElement: container
-    })
+    const activity = createActivityFromModule(controllerClass, location, Object.create(_getApplication(), {
+        rootElement: {
+            writable: false,
+            value: container
+        }
+    }))
         .setTransitionTask(Promise.resolve())
         .setProps({
             location,
             ...props
         }, cb);
 
-    activity.$el.css({
-        opacity: 1,
-        display: 'block',
-        '-webkit-transform': 'translate3d(0%,0%,0)'
-    });
+    activity.$el.css(ACTIVED_STYLE);
     activity.show();
 
     const wrapper = {
