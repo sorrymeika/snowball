@@ -2,8 +2,9 @@ import { Model } from "../objects/Model";
 import { SymbolRelObserver } from "../symbols";
 import { isObservable } from "../predicates";
 
-const reactiveProps = Symbol('reactiveProps');
-const initedClasses = new WeakMap();
+const symbolReactiveProps = Symbol('reactiveProps');
+export const symbolPropsInitializer = Symbol('propsInitializer');
+const initedClasses = new WeakSet();
 const instanceStore = new WeakSet();
 
 function asModel(obj, constructor) {
@@ -44,16 +45,16 @@ function hoistStaticMethods(obj) {
 }
 
 export function _isObservableClass(obsCtor) {
-    return obsCtor && obsCtor.prototype[reactiveProps];
+    return obsCtor && obsCtor.prototype[symbolReactiveProps];
 }
 
 export default function initializer(obj, name, descriptor) {
     if (!initedClasses.has(obj)) {
-        initedClasses.set(obj, true);
+        initedClasses.add(obj);
 
-        obj[reactiveProps] = obj[reactiveProps]
-            ? [...obj[reactiveProps]]
-            : [];
+        obj[symbolReactiveProps] = obj[symbolReactiveProps]
+            ? { ...obj[symbolReactiveProps] }
+            : {};
 
         hoistStaticMethods(obj.constructor);
 
@@ -65,26 +66,23 @@ export default function initializer(obj, name, descriptor) {
                     return true;
                 }
 
-                let initProperties;
+                let initProperties = {};
 
-                const props = proto[reactiveProps];
+                const props = proto[symbolReactiveProps];
                 if (props) {
-                    const instance = Object.create(this, props.reduce((result, { name, desc }) => {
-                        result[name] = {
-                            get() {
-                                return desc.initializer
-                                    ? desc.initializer.call(instance)
-                                    : desc.value;
-                            }
-                        };
-                        return result;
-                    }, {}));
-                    initProperties = props.reduce((result, { name }) => {
-                        result[name] = instance[name];
-                        return result;
-                    }, {});
-                } else {
-                    initProperties = {};
+                    const initProp = this[symbolPropsInitializer] = (name) => {
+                        if (name in initProperties) {
+                            return initProperties[name];
+                        }
+                        const desc = props[name];
+                        return initProperties[name] = desc.initializer
+                            ? desc.initializer.call(this)
+                            : desc.value;
+                    };
+                    for (let key in props) {
+                        initProp(key);
+                    }
+                    this[symbolPropsInitializer] = null;
                 }
 
                 const model = new (this.constructor.Model || Model)(initProperties);
@@ -103,16 +101,6 @@ export default function initializer(obj, name, descriptor) {
     }
 
     if (descriptor.initializer || descriptor.value !== undefined) {
-        const descriptors = obj[reactiveProps];
-        const index = descriptors.findIndex((item) => item.name === name);
-        const newDesc = {
-            name,
-            desc: descriptor
-        };
-        if (index != -1) {
-            descriptors[index] = newDesc;
-        } else {
-            descriptors.push(newDesc);
-        }
+        obj[symbolReactiveProps][name] = descriptor;
     }
 }

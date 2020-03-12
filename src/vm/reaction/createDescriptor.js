@@ -1,5 +1,5 @@
 import { SymbolRelObserver } from "../symbols";
-import initializer from "./initializer";
+import initializer, { symbolPropsInitializer } from "./initializer";
 import { reactTo } from "./Reaction";
 
 export function createDescriptor(get, set) {
@@ -9,6 +9,9 @@ export function createDescriptor(get, set) {
         return {
             enumerable: true,
             get() {
+                if (this[symbolPropsInitializer]) {
+                    return this[symbolPropsInitializer](name);
+                }
                 reactTo(this[SymbolRelObserver], name);
                 return get(this[SymbolRelObserver], name);
             },

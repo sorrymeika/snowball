@@ -173,38 +173,46 @@ function wireParam(classInstance, paramName, options) {
         if (paramName in config.__params__) {
             return config.__params__[paramName];
         } else {
-            const paramVal = paramName in pageCtx.location.params
-                ? pageCtx.location.params[paramName]
-                : pageCtx.location.query[paramName];
-            if (paramVal == null) {
-                return 'defaultValue' in options
-                    ? options.defaultValue
-                    : options.type === 'number'
-                        ? 0
-                        : options.type === 'string'
-                            ? ''
-                            : paramVal;
-            } else if (options.type === 'string') {
-                return paramVal;
-            } else if (options.type === 'number' || /^-?\d+(\.\d+)?$/.test(paramVal)) {
-                return Number(paramVal) || 0;
-            } else if (options.type === 'bool' || options.type === 'boolean') {
-                return paramVal && paramVal != 'false' && paramVal != '0';
-            } else if (paramVal === 'true') {
-                return true;
-            } else if (paramVal === 'false') {
-                return false;
-            } else if (options.type === 'json') {
-                try {
-                    return JSON.parse(paramVal);
-                } catch (error) {
-                    return null;
-                }
-            } else {
-                return paramVal;
-            }
+            const ctx = pageCtx;
+            ctx.page.on('qschange', () => {
+                classInstance[paramName] = getParamValue(ctx, paramName, options);
+            });
+            return getParamValue(ctx, paramName, options);
         }
     });
+}
+
+function getParamValue(ctx, paramName, options) {
+    const paramVal = paramName in ctx.location.params
+        ? ctx.location.params[paramName]
+        : ctx.location.query[paramName];
+    if (paramVal == null) {
+        return 'defaultValue' in options
+            ? options.defaultValue
+            : options.type === 'number'
+                ? 0
+                : options.type === 'string'
+                    ? ''
+                    : paramVal;
+    } else if (options.type === 'string') {
+        return paramVal;
+    } else if (options.type === 'number' || /^-?\d+(\.\d+)?$/.test(paramVal)) {
+        return Number(paramVal) || 0;
+    } else if (options.type === 'bool' || options.type === 'boolean') {
+        return paramVal && paramVal != 'false' && paramVal != '0';
+    } else if (paramVal === 'true') {
+        return true;
+    } else if (paramVal === 'false') {
+        return false;
+    } else if (options.type === 'json') {
+        try {
+            return JSON.parse(paramVal);
+        } catch (error) {
+            return null;
+        }
+    } else {
+        return paramVal;
+    }
 }
 
 function decorateParam(proto, paramName, propName, descriptor, options) {
