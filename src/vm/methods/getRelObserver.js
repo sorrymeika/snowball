@@ -1,14 +1,9 @@
 import { SymbolRelObserver } from '../symbols';
 
-const SymbolNeverConnect = Symbol('Model#NeverConnect');
-
-export function neverConnectToModel(obj) {
-    obj[SymbolNeverConnect] = true;
-    return obj;
-}
+const symbolAsNormalObject = Symbol.for('snowball/Observer#asNormalObject');
 
 function canConnectToModel(obj) {
-    return !obj[SymbolNeverConnect];
+    return !obj[symbolAsNormalObject];
 }
 
 export function getRelObserver(obj) {

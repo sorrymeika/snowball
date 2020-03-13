@@ -1,5 +1,3 @@
-import * as Operators from './operators';
-
 export { isObserver, isObservable, isObservableObject, isModel, isCollection, isList } from './predicates';
 
 export { Observer, Subject } from './objects/Observer';
@@ -14,8 +12,7 @@ export * from './reaction';
 
 export { observable, asObservable, action } from './observable';
 
-export { batch, compute } from './operators';
-export { Operators };
+export { default as compute } from './compute';
 
 export { nextTick } from "./methods/enqueueUpdate";
 

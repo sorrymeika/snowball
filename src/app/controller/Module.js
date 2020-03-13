@@ -2,7 +2,6 @@
 import { initWithContext } from "./controller";
 import { getApplicationCtx } from "../core/createApplication";
 import { PageCtx } from "../types";
-import { Model } from "../../vm";
 
 export default class Module {
     constructor() {
@@ -19,5 +18,3 @@ export default class Module {
         return getApplicationCtx();
     }
 }
-
-Model.neverConnectToModel(Module.prototype);

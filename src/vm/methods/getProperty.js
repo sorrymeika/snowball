@@ -7,7 +7,7 @@ export function getProperty(model, path) {
     const { data } = model.state;
     if (path == null || path == '') {
         reactTo(model);
-        return data;
+        return model.state.facade || data;
     }
 
     if (!data) {
@@ -20,6 +20,10 @@ export function getProperty(model, path) {
         const firstKey = keys.shift();
         if (keys.length == 0) {
             reactTo(model, firstKey);
+            let propVal;
+            if (isModel(model) && (propVal = model.state.observableProps[firstKey])) {
+                return propVal.state.facade || propVal.state.data;
+            }
             return data[firstKey];
         } else {
             const subModel = isModel(model) ? model.state.observableProps[firstKey] : data[firstKey];

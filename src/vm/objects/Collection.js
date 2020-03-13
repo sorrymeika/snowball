@@ -10,7 +10,6 @@ import { enqueueUpdate } from '../methods/enqueueUpdate';
 import { updateRefs } from '../methods/updateRefs';
 import { connect, setMapper, disconnect, freezeObject } from '../methods/connect';
 import { observeProp, unobserveProp } from '../methods/observeProp';
-import compute from '../operators/compute';
 import { getRelObserverOrSelf } from '../methods/getRelObserver';
 import { renewSet } from '../methods/set';
 

@@ -196,7 +196,6 @@ export class ChangeObserver implements IObservable {
     }
 }
 
-ChangeObserver.prototype.compute = Observer.prototype.compute;
 ChangeObserver.prototype[TYPEOF] = 'ChangeObserver';
 
 /**

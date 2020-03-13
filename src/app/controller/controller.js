@@ -1,5 +1,4 @@
 import { isFunction, isString } from "../../utils";
-import { Model } from "../../vm";
 import { ActivityOptions } from '../types';
 import { getApplicationCtx } from "../core/createApplication";
 import { registerRoutes } from "../core/registerRoutes";
@@ -77,7 +76,6 @@ export function controller(cfg: ControllerCfg) {
                 return getApplicationCtx();
             }
         });
-        Model.neverConnectToModel(Controller.prototype);
 
         function controllerFactory(props, ctx) {
             if (isCreating) {

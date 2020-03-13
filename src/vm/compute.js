@@ -1,4 +1,4 @@
-import { readonlyObserver, Observer } from "../objects/Observer";
+import { readonlyObserver, Observer } from "./objects/Observer";
 
 /**
  * 计算方法

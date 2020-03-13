@@ -76,18 +76,46 @@ export function asObservable(data): IObservable {
 
 export default observable;
 
-// class A {
-//     @observable
-//     a = 1;
+// test observable
+if (process.env.NODE_ENV === 'development') {
 
-//     @observable
-//     b = this.a;
+    setTimeout(() => {
+        class A {
+            @observable
+            a = 1;
 
-//     @observable
-//     c = 'asdf';
-// }
+            @observable
+            b = this.a;
 
-// setTimeout(() => {
-//     var a = new A();
-//     console.log(a.a, a.c, a.b);
-// }, 0);
+            @observable
+            c = 'asdf';
+
+            time = 1;
+        }
+        var a = new A();
+        console.assert(a.a == a.b);
+
+        var model = new Model();
+        model.set({
+            a
+        });
+        console.assert(model.get('a') === a);
+
+        model.set({
+            a: {
+                name: 1
+            }
+        });
+        console.assert(model.get('a') !== a && model.get('a').name == 1, 'model.a 应该被替换掉');
+
+        // 深层
+        model.set({
+            a: {
+                a
+            }
+        });
+        console.assert(model.get('a.a') === a);
+        console.assert(model.get('a').name == 1);
+        console.assert(model.get('a.name') == 1);
+    }, 0);
+}

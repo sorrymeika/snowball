@@ -12,9 +12,8 @@ import { blindSet } from '../methods/set';
 import { updateRefs } from '../methods/updateRefs';
 import { connect, disconnect, freezeObject } from '../methods/connect';
 import { observeProp, unobserveProp } from '../methods/observeProp';
-import compute from '../operators/compute';
 import { SymbolFrom } from '../symbols';
-import { getRelObserver, getRelObserverOrSelf, neverConnectToModel } from '../methods/getRelObserver';
+import { getRelObserver, getRelObserverOrSelf } from '../methods/getRelObserver';
 
 const toString = Object.prototype.toString;
 const RE_QUERY = /(?:^|\.)([_a-zA-Z0-9]+)(\[(?:'(?:\\'|[^'])*'|"(?:\\"|[^"])*"|[^\]])+\](?:\[[+-]?\d*\])?)?/g;
@@ -29,8 +28,6 @@ export class Model extends Observer {
             return value;
         }
     }
-
-    static neverConnectToModel = neverConnectToModel;
 
     constructor(attributes, key?, parent?) {
         if (process.env.NODE_ENV !== 'production') {
@@ -373,48 +370,52 @@ function setAttribute(model, attr, newValue, renew, renewChild) {
             }
             connect(model, newValue, attr);
             return true;
-        } else if (isModel(oldValue) || isDictionary(oldValue)) {
-            if (oldValue.state.facade && !isPlainObject(newValue)) {
-                throw new Error('不可改变' + attr + '的数据类型');
-            }
-            oldValue.set(renew || renewChild, newValue);
-            attributes[attr] = oldValue.state.data;
+        } else if (isObservable(oldValue) && !oldValue.state.facade) {
+            if (isModel(oldValue) || isDictionary(oldValue)) {
+                oldValue.set(renew || renewChild, newValue);
+                attributes[attr] = oldValue.state.data;
 
-            if (oldValue.state.changed) {
-                changes.push(attr, oldValue.state.data, oldAttrValue);
-                return true;
-            }
-        } else if (isObservable(oldValue)) {
-            if ((isCollection(oldValue) || isList(oldValue)) && !isArray(newValue)) {
-                if (newValue == null) {
-                    newValue = [];
-                } else {
-                    throw new Error('[Array to ' + (typeof newValue) + ' error]不可改变' + attr + '的数据类型');
+                if (oldValue.state.changed) {
+                    changes.push(attr, oldValue.state.data, oldAttrValue);
+                    return true;
+                }
+            } else {
+                if ((isCollection(oldValue) || isList(oldValue)) && !isArray(newValue)) {
+                    if (newValue == null) {
+                        newValue = [];
+                    } else {
+                        throw new Error('[Array to ' + (typeof newValue) + ' error]不可改变' + attr + '的数据类型');
+                    }
+                }
+
+                oldValue.set(newValue);
+                attributes[attr] = oldValue.state.data;
+
+                if (oldValue.state.changed) {
+                    changes.push(attr, oldValue.state.data, oldAttrValue);
+                    return true;
                 }
             }
-
-            oldValue.set(newValue);
-            attributes[attr] = oldValue.state.data;
-
-            if (oldValue.state.changed) {
-                changes.push(attr, oldValue.state.data, oldAttrValue);
+        } else {
+            if (isObservable(oldValue)) {
+                disconnect(model, oldValue);
+            }
+            if (isThenable(newValue)) {
+                newValue.then(((attr, res) => {
+                    model.set(renew, attr, res);
+                }).bind(model, attr));
+            } else {
+                newValue = createAttribute(model, attr, newValue);
+                if (isObservable(newValue)) {
+                    changes.push(attr, newValue.state.data, oldAttrValue);
+                    observableProps[attr] = newValue;
+                    attributes[attr] = newValue.state.data;
+                } else {
+                    changes.push(attr, newValue, oldAttrValue);
+                    attributes[attr] = newValue;
+                }
                 return true;
             }
-        } else if (isThenable(newValue)) {
-            newValue.then(((attr, res) => {
-                model.set(renew, attr, res);
-            }).bind(model, attr));
-        } else {
-            newValue = createAttribute(model, attr, newValue);
-            if (isObservable(newValue)) {
-                changes.push(attr, newValue.state.data, oldAttrValue);
-                observableProps[attr] = newValue;
-                attributes[attr] = newValue.state.data;
-            } else {
-                changes.push(attr, newValue, oldAttrValue);
-                attributes[attr] = newValue;
-            }
-            return true;
         }
     }
 
