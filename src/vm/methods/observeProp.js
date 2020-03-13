@@ -1,9 +1,9 @@
 import { get } from "../../utils";
-import { ChangeObserver } from "../objects/Observer";
+import { PropObserver } from "../objects/Observer";
 
 export function observeProp(observer, name, fn) {
     if (!fn) {
-        return new ChangeObserver(observer, name);
+        return new PropObserver(observer, name);
     } else {
         const cb = (e) => fn.call(observer, get(observer.state.data, e.type.replace(/^datachanged:/, '').replace(/[/]/g, '.')));
         cb._cb = fn;

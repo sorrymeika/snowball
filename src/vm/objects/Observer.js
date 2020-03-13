@@ -1,7 +1,7 @@
 import { eventMixin } from '../../core/event';
 import { identify } from '../../utils/guid';
 
-import { enqueueUpdate, nextTick, enqueueInit, emitUpdate } from '../methods/enqueueUpdate';
+import { enqueueUpdate, nextTick, enqueueInit, emitUpdate, defer } from '../methods/enqueueUpdate';
 import { updateRefs } from '../methods/updateRefs';
 import { connect, disconnect } from '../methods/connect';
 import { TYPEOF } from '../predicates';
@@ -9,7 +9,7 @@ import { getProperty } from '../methods/getProperty';
 
 export interface IObservable {
     get: () => any,
-    set: () => IObservable,
+    set?: () => IObservable,
     observe: (cb: (value: any) => any) => boolean,
     unobserve: (cb: (value: any) => any) => any,
     destroy: () => never,
@@ -108,6 +108,9 @@ export class Observer implements IObservable {
 
             this.trigger('destroy')
                 .off();
+            this.on = this.set = this.get = () => {
+                throw new Error('observer is destroyed');
+            };
         }
     }
 }
@@ -135,7 +138,6 @@ Observer.prototype.off = function (type, fn) {
 
 Observer.prototype[TYPEOF] = 'Observer';
 
-
 export function readonlyObserver(observer) {
     const set = observer.set.bind(observer);
     if (process.env.NODE_ENV === 'production') {
@@ -152,7 +154,7 @@ export function readonlyObserver(observer) {
     return [observer, set];
 }
 
-export class ChangeObserver implements IObservable {
+export class PropObserver implements IObservable {
     constructor(observer, name) {
         this.state = { updated: observer.updated };
         this.observer = observer;
@@ -182,10 +184,6 @@ export class ChangeObserver implements IObservable {
         return this;
     }
 
-    valueOf() {
-        return this.get();
-    }
-
     destroy() {
         const callbacks = this.callbacks;
         for (var i = callbacks.length - 1; i >= 0; i--) {
@@ -196,10 +194,10 @@ export class ChangeObserver implements IObservable {
     }
 }
 
-ChangeObserver.prototype[TYPEOF] = 'ChangeObserver';
+PropObserver.prototype[TYPEOF] = 'PropObserver';
 
 /**
- * 立即触发型Observer
+ * set之后立刻触发
  */
 export class Subject extends Observer {
     set(data) {
@@ -215,5 +213,39 @@ export class Subject extends Observer {
         return this;
     }
 }
-
 Subject.prototype[TYPEOF] = 'Subject';
+
+export class PureSubject extends Observer {
+    set(data) {
+        if (this.state.changed = (this.state.data !== data)) {
+            this.state.data = data;
+            emitUpdate(this);
+            updateRefs(this);
+        } else {
+            this.state.version++;
+        }
+        return this;
+    }
+}
+PureSubject.prototype[TYPEOF] = 'PureSubject';
+
+export class State extends Observer {
+    /**
+     * 异步设置数据
+     * 无论设置数据和老数据是否相同，都会触发数据变更事件
+     * @param {any} data 数据
+     */
+    set(data) {
+        if (this.state.next) {
+            return this.state.next = this.state.next.then(() => this.set(data));
+        }
+
+        Observer.prototype.set.call(this, data);
+
+        const newData = this.state.data;
+        enqueueUpdate(this);
+
+        return this.state.next = defer(() => newData);
+    }
+}
+State.prototype[TYPEOF] = 'State';
