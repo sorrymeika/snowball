@@ -42,4 +42,3 @@ function createEmitterDecorator(type) {
 
 export const emitter = createEmitterDecorator();
 export const asyncEmitter = createEmitterDecorator("async");
-emitter.async = asyncEmitter;

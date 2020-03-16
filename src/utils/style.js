@@ -1,4 +1,4 @@
-var guid = 0;
+var styleId = 0;
 
 export function style(id, css, isReplace) {
     var doc = document,
@@ -6,7 +6,7 @@ export function style(id, css, isReplace) {
 
     if (css === undefined) {
         css = id;
-        id = "style" + (++guid);
+        id = "style" + (++styleId);
     }
     var style = document.getElementById(id);
     if (style) {

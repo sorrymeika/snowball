@@ -2,26 +2,24 @@
 import React, { createElement, useState, useMemo, useRef, useEffect, useContext } from 'react';
 import { isString, isArray, isFunction } from '../../utils';
 import { Reaction } from '../../vm';
-import { setCurrentCtx } from '../controller/controller';
 import { observer } from './observer';
-import { _getApplication, getApplicationCtx } from '../core/createApplication';
+import { _getApplication, appCtx } from '../core/createApplication';
 import { withAutowiredScope, autowired } from '../core/autowired';
 import { buildConfiguration } from '../core/configuration';
 
 export const PageContext = React.createContext();
 
 export function AppContextProvider({ children, configurations }) {
-    const app = getApplicationCtx();
     const ctx = useMemo(() => {
         return {
-            Configuration: buildConfiguration(app._configuration.concat(configurations || []))
+            Configuration: buildConfiguration(appCtx._configuration.concat(configurations || []))
         };
-    }, [app._configuration, configurations]);
+    }, [configurations]);
 
     return (
         <PageContext.Provider
             value={{
-                app,
+                app: appCtx,
                 ctx,
             }}
         >{children}</PageContext.Provider>
@@ -119,7 +117,6 @@ function createInjector(mapDependenciesToProps, mergeProps = defaultMergeProps, 
 
 function compose(mapDependenciesToPropsFactories) {
     return function (dependencies, ownProps, injector) {
-        setCurrentCtx(dependencies.ctx);
         const newProps = {};
         withAutowiredScope(dependencies, () => {
             mapDependenciesToPropsFactories.forEach(function (mapDependenciesToProps, i) {
@@ -140,7 +137,6 @@ function compose(mapDependenciesToPropsFactories) {
                 }
             });
         });
-        setCurrentCtx(null);
         return newProps;
     };
 }

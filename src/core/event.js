@@ -1,5 +1,8 @@
 import { isPlainObject } from "../utils";
 
+const symbolEventEmitter = Symbol.for('snowball#EventEmitter');
+const symbolEmitter = Symbol.for('snowball#Emitter');
+
 function returnFalse() {
     return false;
 }
@@ -32,6 +35,8 @@ Event.prototype = {
 };
 
 const EventEmitterProto = {
+    [symbolEventEmitter]: true,
+
     on(names, callback) {
         if (!callback || !names) return;
 
@@ -165,67 +170,42 @@ export function eventMixin(fn, ext) {
 
 function createEmitterFn(extend) {
     return (init) => {
-        let middlewares = [];
         let funcs = [];
 
         const emitter = (fn) => typeof fn === 'function'
             ? emitter.on(fn)
             : emitter.emit(fn);
 
-        emitter.$$typeof = 'snowball#Emitter';
+        emitter[symbolEmitter] = true;
 
-        const props = extend(middlewares, funcs);
-        Object.assign(emitter, props);
-
-        emitter.on = (fn) => {
-            funcs.push(fn);
-            return () => emitter.off(fn);
-        };
-
-        emitter.once = (fn) => {
-            const once = (state, e) => {
-                dispose();
-                fn(state, e);
-            };
-            const dispose = emitter.on(once);
-            return dispose;
-        };
-
-        emitter.reset = () => {
-            funcs = init ? [init] : [];
-        };
-
-        emitter.off = (fn) => {
-            if (fn) {
-                const index = funcs.indexOf(fn);
-                if (index !== -1) {
-                    funcs.splice(index, 1);
+        Object.assign(emitter, {
+            on(fn) {
+                funcs.push(fn);
+                return () => emitter.off(fn);
+            },
+            once(fn) {
+                const once = (state, e) => {
+                    dispose();
+                    fn(state, e);
+                };
+                const dispose = emitter.on(once);
+                return dispose;
+            },
+            reset() {
+                funcs = init ? [init] : [];
+            },
+            off(fn) {
+                if (fn) {
+                    const index = funcs.indexOf(fn);
+                    if (index !== -1) {
+                        funcs.splice(index, 1);
+                    }
+                } else {
+                    funcs = [];
                 }
-            } else {
-                funcs = [];
+                return emitter;
             }
-            return emitter;
-        };
-
-        emitter.middleware = (fn) => {
-            middlewares.push(fn);
-            return () => {
-                const index = middlewares.indexOf(fn);
-                if (index !== -1) {
-                    middlewares.splice(index, 1);
-                }
-            };
-        };
-
-        // emitter.clear = () => {
-        //     middlewares = [];
-        //     funcs = [];
-        //     return emitter;
-        // };
-
-        emitter.destroy = () => {
-            middlewares = funcs = null;
-        };
+        }, extend(funcs));
 
         if (typeof init === 'function') {
             emitter(init);
@@ -239,94 +219,29 @@ function eventFromState(state) {
     return new Event(isPlainObject(state) && state.type && typeof state.type == 'string' ? state.type : 'do');
 }
 
-const createEmitter = createEmitterFn((middlewares, funcs) => {
+const createEmitter = createEmitterFn((funcs) => {
     return {
         emit(state) {
             const event = eventFromState(state);
-
-            if (middlewares.length == 0) {
-                funcs.every(nextFunc => {
-                    nextFunc(state, event);
-                    return !event.isPropagationStopped();
-                });
-            } else {
-                let i = middlewares.length - 1;
-
-                const next = (newState) => {
-                    if (i >= 0 && !event.isDefaultPrevented()) {
-                        let fn = middlewares[i];
-                        let called = false;
-                        i--;
-
-                        fn(newState, event, (nextState = newState) => {
-                            if (called) throw new Error('next方法不可重复调用！');
-                            called = true;
-                            next(nextState);
-                        });
-
-                        if (!called) {
-                            throw new Error('必须调用next方法!');
-                        }
-                    } else {
-                        funcs.every(nextFunc => {
-                            nextFunc(newState, event);
-                            return !event.isPropagationStopped();
-                        });
-                    }
-                };
-                next(state);
-            }
-
+            funcs.every(nextFunc => {
+                nextFunc(state, event);
+                return !event.isPropagationStopped() && !event.isDefaultPrevented();
+            });
             return event;
         }
     };
 });
 
-const createAsyncEmitter = createEmitterFn((middlewares, funcs) => {
+const createAsyncEmitter = createEmitterFn((funcs) => {
     return {
         emit: async (state) => {
             const event = eventFromState(state);
-
-            if (middlewares.length == 0) {
-                for (let i = 0; i < funcs.length; i++) {
-                    await funcs[i](state, event);
-                    if (event.isPropagationStopped()) {
-                        break;
-                    }
+            for (let i = 0; i < funcs.length; i++) {
+                await funcs[i](state, event);
+                if (event.isPropagationStopped() || event.isDefaultPrevented()) {
+                    break;
                 }
-            } else {
-                let i = middlewares.length - 1;
-
-                const next = async (newState) => {
-                    if (i >= 0 && !event.isDefaultPrevented()) {
-                        let fn = middlewares[i];
-                        let called = 0;
-                        i--;
-
-                        await fn(newState, event, async (nextState = newState) => {
-                            if (called) throw new Error('next方法不可重复调用！');
-                            called = 1;
-                            await next(nextState);
-                            called = 2;
-                        });
-
-                        if (!called) {
-                            throw new Error('必须调用`next`方法!');
-                        } else if (called == 1) {
-                            throw new Error('必须使用`await next();`调用`next`方法!');
-                        }
-                    } else {
-                        for (let j = 0; j < funcs.length; j++) {
-                            await funcs[j](state, event);
-                            if (event.isPropagationStopped()) {
-                                break;
-                            }
-                        }
-                    }
-                };
-                await next(state);
             }
-
             return event;
         }
     };
@@ -357,13 +272,11 @@ function createEventDelegate(eventEmitter, type, listener) {
                 eventEmitter.trigger(type, ...args);
                 return delegate;
             },
-
             on() {
                 delegate.off();
                 eventEmitter.on(type, listener);
                 return delegate;
             },
-
             off() {
                 eventEmitter.off(type, listener);
                 return delegate;

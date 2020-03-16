@@ -14,10 +14,6 @@ export function _getApplication() {
     return application;
 }
 
-export function getApplicationCtx() {
-    return appCtx;
-}
-
 const currentCtxProperty = {
     get() {
         return application.currentActivity.page.ctx;

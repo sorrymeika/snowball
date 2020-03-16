@@ -1,17 +1,13 @@
 import { isFunction, isString } from "../../utils";
 import { ActivityOptions } from '../types';
-import { getApplicationCtx } from "../core/createApplication";
+import { appCtx } from "../core/createApplication";
 import { registerRoutes } from "../core/registerRoutes";
 import { getWiringInfo } from "../core/autowired";
 
 export const INJECTABLE_PROPS = Symbol('INJECTABLE_PROPS');
 
-let currentCtx = null;
 let isCreating = false;
-
-export function setCurrentCtx(ctx) {
-    currentCtx = ctx;
-}
+let currentCtx;
 
 export function initWithContext(fn) {
     const ctx = currentCtx || getWiringInfo().ctx;
@@ -73,7 +69,7 @@ export function controller(cfg: ControllerCfg) {
         });
         Object.defineProperty(Controller.prototype, 'app', {
             get() {
-                return getApplicationCtx();
+                return appCtx;
             }
         });
 

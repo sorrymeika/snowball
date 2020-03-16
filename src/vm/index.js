@@ -10,7 +10,7 @@ export * from './reaction';
 
 export { observable, asObservable, action } from './observable';
 
-export { default as stream } from './stream';
+export { default as stream, StreamUtils } from './stream';
 export { nextTick } from "./methods/enqueueUpdate";
 
 export * from './component';
