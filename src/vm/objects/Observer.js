@@ -1,7 +1,7 @@
 import { eventMixin } from '../../core/event';
 import { identify } from '../../utils/guid';
 
-import { enqueueUpdate, nextTick, enqueueInit, emitUpdate, defer } from '../methods/enqueueUpdate';
+import { enqueueUpdate, nextTick, enqueueInit, defer } from '../methods/enqueueUpdate';
 import { updateRefs } from '../methods/updateRefs';
 import { connect, disconnect } from '../methods/connect';
 import { TYPEOF } from '../predicates';
@@ -67,6 +67,22 @@ export class Observer implements IObservable {
 
     unobserve(fn) {
         return this.off('datachanged', fn);
+    }
+
+    subscribe(next, error?, complete?) {
+        if (typeof next == 'object') {
+            error = next.error;
+            complete = next.complete;
+            next = next.next;
+        }
+        error && this.on('error', error);
+        complete && this.on('destroy', complete);
+        const despose = this.observe(next);
+        return () => {
+            error && this.off('error', error);
+            complete && this.off('destroy', complete);
+            despose();
+        };
     }
 
     contains(observer) {
@@ -196,39 +212,6 @@ export class PropObserver implements IObservable {
 
 PropObserver.prototype[TYPEOF] = 'PropObserver';
 
-/**
- * set之后立刻触发
- */
-export class Subject extends Observer {
-    set(data) {
-        if (this.state.changed = (this.state.data !== data)) {
-            this.state.data = data;
-            updateRefs(this);
-        } else {
-            this.state.version++;
-        }
-        if (this.state.initialized) {
-            emitUpdate(this);
-        }
-        return this;
-    }
-}
-Subject.prototype[TYPEOF] = 'Subject';
-
-export class PureSubject extends Observer {
-    set(data) {
-        if (this.state.changed = (this.state.data !== data)) {
-            this.state.data = data;
-            emitUpdate(this);
-            updateRefs(this);
-        } else {
-            this.state.version++;
-        }
-        return this;
-    }
-}
-PureSubject.prototype[TYPEOF] = 'PureSubject';
-
 export class State extends Observer {
     /**
      * 异步设置数据
@@ -249,3 +232,27 @@ export class State extends Observer {
     }
 }
 State.prototype[TYPEOF] = 'State';
+
+export class Frame extends Observer {
+    /**
+     * 异步设置数据，本桢渲染完成才会触发下一次
+     * 无论设置数据和老数据是否相同，都会触发数据变更事件
+     * @param {any} data 数据
+     */
+    set(data) {
+        return new Promise((done) => {
+            this.state.next = (this.state.next || Promise.resolve()).then(() => {
+                return new Promise((resolve) => {
+                    nextTick(() => {
+                        Observer.prototype.set.call(this, data);
+                        const newData = this.state.data;
+                        enqueueUpdate(this);
+                        resolve();
+                        nextTick(() => done(newData));
+                    });
+                });
+            });
+        });
+    }
+}
+Frame.prototype[TYPEOF] = 'Frame';

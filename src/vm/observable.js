@@ -1,4 +1,4 @@
-import { readonlyObserver, Subject, IObservable, Observer } from "./objects/Observer";
+import { readonlyObserver, IObservable, Observer } from "./objects/Observer";
 import { isObservable } from "./predicates";
 import { isPlainObject, isFunction, isString, isArray } from "../utils";
 import { SymbolFrom, SymbolRelObserver } from "./symbols";
@@ -13,7 +13,8 @@ import * as attributes from "./reaction/types";
  * @param {Function|string} [execute]
  * @example
  * const observer =observable(0|{}|[]|'')
- * const observer =observable((fn)=>{
+ * const observer =observable(0, (set)=>{
+ *   const fn = () => set(Date.now());
  *   document.body.addEventListener('click', fn);
  *   return () => {
  *     document.body.removeEventListener('click', fn);
@@ -25,16 +26,9 @@ export const observable = (initalValue, execute, descriptor) => {
     if (isString(execute)) {
         return attributes.any(initalValue, execute, descriptor);
     }
-
-    if (isFunction(initalValue)) {
-        const [observer, set] = readonlyObserver(new Subject());
-        const dispose = initalValue(set);
-        observer.on('destroy', dispose);
-        return observer;
-    }
     if (isFunction(execute)) {
         const [observer, set] = readonlyObserver(isObservable(initalValue) ? initalValue : observable(initalValue));
-        execute(observer, set);
+        execute(set);
         return observer;
     }
     if (isObservable(initalValue)) {

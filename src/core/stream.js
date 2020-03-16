@@ -13,8 +13,8 @@ function flow(stream, fn) {
 
 function batchFlow(streams, fn, beforeComplete?) {
     return new Stream((iterator) => {
-        const unsubscribers = streams.map((stream, i) => {
-            return stream.subscribe((data) => {
+        const unsubscribers = streams.map((item, i) => {
+            return (typeof item.subscribe === 'function' ? item : stream(item)).subscribe((data) => {
                 fn(data, i, iterator.next, iterator.error, iterator.complete);
             }, iterator.error, () => {
                 try {
@@ -148,6 +148,11 @@ class Stream {
     }
 
     subscribe(fn, error?, complete?) {
+        if (typeof next == 'object') {
+            error = fn.error;
+            complete = fn.complete;
+            fn = fn.next;
+        }
         const iterator = new Iterator(fn, error, complete);
         iterator._despose = this._subscribe({
             next(data) {
@@ -264,10 +269,8 @@ function fromPromise(promise) {
 }
 
 function fromObservable(obs) {
-    return new Stream(({ next, complete }) => {
-        next(obs.get());
-        obs.on('destroy', complete);
-        return obs.observe(next);
+    return new Stream((iterator) => {
+        return obs.subscribe(iterator);
     });
 }
 
@@ -343,7 +346,9 @@ export const StreamUtils = {
     forkJoin,
     extend(props) {
         Object.assign(Stream.prototype, props);
-    }
+    },
+    flow,
+    batchFlow
 };
 
 export default function stream(val) {

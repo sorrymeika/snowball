@@ -1,6 +1,6 @@
 export { isObserver, isObservable, isObservableObject, isModel, isCollection, isList } from './predicates';
 
-export { Observer, Subject, PureSubject, State } from './objects/Observer';
+export { Observer, State, Frame } from './objects/Observer';
 export { Model } from './objects/Model';
 export { Collection } from './objects/Collection';
 export { default as List } from './objects/List';
