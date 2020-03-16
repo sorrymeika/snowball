@@ -1,5 +1,5 @@
 import { debounce, throttle, isFunction, isThenable } from "../utils";
-import { isObservable } from "./predicates";
+import { isObservable } from "../vm/predicates";
 
 const symbolEmitter = Symbol.for('snowball#Emitter');
 
@@ -8,6 +8,24 @@ function flow(stream, fn) {
         return stream.subscribe((data) => {
             fn(data, iterator.next, iterator.error, iterator.complete);
         }, iterator.error, iterator.complete);
+    });
+}
+
+function batchFlow(streams, fn, beforeComplete?) {
+    return new Stream((iterator) => {
+        const unsubscribers = streams.map((stream, i) => {
+            return stream.subscribe((data) => {
+                fn(data, i, iterator.next, iterator.error, iterator.complete);
+            }, iterator.error, () => {
+                try {
+                    beforeComplete && beforeComplete(iterator);
+                    iterator.complete();
+                } catch (error) {
+                    iterator.error();
+                }
+            });
+        });
+        return () => unsubscribers.forEach((unsubscribe) => unsubscribe());
     });
 }
 
@@ -29,6 +47,7 @@ class Iterator {
     }
 
     error(e) {
+        if (this._done) throw new Error('Iterator is complete!');
         this._onError ? this._onError(e) : console.error(e);
         this.complete();
     }
@@ -46,6 +65,18 @@ class Stream {
         if (subscribe) {
             this._subscribe = subscribe;
         }
+    }
+
+    merge(...args) {
+        return merge(this, ...args);
+    }
+
+    combineLatest(...args) {
+        return combineLatest(this, ...args);
+    }
+
+    forkJoin(...args) {
+        return forkJoin(this, ...args);
     }
 
     filter(fn) {
@@ -98,6 +129,15 @@ class Stream {
         });
     }
 
+    takeWhile(fn) {
+        return flow(this, (data, next, error, complete) => {
+            next(data);
+            if (fn(data)) {
+                complete();
+            }
+        });
+    }
+
     switchMap(fn) {
         let unsubscribe;
         return flow(this, (data, next, error, complete) => {
@@ -129,6 +169,36 @@ class Stream {
             this.subscribe((x) => value = x, (err) => reject(err), () => resolve(value));
         });
     }
+}
+
+function merge(...streams) {
+    return batchFlow(streams, (data, i, next) => {
+        next(data);
+    });
+}
+
+function combineLatest(...streams) {
+    let length = streams.length;
+    let every = false;
+    const empty = Symbol();
+    const results = new Array(length).fill(empty);
+
+    return batchFlow(streams, (data, i, next, error) => {
+        results[i] = data;
+        if (every || (every = results.every(item => item != empty))) {
+            next(results);
+        }
+    });
+}
+
+function forkJoin(...streams) {
+    let length = streams.length;
+    const results = new Array(length);
+    return batchFlow(streams, (data, i, next) => {
+        results[i] = data;
+    }, ({ next }) => {
+        next(results);
+    });
 }
 
 class Subject extends Stream {
@@ -183,6 +253,7 @@ class Subject extends Stream {
     }
 }
 
+
 function fromPromise(promise) {
     return new Stream(({ next, complete }) => {
         promise.then((data) => {
@@ -226,6 +297,7 @@ function fromEmitter(emitter) {
             if (!fn || fn == next)
                 complete();
         };
+        return () => off(next);
     });
 }
 
@@ -247,7 +319,31 @@ export const StreamUtils = {
     fromObservable,
     fromEvent,
     fromEmitter,
-    of
+    of,
+    interval(time) {
+        return new Stream(({ next }) => {
+            let count = 0;
+            const interval = setInterval(() => {
+                next(count++);
+            }, time);
+            return () => clearInterval(interval);
+        });
+    },
+    timer(time) {
+        return new Stream(({ next, complete }) => {
+            const interval = setTimeout(() => {
+                next(0);
+                complete();
+            }, time);
+            return () => setTimeout(interval);
+        });
+    },
+    merge,
+    combineLatest,
+    forkJoin,
+    extend(props) {
+        Object.assign(Stream.prototype, props);
+    }
 };
 
 export default function stream(val) {
@@ -267,26 +363,22 @@ export default function stream(val) {
 
 if (process.env.NODE_ENV === 'development') {
     setTimeout(() => {
-        const { Model } = require('./');
+        const { Model } = require('../vm');
 
-        stream(['asf', 1, 2])
+        let i = 0;
+        let array = ['asf', 1, 2];
+        stream(array)
             .subscribe((a) => {
-                console.log(a);
+                console.assert(a == array[i++]);
             });
 
         const model = new Model({
             id: 1
         });
-
         var flow = stream(model);
         var mapFlow = flow.map(a => a.id + 1);
         mapFlow.subscribe((val) => {
-            console.log(val);
-        });
-        console.log(flow, mapFlow);
-
-        setTimeout(() => {
-            console.log(flow, mapFlow);
+            console.assert(val == 2);
         });
     });
 }

@@ -24,4 +24,5 @@ export {
 };
 
 export * from "./vm";
+export { default as stream, StreamUtils } from './core/stream';
 export * from "./core/event";
