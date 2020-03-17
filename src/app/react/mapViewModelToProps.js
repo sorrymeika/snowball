@@ -1,7 +1,7 @@
 import { getWiringInfo, autowired } from "../core/autowired";
 import { getPropertyNames, defineProxyProperty, isString } from "../../utils";
 
-const excludeProps = ['ctx', 'app', 'constructor', 'onInit', 'onCreate', 'onDestroy'];
+const excludeProps = ['ctx', 'app', 'constructor', 'onResume', 'onPause', 'onInit', 'onCreate', 'onDestroy'];
 
 function isPublicProp(propName) {
     return typeof propName === 'string' && !excludeProps.includes(propName) && /^[a-z]/.test(propName);
