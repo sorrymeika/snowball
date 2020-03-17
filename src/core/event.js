@@ -56,8 +56,11 @@ const EventEmitterProto = {
         if (!callback) return this;
 
         var self = this;
-        function once() {
+        async function once() {
             var res = callback.apply(self, arguments);
+            if (res && typeof res.then === 'function') {
+                res = await res;
+            }
             if (res === true)
                 self.off(name, once);
             return res;
@@ -192,8 +195,12 @@ function createEmitterFn(extend) {
                 return dispose;
             },
             untilTrue(fn) {
-                const dispose = emitter.on((state, e) => {
-                    if (fn(state, e) === true) {
+                const dispose = emitter.on(async (state, e) => {
+                    let result = fn(state, e);
+                    if (result && typeof result.then === 'function') {
+                        result = await result;
+                    }
+                    if (result === true) {
                         dispose();
                     }
                 });
