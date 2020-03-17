@@ -52,7 +52,7 @@ const EventEmitterProto = {
         return this;
     },
 
-    onceTrue(name, callback) {
+    untilTrue(name, callback) {
         if (!callback) return this;
 
         var self = this;
@@ -191,6 +191,14 @@ function createEmitterFn(extend) {
                 const dispose = emitter.on(once);
                 return dispose;
             },
+            untilTrue(fn) {
+                const dispose = emitter.on((state, e) => {
+                    if (fn(state, e) === true) {
+                        dispose();
+                    }
+                });
+                return dispose;
+            },
             reset() {
                 funcs = init ? [init] : [];
             },
@@ -300,8 +308,8 @@ export const Emitter = {
 // event.trigger('asdf.bbb');
 // event.off('asdf', fn);
 
-// event.onceTrue('asdf', () => {
-//     console.log('onceTrue');
+// event.untilTrue('asdf', () => {
+//     console.log('untilTrue');
 //     return true;
 // });
 // event.trigger('asdf.bbb');
