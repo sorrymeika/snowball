@@ -32,11 +32,7 @@ Object.defineProperties(appCtx, {
     createAsyncEmitter: {
         value: Emitter.async,
         writable: false
-    },
-    emit: {
-        value: appCtx.trigger.bind(appCtx),
-        writable: false
-    },
+    }
 });
 
 function extendCtx(extendFn) {
