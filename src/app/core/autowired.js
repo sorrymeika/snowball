@@ -1,5 +1,5 @@
 
-import { isString } from "../../utils";
+import { isString, isPlainObject } from "../../utils";
 
 const AUTOWIRED_PROPS = Symbol('AUTOWIRED_PROPS');
 const AUTOWIRED_METHOD = Symbol('AUTOWIRED_METHOD');
@@ -152,10 +152,13 @@ export function autowired(resourceType, options?: { name?: 'string', level: 'ctx
         }
         return null;
     }
-
+    if (isPlainObject(resourceType) && !options) {
+        options = resourceType;
+        resourceType = '';
+    }
     if (isString(resourceType)) {
         return (target, name, descriptor) => {
-            return configAutowired(target, resourceType, (options && options.name) || name, descriptor, {
+            return configAutowired(target, resourceType || name, (options && options.name) || name, descriptor, {
                 level: 'ctx',
                 ...options,
                 autowiredType: 'autowired'

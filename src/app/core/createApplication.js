@@ -104,7 +104,11 @@ export function createApplication({
                 method.apply(navigation, args);
             };
             return nav;
-        }, {}),
+        }, {
+            get history() {
+                return [...navigation.history];
+            }
+        }),
         registerRoutes: application.registerRoutes.bind(application),
         start(cb) {
             if (isStart) throw new Error('the application has already been started!');
