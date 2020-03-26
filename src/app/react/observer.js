@@ -7,7 +7,7 @@ const IsObserverComponent = Symbol('IsObserverComponent');
 
 export function observer(componentClass) {
     if (!componentClass.prototype || !componentClass.prototype.render) {
-        throw new Error('could\'t use `observer` to decorate stateless component! please use Hooks to instead!');
+        throw new Error('could\'t use `observer` to decorate stateless component!');
     }
 
     const target = componentClass.prototype;

@@ -1,9 +1,8 @@
 
 import { isString, isPlainObject } from "../../utils";
 
-const AUTOWIRED_PROPS = Symbol('AUTOWIRED_PROPS');
-const AUTOWIRED_METHOD = Symbol('AUTOWIRED_METHOD');
-
+const AUTOWIRED_PROPS = Symbol.for('SYMBOL_AUTOWIRED_PROPS');
+const AUTOWIRED_METHOD = Symbol.for('SYMBOL_AUTOWIRED_METHOD');
 
 function formatName(name) {
     return name.replace(/^[_]/g, '');
