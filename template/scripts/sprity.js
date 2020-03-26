@@ -34,7 +34,7 @@ async function combineImages(out, srcs, callback) {
 
   const styles = images.map((img) => {
     return {
-      name: path.basename(img.src).replace(/\.(png|jpg|jpeg|gif)$/, ''),
+      name: path.basename(img.alt).replace(/\.(png|jpg|jpeg|gif)$/, ''),
       x: img.left - margin,
       y: img.top - margin,
       width: img.w + margin * 2,
@@ -59,7 +59,6 @@ async function combineImages(out, srcs, callback) {
     })
       .composite(images.map((img) => {
         return {
-          input: img.src,
           top: img.top,
           left: img.left
         };
@@ -186,4 +185,3 @@ create({
   out: "./src/sprity",
   style: "./sprite.scss"
 });
-

@@ -77,7 +77,6 @@
   "scripts": {
     "start": "node scripts/start.js",
     "build": "node scripts/build.js",
-    "sprity": "node scripts/sprity.js",
     "project": "node scripts/project.js",
     "test": "node scripts/test.js"
   },
