@@ -11,41 +11,6 @@ import { isPlainObject, isArray } from "../../utils";
 const hasOwnProperty = Object.prototype.hasOwnProperty;
 const MARK_SWEEP = Symbol('mark and sweep');
 
-function emitChanges(dictionary, changes) {
-    freezeObject(dictionary.state.data, dictionary);
-    enqueueUpdate(dictionary);
-    updateRefs(dictionary);
-
-    if (dictionary.state.hasOnAttrChangeListener && changes.length) {
-        for (var i = 0, length = changes.length; i < length; i += 3) {
-            dictionary.trigger("change:" + changes[i], changes[i + 1], changes[i + 2]);
-        }
-    }
-    dictionary.state.changed = true;
-}
-
-function addChange(dictionary, attributes, key, value, oldValue, changes) {
-    changes.push(key, value, oldValue);
-
-    if (value) {
-        const observer = getRelObserverOrSelf(value);
-        if (isObservable(observer)) {
-            if (isObservable(oldValue)) {
-                disconnect(dictionary, oldValue);
-            }
-            connect(dictionary, observer, key);
-        } else {
-            if (process.env.NODE_ENV !== 'production') {
-                if (isPlainObject(value) || isArray(value)) {
-                    Object.freeze(value);
-                }
-            }
-        }
-    }
-
-    attributes[key] = value;
-}
-
 export class Dictionary extends Observer {
 
     constructor(data, key?, parent?) {
@@ -92,7 +57,7 @@ export class Dictionary extends Observer {
                     disconnect(this, oldValue);
                 }
             } else if (oldValue !== value) {
-                addChange(this, attributes, key, value, oldValue, changes);
+                updateDictionary(this, attributes, key, value, oldValue, changes);
             } else {
                 attributes[key] = value;
             }
@@ -132,7 +97,7 @@ export class Dictionary extends Observer {
                 const oldValue = attributes[key];
 
                 if (oldValue !== value) {
-                    addChange(this, attributes, key, value, oldValue, changes);
+                    updateDictionary(this, attributes, key, value, oldValue, changes);
                 }
             }
         }
@@ -200,3 +165,38 @@ Dictionary.prototype.unobserve = Model.prototype.unobserve;
 Dictionary.prototype.compute = Model.prototype.compute;
 
 Dictionary.prototype[TYPEOF] = 'Dictionary';
+
+function updateDictionary(dictionary, attributes, key, value, oldValue, changes) {
+    changes.push(key, value, oldValue);
+    attributes[key] = value;
+
+    if (value) {
+        const observer = getRelObserverOrSelf(value);
+        if (isObservable(observer)) {
+            if (isObservable(oldValue)) {
+                disconnect(dictionary, oldValue);
+            }
+            connect(dictionary, observer, key);
+            attributes[key] = observer.get();
+        } else {
+            if (process.env.NODE_ENV !== 'production') {
+                if (isPlainObject(value) || isArray(value)) {
+                    Object.freeze(value);
+                }
+            }
+        }
+    }
+}
+
+function emitChanges(dictionary, changes) {
+    freezeObject(dictionary.state.data, dictionary);
+    enqueueUpdate(dictionary);
+    updateRefs(dictionary);
+
+    if (dictionary.state.hasOnAttrChangeListener && changes.length) {
+        for (var i = 0, length = changes.length; i < length; i += 3) {
+            dictionary.trigger("change:" + changes[i], changes[i + 1], changes[i + 2]);
+        }
+    }
+    dictionary.state.changed = true;
+}

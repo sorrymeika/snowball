@@ -6,6 +6,7 @@ import { updateRefs } from '../methods/updateRefs';
 import { connect, disconnect } from '../methods/connect';
 import { TYPEOF } from '../predicates';
 import { getProperty } from '../methods/getProperty';
+import { SymbolFrom } from '../symbols';
 
 export interface IObservable {
     get: () => any,
@@ -45,6 +46,11 @@ export class Observer implements IObservable {
 
     get(path) {
         return getProperty(this, path);
+    }
+
+    at(path) {
+        const val = this.get(path);
+        return (val && val[SymbolFrom]) || val;
     }
 
     set(data) {

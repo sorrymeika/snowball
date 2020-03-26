@@ -241,29 +241,21 @@ export class Model extends Observer {
     }
 
     collection(key) {
-        !key && (key = 'collection');
-
-        var result = this._(key);
-        if (result == null) {
-            this.set(key, []);
-            return this.state.observableProps[key];
-        }
-        return result;
+        return this.observable(key, Collection);
     }
 
     model(key) {
-        if (!this.state.observableProps[key]) this.set(key, {});
-        return this.state.observableProps[key];
+        return this.observable(key, Model);
     }
 
-    observable(key) {
-        const { observableProps, data } = this.state;
-
-        if (observableProps[key]) return observableProps[key];
-
-        var value = data == null ? undefined : data[key];
-        const observer = new Observer(value);
-        this.set(key, observer);
+    observable(key, type?) {
+        if (!key) return null;
+        let observer;
+        const value = this.get(key);
+        if (!value || !(observer = value[SymbolFrom]) || (type && !(observer instanceof type))) {
+            observer = new (type || Observer)();
+            this.set(key, observer);
+        }
         return observer;
     }
 
@@ -552,5 +544,11 @@ if (process.env.NODE_ENV === 'development') {
         });
 
         console.assert(model.attributes.id === undefined, 'model.attributes.id must be undefined, now is ' + model.attributes.id);
+
+        model.model('test')
+            .set({
+                name: 1
+            });
+        console.assert(model.attributes.test.name === 1, 'model.attributes.test.name must be 1, now is ' + model.attributes.test.name);
     }, 0);
 }

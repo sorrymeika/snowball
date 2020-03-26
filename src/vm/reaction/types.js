@@ -6,19 +6,21 @@ function defaultGetter(observer, name) {
     return observer.get(name);
 }
 
+const setAny = (observer, name, val) => {
+    if (!observer.state.observableProps[name]) {
+        if (isArray(val)) {
+            val = new List(val);
+        }
+    }
+    observer.set(true, name, val);
+};
+
 export const any = createDescriptor(
     (observer, name) => {
         const prop = observer.state.observableProps[name];
         return (prop && prop.state.facade) || observer.get(name);
     },
-    (observer, name, val) => {
-        if (!observer.state.observableProps[name]) {
-            if (isArray(val)) {
-                val = new List(val);
-            }
-        }
-        observer.set(true, name, val);
-    }
+    setAny
 );
 
 export const string = createDescriptor(
@@ -57,7 +59,17 @@ export const object = createDescriptor(
 export const array = createDescriptor(
     defaultGetter,
     (observer, name, val) => {
-        if (!Array.isArray(val)) {
+        if (null != val && !Array.isArray(val)) {
+            throw new Error('property value must be array!');
+        }
+        setAny(observer, name, val || []);
+    }
+);
+
+export const collection = createDescriptor(
+    defaultGetter,
+    (observer, name, val) => {
+        if (null != val && !Array.isArray(val)) {
             throw new Error('property value must be array!');
         }
         observer.set(name, val || []);

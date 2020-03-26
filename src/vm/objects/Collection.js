@@ -15,6 +15,20 @@ import { renewSet } from '../methods/set';
 
 const RE_COLL_QUERY = /\[((?:'(?:\\'|[^'])*'|"(?:\\"|[^"])*"|[^\]])+)\](?:\[([+-]?)(\d+)?\])?(?:\.(.*))?/;
 
+function initCollection(collection, array, attributeName, parent) {
+    const { state } = collection;
+    state.initialized = false;
+    state.data = [];
+
+    if (parent) {
+        connect(parent, collection, attributeName);
+    }
+
+    if (array && array.length) collection.add(array);
+    else freezeObject(state.data, collection);
+    collection.state.initialized = true;
+}
+
 function matcher(key, val) {
     return isString(key)
         ? (item, i) => item[key] === val
@@ -99,7 +113,6 @@ function update(collection, arr, comparator, appendUnmatched = true, renewItem =
         fn = contains;
     }
 
-
     if (!isArray(arr)) arr = [arr];
     else arr = [].concat(arr);
 
@@ -141,27 +154,6 @@ function update(collection, arr, comparator, appendUnmatched = true, renewItem =
     return collectionDidUpdate(collection);
 }
 
-export function withMutations(observer, fn) {
-    collectionWillUpdate(observer);
-    fn();
-    collectionDidUpdate(observer);
-    return observer;
-}
-
-export function initCollection(array, attributeName, parent) {
-    const { state } = this;
-    state.initialized = false;
-    state.data = [];
-
-    if (parent) {
-        connect(parent, this, attributeName);
-    }
-
-    if (array && array.length) this.add(array);
-    else freezeObject(state.data, this);
-    this.state.initialized = true;
-}
-
 export class Collection extends Observer {
     static createItem(parent, index, data) {
         return new Model(data, index, parent);
@@ -169,7 +161,7 @@ export class Collection extends Observer {
 
     constructor(array, attributeName, parent) {
         super();
-        initCollection.call(this, array, attributeName, parent);
+        initCollection(this, array, attributeName, parent);
     }
 
     get array() {
@@ -438,6 +430,13 @@ export class Collection extends Observer {
     }
 
     /**
+     * 同等于mergeBy
+     */
+    update(arr, comparator, renewItem = false) {
+        return update(this, arr, comparator, true, renewItem);
+    }
+
+    /**
      * 根据 comparator 更新Model，不在collection中的将会追加到尾部
      * collection.update([{ id: 123 name: '更新掉name' }], 'id')
      *
@@ -447,10 +446,6 @@ export class Collection extends Observer {
      *
      * @return {Collection} self
      */
-    update(arr, comparator, renewItem = false) {
-        return update(this, arr, comparator, true, renewItem);
-    }
-
     mergeBy(comparator, data, renewItem = false) {
         return update(this, data, comparator, true, renewItem);
     }
