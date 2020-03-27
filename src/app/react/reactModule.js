@@ -3,7 +3,7 @@ import { observer } from "./observer";
 
 const IsReactController = Symbol('IsReactController');
 
-export function reactViewModel(componentClass) {
+export function reactModule(componentClass) {
     if (!componentClass.prototype || !componentClass.prototype.render) {
         throw new Error('could\'t use `reactController` to decorate stateless component!');
     }
