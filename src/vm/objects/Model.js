@@ -521,6 +521,15 @@ if (process.env.NODE_ENV === 'development') {
         console.assert(model + '1' === '11', 'model + "1" must be `11`, now is ' + (model + '1'));
         console.assert(model + 5 === 6, 'model + 6 must be `6`, now is ' + (model + 5));
 
+        // var propObserver = model.observe('name');
+
+        // propObserver.subscribe((data) => {
+        //     console.log(data);
+
+        //     // propObserver.destroy();
+        // });
+
+
         model.set({
             name: 1
         });

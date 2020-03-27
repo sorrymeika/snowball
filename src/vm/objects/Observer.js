@@ -1,4 +1,4 @@
-import { eventMixin } from '../../core/event';
+import { eventMixin, Emitter } from '../../core/event';
 import { identify } from '../../utils/guid';
 
 import { enqueueUpdate, nextTick, enqueueInit, defer } from '../methods/enqueueUpdate';
@@ -182,10 +182,25 @@ export class PropObserver implements IObservable {
         this.observer = observer;
         this.name = name;
         this.callbacks = [];
+        this.desposer = Emitter.create();
     }
 
     get() {
         return this.observer.get(this.name);
+    }
+
+    subscribe(next, error?, complete?) {
+        if (typeof next == 'object') {
+            error = next.error;
+            complete = next.complete;
+            next = next.next;
+        }
+        complete && this.desposer.on(complete);
+        const despose = this.observe(next);
+        return () => {
+            complete && this.desposer.off(complete);
+            despose();
+        };
     }
 
     observe(cb) {
@@ -211,8 +226,9 @@ export class PropObserver implements IObservable {
         for (var i = callbacks.length - 1; i >= 0; i--) {
             this.observer.unobserve(this.name, callbacks[i]);
         }
-        this.observer = null;
-        this.callbacks = null;
+        this.desposer.emit();
+        this.desposer.off();
+        this.observer = this.callbacks = this.desposer = null;
     }
 }
 
