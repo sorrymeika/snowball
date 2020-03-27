@@ -17,7 +17,7 @@ const NavigateType = {
 let closeWebViewTimer;
 
 function isReplaceHistory(navigateType) {
-    return navigateType == NavigateType.Replace;
+    return navigateType === NavigateType.Replace;
 }
 
 let isNavigateListenerStart = false;
