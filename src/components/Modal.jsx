@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { util, $ } from '../snowball';
 
 
-export default function Modal({ visible, children, animate = 'scale', onCancel }) {
+export default function Modal({ visible, children, className, animate = 'scale', onCancel }) {
     const maskRef = useRef();
     const wrapperRef = useRef();
 
@@ -48,7 +48,7 @@ export default function Modal({ visible, children, animate = 'scale', onCancel }
 
     return ReactDOM.createPortal(
         <>
-            <div ref={wrapperRef} className={`app-modal app-popup-container app-popup-style-${animate}`}>
+            <div ref={wrapperRef} className={`app-modal app-popup-container app-popup-style-${animate} ${className || ''}`}>
                 <div className={`app-popup-container-${animate}`}>
                     {children}
                 </div>
