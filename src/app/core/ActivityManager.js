@@ -8,8 +8,8 @@ import Activity from './Activity';
 import { _getApplication } from './createApplication';
 
 const ACTIVED_STYLE = {
-    opacity: 1,
     display: 'block',
+    opacity: 1,
     '-webkit-transform': 'translate3d(0%,0%,0)'
 };
 
