@@ -81,6 +81,7 @@ export class Observer implements IObservable {
             complete = next.complete;
             next = next.next;
         }
+        next(this.get());
         error && this.on('error', error);
         complete && this.on('destroy', complete);
         const despose = this.observe(next);
@@ -195,6 +196,7 @@ export class PropObserver implements IObservable {
             complete = next.complete;
             next = next.next;
         }
+        next(this.get());
         complete && this.desposer.on(complete);
         const despose = this.observe(next);
         return () => {
