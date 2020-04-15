@@ -6,7 +6,7 @@
 * 状态管理：immutable、响应式，和`redux`不同，`snowball`的状态管理更符合`OOP`思想。
 * 视图：fiber模式渲染，高性能，双向绑定。 支持字符串模版，采用运行时模版编译。
 * 路由系统和状态管理都完全适配`React`。
-* 业务项目采用分层架构，主要分为`Controller`、`Service`、`View`层，`Controller`层用来组织`Service`层，并将数据注入到`View`层。
+* 业务项目采用分层架构，主要分为`Controller`、`ViewModel`、`Service`、`View`。
 
 
 ## 路由
@@ -60,30 +60,12 @@
 * run `npm run sprity` to build sprity images.
 * to see the built project, please visit `http://localhost:3000/dist/#/`
 
-## 安装常见问题
-
-**if you get some error about `canvas`**
-
-* run `brew install pkgconfig` if show "**pkg-config: command not found**"
-* run `brew install cairo` if show "**No package 'cairo' found**"
-* if you don't have **brew** command in your computer, see the [brew installation](https://brew.sh/)
-* install the [XQuartz](https://www.xquartz.org/)
-
-**or**
-
-* see the [Installation OSX](https://github.com/Automattic/node-canvas/wiki/Installation---OSX) to install without **brew** command
-
-**or**
-
-* just remove the `canvas` module from `package.json`
-
-
 ## 打包
 ```
 业务项目打包后会剔除掉`react`,`react-dom`,`polyfill`等框架和框架中的公共组件/公共样式
 ```
 1. `snowball`会将`React`等框架注册到 `window.Snowball` 上
-2. 使用 `snowball-loader`, 该loader会将 `import React from "react"` 替换成 `const React = window.Snowball.React`
+2. 使用 `snowball-loader`, 该loader会将 `import React from "react"` 替换成 `const React = window.Snowball._React`
 
 
 ## 框架版本管理
@@ -93,8 +75,7 @@
 
 ## 项目结构
 
-* 项目主要分为`Controller`、`Service`、`View`层
-* `Controller`层用来组织`Service`层，并将`service`和`状态`注入到`View`层
+* 项目结构主要分为`Controller`、`ViewModel`、`Service`、`View`层
 
 ```html
 snowball-project
@@ -103,13 +84,14 @@ snowball-project
 ├── app
 |   ├── router.js
 │   └── home <!-- 业务文件夹 -->
-│       ├── controllers 
-│       ├── services <!-- 业务服务 -->
+│       ├── controllers <!-- 页面控制器 -->
+│       ├── view-models <!-- 视图状态/业务逻辑 -->
+│       ├── services <!-- api调用/业务逻辑 -->
 │       ├── scss 
-│       ├── containers 
-│       └── components
+│       ├── containers <!-- 页面组件 -->
+│       └── components <!-- 组件 -->
 ├── shared
-│   ├── models <!-- 公共模型 -->
+│   ├── view-models
 │   └── services <!-- 公共服务 -->
 ```
 
@@ -131,6 +113,12 @@ const app = createApplication({
         // 懒加载
         '/type/\\d+:type(?:/\\d+:subType)?': lazy(() => import('./app/type/controllers/TypeController')),
     },
+    configuration: configuration({
+        modules: {
+            // 公共模块注册，注册的模块可使用`autowired`自动加载依赖
+            userService: singleton(UserService)
+        }
+    }),
     options: {
         // 禁用跳转切换动画
         disableTrasition: true
@@ -148,15 +136,6 @@ const app = createApplication({
                     })
                 }
                 return this[SymbolServer];
-            },
-            // 注册服务到`app`中，注册的服务可通过 `this.app.service.xxx` 或 `this.ctx.service.xxx` 获取服务单例，如:
-            //      this.app.service.user.getUser()
-            //          .then((res) => {
-            //              this.user = res.data;
-            //          })
-            services: {
-                // 在此注册的 Service 无需继承 require('snowball/app').Service
-                user: UserService
             }
         }
     }
@@ -179,18 +158,67 @@ class UserService implements IUserService {
 }
 ```
 
+* `app/home/configuration.js`
+
+```js
+import { configuration } from "snowball/app";
+
+export const HomeConfiguration = configuration({
+    modules: {
+        typeViewModel: TypeViewModel
+    }
+});
+```
+
 * `app/home/controllers/HomeController.js`
 
 ```js
-import { controller, autowired } from "snowball/app";
+import { controller, autowired, configuration } from "snowball/app";
 
 // Controller
-@controller(Home)
+@controller({
+    component: Home,
+    configuration: HomeConfiguration
+})
 class HomeController {
     @autowired
-    typeUIService;
+    typeViewModel;
 
     onInit() {
+    }
+}
+```
+
+* `app/shared/view-models/TypeViewModel.js`
+
+```js
+import { observable } from 'snowball';
+import { ViewModel } from 'snowball/app';
+
+class TypeViewModel extends ViewModel {
+    @observable types = [];
+    @observable subTypes = [];
+
+    // 初始化事件，页面`onInit`完成且`autowired`第一次调用时触发
+    // `ViewModel`的生命周期事件同`Controller`基本一样
+    onInit() {
+        this.init();
+    }
+
+    onTypeChange = this.ctx.createEmitter();
+
+    constructor() {
+        super();
+
+        this.onTypeChange((typeId) => this.changeType(typeId));
+    }
+
+    init() {
+        this.types = await this.app.server.post('/getTypes');
+    }
+
+    changeType(typeId) {
+        this.subTypes = await this.app.server.post('/getSubTypes', typeId);
     }
 }
 ```
@@ -228,21 +256,16 @@ class Home extends Component {
 import { inject } from "snowball/app";
 
 // 可通过 `inject` 方法将 `controller` 的属性注入到组件的 `props` 中
+// `inject`方法内使用`autowired`可根据注册名称自动加载并实例化依赖
 // `controller` 中以 `_`和'$'开头的属性会认为是私有属性，不可注入
-const TypeSelect = inject(({ typeUIService }) => (
-    typeUIService
-    ? {
-        types: typeUIService.types,
-        onTypeChange: typeUIService.onTypeChange.emit,
-        onInit: typeUIService.onInit.emit
-    }
-    : null
-))((props) => {
-    const { type, subTypes, onInit, onTypeChange } = props;
-
-    useEffect(() => {
-        onInit();
-    }, [onInit])
+const TypeSelect = inject(() => {
+    const typeViewModel = autowired('typeViewModel');
+    return {
+        types: typeViewModel.types,
+        onTypeChange: typeViewModel.onTypeChange.emit,
+    };
+})((props) => {
+    const { type, subTypes, onTypeChange } = props;
 
     return (
         <>
@@ -251,37 +274,6 @@ const TypeSelect = inject(({ typeUIService }) => (
         </>
     );
 })
-```
-
-* `app/shared/services/TypeUIService.js`
-
-```js
-import { observable } from 'snowball';
-import { Service } from 'snowball/app';
-
-// 在 Controller 中实例化的 Service 必须继承 `Service`
-class TypeUIService extends Service {
-    @observable types = [];
-    @observable subTypes = [];
-
-    // 创建事件
-    onInit = this.ctx.createEmitter();
-    onTypeChange = this.ctx.createEmitter();
-
-    constructor() {
-        this.onTypeChange((typeId) => this.changeType(typeId));
-        // 仅执行一次
-        this.onInit.once(() => this.init());
-    }
-
-    init() {
-        this.types = await this.app.server.post('/getTypes');
-    }
-
-    changeType(typeId) {
-        this.subTypes = await this.app.server.post('/getSubTypes', typeId);
-    }
-}
 ```
 
 
@@ -330,7 +322,7 @@ export default class HomeController {
     type;
 
     @autowired
-    userService;
+    _userService;
 
     constructor(props, ctx) {
         // 框架会自动带入路由参数到 props 中
@@ -354,11 +346,11 @@ export default class HomeController {
 
     // 页面初始化事件，数据请求不要放到 `constructor` 里，而是放在 `onInit` 里
     async onInit() {
-        await this.userService.fetch();
+        await this._userService.fetch();
 
         // 缓存页面数据到localStorage
         this.ctx.page.setCache({
-            user: this.user
+            pageInfo: this.pageInfo
         });
     }
 
@@ -372,11 +364,11 @@ export default class HomeController {
     }
 
     get user() {
-        return this.userService.getModel();
+        return this._userService.getModel();
     }
 
     handleTitleClick() {
-        this.userService.update();
+        this._userService.update();
     }
 }
 ```
@@ -391,7 +383,7 @@ export default class HomeController {
 
 ### 服务层 `services`
 
-* 服务层，主要作用为调用服务端接口，存储UI状态，处理业务逻辑。应用services间可互相调用。必须写interface.
+* 服务层，主要作用为调用服务端接口，处理业务逻辑。应用services间可互相调用。必须写interface.
 
 ```js
 import UserModel from "../models/UserModel";

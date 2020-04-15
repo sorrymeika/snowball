@@ -1,6 +1,7 @@
-import { isNumber, isString, isObject, isBoolean, isArray } from "../../utils";
+import { isNumber, isString, isObject, isBoolean, isArray, isPlainObject } from "../../utils";
 import { createDescriptor } from "./createDescriptor";
 import List from "../objects/List";
+import { Dictionary } from "../objects/Dictionary";
 
 function defaultGetter(observer, name) {
     return observer.get(name);
@@ -63,6 +64,16 @@ export const array = createDescriptor(
             throw new Error('property value must be array!');
         }
         setAny(observer, name, val || []);
+    }
+);
+
+export const dictionary = createDescriptor(
+    defaultGetter,
+    (observer, name, val) => {
+        if (!observer.state.observableProps[name]) {
+            val = new Dictionary(val);
+        }
+        observer.set(true, name, val);
     }
 );
 

@@ -1,4 +1,3 @@
-/* eslint-disable max-statements */
 import { isBoolean, isArray, isPlainObject, isThenable, isString } from '../../utils/is';
 import { extend, deepClone } from '../../utils/clone';
 
