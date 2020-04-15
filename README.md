@@ -50,7 +50,7 @@
 2. run `cd snowball && npm install`
 3. run `npm run project yourProjectName` to create your own project
 4. `import { env, Model } from "snowball"`
-5. see `https://github.com/sorrymeika/juicy` or `https://github.com/sorrymeika/sn-pyarmid` to get the full example!
+5. see `https://github.com/sorrymeika/juicy` or `https://github.com/sorrymeika/nuclear` to get the full example!
 
 ### Getting Start
 
