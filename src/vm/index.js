@@ -9,6 +9,7 @@ export { Dictionary } from './objects/Dictionary';
 export * from './reaction';
 
 export { observable, asObservable, action } from './observable';
+export { compute } from './compute';
 
 export { nextTick } from "./methods/enqueueUpdate";
 

@@ -1,4 +1,4 @@
-import { observable, autorun } from '../../vm';
+import { observable, autorun, compute } from '../../vm';
 import { EventEmitter, Emitter } from '../../core/event';
 import { buildConfiguration } from './configuration';
 import { withAutowiredScope, autowired } from './autowired';
@@ -53,6 +53,12 @@ export default class PageCtx extends EventEmitter {
         const dispose = autorun(fn);
         this.page.on('destroy', dispose);
         return dispose;
+    }
+
+    compute(fn) {
+        const observer = compute(fn);
+        this.page.on('destroy', () => observer.destroy());
+        return observer;
     }
 
     useObservable(value) {

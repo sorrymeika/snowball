@@ -70,6 +70,9 @@ export const array = createDescriptor(
 export const dictionary = createDescriptor(
     defaultGetter,
     (observer, name, val) => {
+        if (null != val && !isPlainObject(val)) {
+            throw new Error('property value must be plain object!');
+        }
         if (!observer.state.observableProps[name]) {
             val = new Dictionary(val);
         }

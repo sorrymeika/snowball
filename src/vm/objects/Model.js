@@ -10,7 +10,7 @@ import { enqueueUpdate } from '../methods/enqueueUpdate';
 import { blindSet } from '../methods/set';
 import { updateRefs } from '../methods/updateRefs';
 import { connect, disconnect, freezeObject } from '../methods/connect';
-import { observeProp, unobserveProp } from '../methods/observeProp';
+import { observeProp, unobserveProp, handlePropChange } from '../methods/observeProp';
 import { SymbolFrom } from '../symbols';
 import { getRelObserver, getRelObserverOrSelf } from '../methods/getRelObserver';
 
@@ -289,7 +289,7 @@ export class Model extends Observer {
             if (fn) {
                 const cb = (e, newValue, oldValue) => {
                     if (e.target === this) {
-                        return fn.call(this, newValue, oldValue);
+                        return handlePropChange(this, e, newValue, fn, oldValue); ;
                     }
                 };
                 cb._cb = fn;
