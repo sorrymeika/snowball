@@ -37,7 +37,8 @@ function autoCompute(calc) {
             set(calc());
         };
     };
-    return observer.on('destroy', autorun(() => {
+    const dispose = autorun(() => {
         run();
-    }));
+    });
+    return observer.on('destroy', dispose);
 }
