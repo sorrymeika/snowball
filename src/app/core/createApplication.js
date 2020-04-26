@@ -20,32 +20,12 @@ const currentCtxProperty = {
     }
 };
 
-export const appCtx = new EventEmitter();
-
-Object.defineProperties(appCtx, {
+export const appCtx = Object.defineProperties(new EventEmitter(), {
     currentCtx: currentCtxProperty,
     current: currentCtxProperty,
-    createEmitter: {
-        value: Emitter.create,
-        writable: false
-    },
-    createAsyncEmitter: {
-        value: Emitter.async,
-        writable: false
-    }
 });
-
-function extendCtx(extendFn) {
-    const descriptors = getOwnPropertyDescriptors(extendFn(appCtx));
-    Object.keys(descriptors)
-        .forEach((key) => {
-            const descriptor = descriptors[key];
-            if (isFunction(descriptor.get)) {
-                descriptor.get = descriptor.get.bind(appCtx);
-            }
-            Object.defineProperty(appCtx, key, descriptor);
-        });
-}
+appCtx.createEmitter = Emitter.create;
+appCtx.createAsyncEmitter = Emitter.async;
 
 /**
  * 创建应用
@@ -54,9 +34,10 @@ function extendCtx(extendFn) {
  * @param {Object} props.routes 路由映射
  * @param {Object} props.extend 扩展应用上下文
  * @param {Object} [props.options] 应用属性
- * @param {boolean} [props.options.maxActivePages] 最大活动页面数
+ * @param {boolean} [props.options.maxMemorizedPages] 内存中最大页面数
+ * @param {boolean} [props.options.activedPageStyle] 激活的页面的样式
  * @param {boolean} [props.options.disableTransition] 禁用跳转切换动画
- * @param {boolean} [props.options.autoStart] 是否自动启动，为否时需要主动调用start方法
+ * @param {boolean} [props.options.autoStart=true] 是否自动启动，为否时需要主动调用start方法
  * @param {Element} rootElement 页面根元素
  * @param {Element} [callback] 回调函数
  */
@@ -70,9 +51,14 @@ export function createApplication({
     if (application) throw new Error('application has already been created!');
 
     options = {
-        maxActivePages: 10,
+        maxMemorizedPages: 10,
         disableTransition: false,
         autoStart: true,
+        activedPageStyle: {
+            display: 'block',
+            opacity: 1,
+            '-webkit-transform': 'translate3d(0%,0%,0)'
+        },
         ...options
     };
 
@@ -82,12 +68,12 @@ export function createApplication({
     application = new Application(
         new Router(projects, routes),
         rootElement,
+        appCtx,
         options
     );
-
     const navigation = new Navigation(application, options);
     application.setNavigation(navigation)
-        .setActivityManager(new ActivityManager(application, options));
+        .setActivityManager(new ActivityManager(application));
 
     const Configuration = buildConfiguration(conf);
     let autowiredCache;
@@ -130,7 +116,6 @@ export function createApplication({
             return instance;
         }
     });
-    application.ctx = appCtx;
 
     if (extend) {
         extendCtx(extend);
@@ -141,4 +126,16 @@ export function createApplication({
     }
 
     return appCtx;
+}
+
+function extendCtx(extendFn) {
+    const descriptors = getOwnPropertyDescriptors(extendFn(appCtx));
+    Object.keys(descriptors)
+        .forEach((key) => {
+            const descriptor = descriptors[key];
+            if (isFunction(descriptor.get)) {
+                descriptor.get = descriptor.get.bind(appCtx);
+            }
+            Object.defineProperty(appCtx, key, descriptor);
+        });
 }

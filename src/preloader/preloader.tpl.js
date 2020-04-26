@@ -24,6 +24,7 @@ window.preloader = (function (window, document, preloadOptions, undefined) {
     var iOS = PLATFORM === 'iOS';
     var isAndroid = PLATFORM === 'android';
     var IS_SNOWBALL_WEBVIEW = /snowball/i.test(ua);
+    var IS_MOBILE = preloadOptions.mobile !== false;
 
     (function initialize(initializers) {
         console.time("Start React App spend");
@@ -35,17 +36,28 @@ window.preloader = (function (window, document, preloadOptions, undefined) {
         });
 
         initializers.forEach(function (init) {
-            init();
+            init && init();
         });
     })([
+        IS_MOBILE && iOS && function adjustViewportOnKeybordDown() {
+            // 修复iOS输入框失焦后view不下来的问题
+            var initialWindowHeight = window.innerHeight;
+            window.addEventListener('blur', function (e) {
+                document.body.style.height = initialWindowHeight + 1 + 'px';
+                setTimeout(() => {
+                    document.body.style.height = initialWindowHeight + 'px';
+                    document.body.scrollTop = 0;
+                }, 100);
+            }, true);
+        },
         /**
          * 设置1rem等于100px
          */
-        function resetRem() {
+        IS_MOBILE && function resetRem() {
             function refreshRem() {
                 var docEl = document.documentElement;
                 var screenWidth = Math.min(screen.width, window.innerWidth, docEl.getBoundingClientRect().width);
-                var rem = preloadOptions.mobile !== false ? Math.min(screenWidth, 414) * 100 / 375 || 100 : 100;
+                var rem = IS_MOBILE ? Math.min(screenWidth, 414) * 100 / 375 || 100 : 100;
                 window.pixelWidth = screenWidth * window.devicePixelRatio;
 
                 docEl.style.fontSize = rem + 'px';

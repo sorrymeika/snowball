@@ -62,16 +62,7 @@ export function controller(cfg: ControllerCfg) {
     }
 
     return function (Controller) {
-        Object.defineProperty(Controller.prototype, 'ctx', {
-            get() {
-                return this._ctx;
-            }
-        });
-        Object.defineProperty(Controller.prototype, 'app', {
-            get() {
-                return appCtx;
-            }
-        });
+        Controller.prototype.app = appCtx;
 
         function controllerFactory(props, ctx) {
             if (isCreating) {
@@ -80,11 +71,10 @@ export function controller(cfg: ControllerCfg) {
             isCreating = true;
             currentCtx = ctx;
 
-            Controller.prototype._ctx = ctx;
-
+            Controller.prototype.ctx = ctx;
             const controllerInstance = new Controller(props, ctx);
-            controllerInstance._ctx = ctx;
-            Controller.prototype._ctx = null;
+            controllerInstance.ctx = ctx;
+            Controller.prototype.ctx = null;
 
             isCreating = false;
             currentCtx = null;

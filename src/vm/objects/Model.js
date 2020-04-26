@@ -5,13 +5,13 @@ import { Observer } from './Observer';
 import { Collection } from './Collection';
 
 import { isModel, isCollection, isObservable, TYPEOF, isDictionary, isList } from '../predicates';
+import { SymbolFrom } from '../symbols';
 
 import { enqueueUpdate } from '../methods/enqueueUpdate';
 import { blindSet } from '../methods/set';
 import { updateRefs } from '../methods/updateRefs';
 import { connect, disconnect, freezeObject } from '../methods/connect';
 import { observeProp, unobserveProp, handlePropChange } from '../methods/observeProp';
-import { SymbolFrom } from '../symbols';
 import { getRelObserver, getRelObserverOrSelf } from '../methods/getRelObserver';
 
 const toString = Object.prototype.toString;

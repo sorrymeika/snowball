@@ -1,12 +1,13 @@
 import { eventMixin, Emitter } from '../../core/event';
 import { identify } from '../../utils/guid';
 
+import { TYPEOF } from '../predicates';
+import { SymbolFrom } from '../symbols';
+
 import { enqueueUpdate, nextTick, enqueueInit, defer } from '../methods/enqueueUpdate';
 import { updateRefs } from '../methods/updateRefs';
 import { connect, disconnect } from '../methods/connect';
-import { TYPEOF } from '../predicates';
 import { getProperty } from '../methods/getProperty';
-import { SymbolFrom } from '../symbols';
 
 export interface IObservable {
     get: () => any,

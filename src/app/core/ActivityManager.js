@@ -7,19 +7,12 @@ import { IApplication, IActivityManager, ToggleOptions } from '../types';
 import Activity from './Activity';
 import { _getApplication } from './createApplication';
 
-const ACTIVED_STYLE = {
-    display: 'block',
-    opacity: 1,
-    '-webkit-transform': 'translate3d(0%,0%,0)'
-};
-
 export default class ActivityManager implements IActivityManager {
 
     application: IApplication;
 
-    constructor(application, options) {
+    constructor(application) {
         this.activitiesCache = [];
-        this.options = options;
         this.application = application;
     }
 
@@ -98,12 +91,15 @@ export default class ActivityManager implements IActivityManager {
             return replacingTask;
         }
 
-        const { disableTransition = false } = this.options;
+        const {
+            disableTransition = false,
+            activedPageStyle
+        } = application.options;
 
         if (prevActivity && withTransition && !disableTransition) {
             replaceActivityWithTransition(this, prevActivity, activity, isForward, resolveTransition);
         } else {
-            activity.$el.css(ACTIVED_STYLE);
+            activity.$el.css(activedPageStyle);
             activity.page.trigger('beforeshow');
             activity.show(!prevActivity
                 ? resolveTransition
@@ -150,6 +146,7 @@ function createActivityFromModule(type, location, application) {
 }
 
 function replaceActivityWithTransition(activityManager, prevActivity, activity, isForward, callback) {
+    const { application } = activityManager;
     const ease = 'cubic-bezier(.34,.86,.54,.99)';
     const duration = 400;
     const { enterFrom, enterTo, exitFrom, exitTo } = getTransition(isForward, isForward ? activity.transition : prevActivity.transition);
@@ -176,7 +173,7 @@ function replaceActivityWithTransition(activityManager, prevActivity, activity, 
                 let prev = prevActivity._prev;
                 let count = 1;
                 while (prev) {
-                    if (count >= activityManager.options.maxActivePages) {
+                    if (count >= application.options.maxMemorizedPages) {
                         disposeActivity(activityManager, prev);
                     }
                     prev = prev._prev;
@@ -197,7 +194,7 @@ function replaceActivityWithTransition(activityManager, prevActivity, activity, 
             outAnimTask.then(() => {
                 activity.show();
             });
-            activityManager.application.prevActivity = activity._prev;
+            application.prevActivity = activity._prev;
             resolve();
             activity.scrollTop && window.scrollTo(0, activity.scrollTop);
         });
@@ -236,7 +233,8 @@ function disposeUselessActivities(activityManager, prevActivity, activity) {
 
 export const renderActivity = function (controllerClass, props, container, cb) {
     const location = (props && props.location) || {};
-    const activity = createActivityFromModule(controllerClass, location, Object.create(_getApplication(), {
+    const application = _getApplication();
+    const activity = createActivityFromModule(controllerClass, location, Object.create(application, {
         rootElement: {
             writable: false,
             value: container
@@ -248,7 +246,7 @@ export const renderActivity = function (controllerClass, props, container, cb) {
             ...props
         }, cb);
 
-    activity.$el.css(ACTIVED_STYLE);
+    activity.$el.css(application.options.activedPageStyle);
     activity.show();
 
     const wrapper = {

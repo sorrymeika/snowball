@@ -13,8 +13,10 @@ export default class Application implements IApplication {
     constructor(
         router: IRouter,
         rootElement,
+        ctx,
         options
     ) {
+        this.ctx = ctx;
         this.router = router;
         this.rootElement = rootElement;
         this.options = options;

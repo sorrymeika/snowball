@@ -9,9 +9,6 @@ const instanceStore = new WeakSet();
 
 function asModel(obj, constructor) {
     if (process.env.NODE_ENV === "development") {
-        if (!obj instanceof constructor) {
-            throw new Error('obj must instanceof' + constructor);
-        }
         if (!isObservable(obj[SymbolRelObserver])) {
             throw new Error('unavailable object!');
         }
@@ -22,26 +19,15 @@ function asModel(obj, constructor) {
 function _init(obj, data) {
     const model = asModel(obj, this);
     model.state.initialized = false;
-    model.set(data);
+    Object.assign(obj, data);
     model.state.initialized = true;
 }
 
-function init(obj, data) {
+export function initReactiveObject(obj, data) {
     if (data == null) return;
     if (instanceStore.has(obj)) throw new Error('obj was initialized!');
     _init.call(this, obj, data);
-}
-
-function _from(data, ...args) {
-    const Klass = this;
-    const instance = new Klass(...args);
-    _init.call(this, instance, data);
-    return instance;
-}
-
-function hoistStaticMethods(obj) {
-    obj.init = init;
-    obj.from = _from;
+    return obj;
 }
 
 export function _isObservableClass(obsCtor) {
@@ -56,8 +42,6 @@ export default function initializer(obj, name, descriptor) {
             ? { ...obj[symbolReactiveProps] }
             : {};
 
-        hoistStaticMethods(obj.constructor);
-
         Object.defineProperty(obj, SymbolRelObserver, {
             configurable: true,
             get() {
@@ -66,16 +50,15 @@ export default function initializer(obj, name, descriptor) {
                     return true;
                 }
 
-                let initProperties = {};
-
+                const initialProps = {};
                 const props = proto[symbolReactiveProps];
                 if (props) {
                     const initProp = this[symbolPropsInitializer] = (name) => {
-                        if (name in initProperties) {
-                            return initProperties[name];
+                        if (name in initialProps) {
+                            return initialProps[name];
                         }
                         const desc = props[name];
-                        return initProperties[name] = desc.initializer
+                        return initialProps[name] = desc.initializer
                             ? desc.initializer.call(this)
                             : desc.value;
                     };
@@ -85,7 +68,7 @@ export default function initializer(obj, name, descriptor) {
                     this[symbolPropsInitializer] = null;
                 }
 
-                const model = new (this.constructor.Model || Model)(initProperties);
+                const model = new (this.constructor.Model || Model)(initialProps);
                 model.state.facade = this;
 
                 instanceStore.add(this);

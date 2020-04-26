@@ -733,7 +733,7 @@ Page.extentions.ctx((page, ctx) => {
 * `models/UserModel.js`
 
 ```js
-import { Model, Collection, Reaction, observable } from 'snowball';
+import { Model, Collection, Reaction, observable, initReactiveObject } from 'snowball';
 import { controller, service, observer } from 'snowball/app';
 
 // Model 的接口必须定义
@@ -764,7 +764,7 @@ class User implements IUser {
     userName;
 
     constructor(user: IUser) {
-        User.init(this, user);
+        initReactiveObject(this, user);
     }
 }
 
