@@ -4,7 +4,7 @@ import { appCtx } from "../core/createApplication";
 import { registerRoutes } from "../core/registerRoutes";
 import { getWiringInfo } from "../core/autowired";
 
-export const INJECTABLE_PROPS = Symbol('INJECTABLE_PROPS');
+export const symbolCtx = Symbol('SymbolCtx');
 
 let isCreating = false;
 let currentCtx;
@@ -62,7 +62,18 @@ export function controller(cfg: ControllerCfg) {
     }
 
     return function (Controller) {
-        Controller.prototype.app = appCtx;
+        Object.defineProperties(Controller.prototype, {
+            ctx: {
+                get() {
+                    return this[symbolCtx];
+                }
+            },
+            app: {
+                get() {
+                    return appCtx;
+                }
+            }
+        });
 
         function controllerFactory(props, ctx) {
             if (isCreating) {
@@ -71,17 +82,16 @@ export function controller(cfg: ControllerCfg) {
             isCreating = true;
             currentCtx = ctx;
 
-            Controller.prototype.ctx = ctx;
+            Controller.prototype[symbolCtx] = ctx;
             const controllerInstance = new Controller(props, ctx);
-            controllerInstance.ctx = ctx;
-            Controller.prototype.ctx = null;
+            controllerInstance[symbolCtx] = ctx;
+            Controller.prototype[symbolCtx] = null;
 
             isCreating = false;
             currentCtx = null;
 
             return controllerInstance;
         }
-
         controllerFactory.$$typeof = 'snowball/app#controller';
         controllerFactory.componentClass = componentClass;
         controllerFactory.config = config || [];
