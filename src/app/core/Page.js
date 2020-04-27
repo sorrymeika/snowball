@@ -32,7 +32,7 @@ export class Page extends EventEmitter implements IPage {
             copyProperties(Page.prototype, props);
         },
         react(props: { Provider: any }) {
-            copyProperties(PageCtx.prototype.react || (PageCtx.prototype.react = {}), props);
+            copyProperties(Page.prototype.react || (Page.prototype.react = {}), props);
         },
         ctx(props) {
             copyProperties(PageCtx.prototype, props);
