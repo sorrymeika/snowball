@@ -1,11 +1,11 @@
-import { IPage, PageLifecycleDelegate } from '../types';
+import { IPage, PageLifecycle } from '../types';
 import { Model } from '../../vm';
 import { store, copyProperties } from '../../utils';
 import { EventEmitter } from '../../core/event';
 import PageCtx from './PageCtx';
 
 const defaultTitle = document.title;
-const extentions = [];
+const lifecycles = [];
 
 function createPageCtx(page, app, configs) {
     const pageCtx = new PageCtx(page, app, configs);
@@ -17,16 +17,22 @@ function createPageCtx(page, app, configs) {
     return pageCtx;
 }
 
+export function bindPageLifecycle(page, lifecycle) {
+    Object.keys(lifecycle)
+        .forEach(name => {
+            if (/^on(\w+)$/.test(name)) {
+                const lifecycleName = RegExp.$1.toLowerCase();
+                const lifecycleFn = lifecycle[name];
+                page.on(lifecycleName, () => lifecycleFn.call(page, page.ctx));
+            }
+        });
+}
+
 export class Page extends EventEmitter implements IPage {
 
     static extentions = {
-        lifecycle: ({ initialize, onShow, onCreate, onDestroy }) => {
-            extentions.push({
-                initialize,
-                onShow,
-                onCreate,
-                onDestroy,
-            });
+        lifecycle: (lifecycle: PageLifecycle) => {
+            lifecycles.push(lifecycle);
         },
         mixin: (props) => {
             copyProperties(Page.prototype, props);
@@ -47,11 +53,12 @@ export class Page extends EventEmitter implements IPage {
         this.app = app;
         this.ctx = createPageCtx(this, app, configs);
 
-        extentions.forEach(({ initialize, onCreate, onShow, onDestroy }) => {
+        lifecycles.forEach(({
+            initialize,
+            ...lifecycle
+        }) => {
             if (initialize) initialize.call(this);
-            if (onCreate) this.on('create', () => onCreate.call(this));
-            if (onShow) this.on('show', () => onShow.call(this));
-            if (onDestroy) this.on('destroy', () => onDestroy.call(this));
+            bindPageLifecycle(this, lifecycle);
         });
 
         this.on('show', () => {
@@ -92,10 +99,6 @@ export class Page extends EventEmitter implements IPage {
 
     isDestroyed() {
         return this._activity.isDestroyed;
-    }
-
-    setLifecycleDelegate(delegate: PageLifecycleDelegate) {
-        this._activity.lifecycle = delegate || {};
     }
 
     get cache() {

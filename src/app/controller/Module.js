@@ -1,5 +1,6 @@
 
-import { initWithContext, symbolCtx } from "./controller";
+import { initWithContext } from "./controller";
+import { symbolCtx } from "./symbols";
 import { appCtx } from "../core/createApplication";
 import { PageCtx } from "../types";
 

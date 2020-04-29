@@ -75,8 +75,8 @@ export default class ReactViewAdapter implements IViewAdapter {
     render(props, callback) {
         this._reactProps = { ...props };
 
-        const lifecycle = this.activity.lifecycle;
-        if (lifecycle.shouldRender && !lifecycle.shouldRender(this._reactProps)) {
+        const { shouldRenderFn } = this.activity;
+        if (shouldRenderFn && !shouldRenderFn(this._reactProps)) {
             callback && callback();
             return;
         }

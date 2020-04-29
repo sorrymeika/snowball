@@ -1,7 +1,8 @@
 
 import { $, getPropertyNames, defineProxyProperty } from '../../utils';
 import { ActivityOptions } from '../types';
-import { Page } from './Page';
+import { symbolController } from '../controller/symbols';
+import { Page, bindPageLifecycle } from './Page';
 import ViewAdapter from './ViewAdapter';
 
 const ACTIVITY_STATUS_PREPARE = -1;
@@ -11,8 +12,19 @@ const ACTIVITY_STATUS_RESUME = 2;
 const ACTIVITY_STATUS_PAUSE = 3;
 const ACTIVITY_STATUS_DESTROY = 4;
 
-const lifecycleNames = ['onInit', 'onQsChange', 'onShow', 'onCreate', 'onResume', 'onPause', 'onDestroy', 'shouldRender'];
-const excludeProps = [...lifecycleNames, 'constructor'];
+const lifecycleNames = [
+    'onInit',
+    'onQsChange',
+    'onBeforeShow',
+    'onShow',
+    'onCreate',
+    'onResume',
+    'onBeforeHide',
+    'onHide',
+    'onPause',
+    'onDestroy',
+];
+const excludeProps = [...lifecycleNames, 'shouldRender', 'constructor'];
 
 function isInjectableProp(propName) {
     return typeof propName === 'string' && !excludeProps.includes(propName) && /^[a-z]/.test(propName);
@@ -63,15 +75,19 @@ export class Activity {
 
         let type = this.controllerFactory;
 
-        if (type.$$typeof === 'snowball/app#controller') {
+        if (type.$$typeof === symbolController) {
             const controllerInstance = type(props, this.page.ctx);
             const lifecycle = {};
-
             lifecycleNames.forEach((lifecycleName) => {
-                controllerInstance[lifecycleName] && (lifecycle[lifecycleName] = controllerInstance[lifecycleName].bind(controllerInstance));
+                if (controllerInstance[lifecycleName]) {
+                    lifecycle[lifecycleName] = controllerInstance[lifecycleName].bind(controllerInstance);
+                };
             });
+            bindPageLifecycle(this.page, lifecycle);
 
-            this.page.setLifecycleDelegate(lifecycle);
+            if (controllerInstance.shouldRender) {
+                this.shouldRenderFn = controllerInstance.shouldRender.bind(controllerInstance);
+            }
 
             const propertyNames = getPropertyNames(controllerInstance);
             propertyNames.forEach((propertyName) => {
@@ -92,7 +108,6 @@ export class Activity {
 
         this.view.init(props, () => {
             this.status = ACTIVITY_STATUS_INIT;
-            this.lifecycle.onInit && this.lifecycle.onInit(this.page.ctx);
             this.page.trigger('init');
 
             this._isReady = true;
@@ -139,9 +154,6 @@ export class Activity {
     }
 
     qsChange() {
-        if (typeof this.lifecycle.onQsChange === 'function') {
-            this.lifecycle.onQsChange(this.page.ctx);
-        }
         this.page.trigger('qschange');
     }
 
@@ -154,9 +166,6 @@ export class Activity {
         this.ready(() => {
             this.isActive = true;
             this.$el.addClass('app-view-actived');
-            if (typeof this.lifecycle.onShow === 'function') {
-                this.lifecycle.onShow(this.page.ctx);
-            }
             this.page.trigger('show');
             callback && callback();
         });
@@ -168,15 +177,9 @@ export class Activity {
     active() {
         if (this.status == ACTIVITY_STATUS_INIT) {
             this.status = ACTIVITY_STATUS_CREATE;
-            if (typeof this.lifecycle.onCreate === 'function') {
-                this.lifecycle.onCreate(this.page.ctx);
-            }
             this.page.trigger('create');
         } else if (this.status == ACTIVITY_STATUS_PAUSE) {
             this.status = ACTIVITY_STATUS_RESUME;
-            if (typeof this.lifecycle.onResume === 'function') {
-                this.lifecycle.onResume(this.page.ctx);
-            }
             this.page.trigger('resume');
         }
         return this;
@@ -189,9 +192,6 @@ export class Activity {
         if (this.status == ACTIVITY_STATUS_RESUME || this.status == ACTIVITY_STATUS_CREATE || this.status == ACTIVITY_STATUS_INIT) {
             this.status = ACTIVITY_STATUS_PAUSE;
             this.isActive = false;
-            if (typeof this.lifecycle.onPause === 'function') {
-                this.lifecycle.onPause(this.page.ctx);
-            }
             document.activeElement && document.activeElement.blur();
             this.page.trigger('pause');
         }
@@ -213,16 +213,10 @@ export class Activity {
             this.view = null;
             this.$el.remove();
             this.$el = this.el = null;
-
-            if (typeof this.lifecycle.onDestroy === 'function') {
-                this.lifecycle.onDestroy(this.page.ctx);
-            }
             this.page.trigger('destroy');
             this.page.off();
         }
     }
 }
-
-Activity.prototype.lifecycle = {};
 
 export default Activity;

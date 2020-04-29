@@ -1,5 +1,6 @@
 
 import Module from "./Module";
+import { symbolController } from "./symbols";
 
 export class ViewModel extends Module {
     constructor() {
@@ -8,7 +9,7 @@ export class ViewModel extends Module {
         const { page } = this.ctx;
         const { status } = page;
 
-        if (status != 4) {
+        if (!this[symbolController] && status != 4) {
             const init = () => {
                 this.onInit && this.onInit();
                 this.onResume && page.on('resume', () => this.onResume());

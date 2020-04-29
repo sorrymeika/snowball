@@ -9,11 +9,7 @@ export type Location = {
     params: any
 }
 
-export type PageLifecycleDelegate = {
-    /**
-     * 页面是否需要渲染，除使用快照外一般不使用
-     */
-    shouldRender: () => boolean,
+export type PageLifecycle = {
     /**
      * 页面第一次打开，且动画开始前触发
      */
@@ -69,10 +65,7 @@ export interface IPage {
      * 设置当前页document.title
      */
     title: string;
-    /**
-     * 设置页面事件代理
-     */
-    setLifecycleDelegate: (delegate: PageLifecycleDelegate) => any;
+
     location: Location;
     findNode: (selector: string) => HTMLElement;
     getMainScrollView: () => any;

@@ -3,8 +3,7 @@ import { ActivityOptions } from '../types';
 import { appCtx } from "../core/createApplication";
 import { registerRoutes } from "../core/registerRoutes";
 import { getWiringInfo } from "../core/autowired";
-
-export const symbolCtx = Symbol('SymbolCtx');
+import { symbolCtx, symbolController } from "./symbols";
 
 let isCreating = false;
 let currentCtx;
@@ -39,6 +38,7 @@ type ControllerCfg = {
  *     onResume: 页面从后台进入前台，且动画结束时触发
  *     onPause: 页面从前台进入后台，且动画结束时触发
  *     onDestroy: 页面被销毁后触发
+ *     shouldRender: 页面是否需要渲染，除使用快照外一般不使用
  */
 export function controller(cfg: ControllerCfg) {
     let options,
@@ -72,6 +72,9 @@ export function controller(cfg: ControllerCfg) {
                 get() {
                     return appCtx;
                 }
+            },
+            [symbolController]: {
+                value: true
             }
         });
 
@@ -92,7 +95,7 @@ export function controller(cfg: ControllerCfg) {
 
             return controllerInstance;
         }
-        controllerFactory.$$typeof = 'snowball/app#controller';
+        controllerFactory.$$typeof = symbolController;
         controllerFactory.componentClass = componentClass;
         controllerFactory.config = config || [];
         controllerFactory.options = options;
