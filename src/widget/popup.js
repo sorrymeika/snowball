@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React from 'react';
 import ReactDOM from 'react-dom';
 import { $, reflow } from '../utils';
 
@@ -41,14 +41,13 @@ type PopupProps = {
     clickMaskToHide: boolean,
     onHide?: (isClickMaskToHide?: boolean) => any,
     onShow?: (ref: any) => void,
-    portal: Component<P>,
 }
 
 class Popup {
     constructor({ title, className, animate = "scale", clickMaskToHide = false, ...props }: PopupProps) {
         this.props = props;
         this.clickMaskToHide = clickMaskToHide;
-        this.$container = $(`<div class="app-popup-container app-popup-style-${animate}"><div class="app-popup-container-${animate}"></div></div>`)
+        this.$container = $(`<div class="app-popup-container app-popup-style-${animate} ${props.type ? 'app-popup-' + props.type : ''}"><div class="app-popup-container-${animate}"></div></div>`)
             .addClass(className || '')
             .on($.fx.transitionEnd, function () {
                 if (!$(this).hasClass('show')) {
@@ -132,7 +131,7 @@ class Popup {
 
     _showNow() {
         var { $container } = this;
-        var { content, portal, onShow } = this.props;
+        var { content, onShow } = this.props;
         var children = content;
 
         if (children.length) {
@@ -141,23 +140,7 @@ class Popup {
 
         if (React.isValidElement(content) || content instanceof React.Component) {
             content = children.length && children.length > 1 ? <div>{children}</div> : content;
-            if (portal) {
-                if (!ReactDOM.unstable_renderSubtreeIntoContainer) {
-                    class Provider extends React.Component {
-                        getChildContext() {
-                            return portal.context;
-                        }
-                        render() {
-                            return content;
-                        }
-                    }
-                    ReactDOM.render(React.createElement(Provider), $container.children()[0]);
-                } else {
-                    ReactDOM.unstable_renderSubtreeIntoContainer(portal, content, $container.children()[0]);
-                }
-            } else {
-                ReactDOM.render(content, $container.children()[0]);
-            }
+            ReactDOM.render(content, $container.children()[0]);
             this.addOnFadeOutListener(() => ReactDOM.unmountComponentAtNode($container.children()[0]));
         } else {
             $container.children().append(children);
@@ -315,38 +298,6 @@ export const popup = {
             });
             popups.length = 0;
         }
-    }
-};
-
-popup.Popup = class PopupComponent extends React.Component {
-    onClickMask = () => {
-        this.props.onClickMask && this.props.onClickMask();
-    }
-
-    componentWillMount() {
-        $mask.on('click', this.onClickMask);
-    }
-
-    componentWillUnmount() {
-        $mask.off('click', this.onClickMask);
-    }
-
-    render() {
-        if (this.props.visible) {
-            if (!this.popup) {
-                this.popup = popup.popup({
-                    ...this.props,
-                    portal: this,
-                    content: this.props.children
-                });
-            } else {
-                this.popup.props.content = this.props.children;
-                this.popup.show();
-            }
-        } else if (this.popup) {
-            this.popup.hide();
-        }
-        return null;
     }
 };
 
