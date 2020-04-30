@@ -2,7 +2,7 @@
  * Native调用JavaScript
  */
 
-import * as env from "../env";
+import * as env from "../../env";
 import SnowballWebView from "./protocols/SnowballWebView";
 import { WeiXin } from "./protocols/WeiXin";
 import { Browser } from "./protocols/Browser";

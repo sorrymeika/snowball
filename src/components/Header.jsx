@@ -1,30 +1,9 @@
 import React from 'react';
-import { $ } from '../utils';
-import * as appsdk from '../native-sdk';
-import { _getApplication } from '../app/core/createApplication';
+import { appCtx } from '../app/core/createApplication';
 
-let closeWebViewTimer;
 function goBack() {
-    if (closeWebViewTimer) clearTimeout(closeWebViewTimer);
-    closeWebViewTimer = setTimeout(() => {
-        try {
-            _getApplication()
-                .currentActivity
-                .destroy();
-        } catch (e) {
-            console.error(e);
-        }
-        appsdk.exitWebView();
-    }, 600);
-    history.back();
+    appCtx.navigation.back();
 };
-
-$(window).on('hashchange popstate unload', () => {
-    if (closeWebViewTimer) {
-        clearTimeout(closeWebViewTimer);
-        closeWebViewTimer = null;
-    }
-});
 
 export default function Header({
     title,

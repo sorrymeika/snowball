@@ -46,7 +46,6 @@ module.exports = function (source) {
     content = replaceImport(content, "snowball/graphics", "window.Snowball._graphics");
     content = replaceImport(content, "snowball/utils", "window.Snowball.util");
     content = replaceImport(content, "snowball/widget", "window.Snowball._widget");
-    content = replaceImport(content, "snowball/native-sdk", "window.Snowball._nativeSdk");
     content = replaceImport(content, "snowball/(?!libs/).+", (packageName) => "{};throw new Error('unavaliable import `" + packageName + "`!!')");
     content = replaceImport(content, "react", "window.Snowball._React");
     content = replaceImport(content, "react-dom", "window.Snowball._ReactDOM");

@@ -1,3 +1,4 @@
+import { $ } from '../../utils';
 import { sdk } from './sdk';
 
 import * as webview from './webview';
@@ -5,6 +6,10 @@ import * as GIS from './GIS';
 
 import ShareTypes from './share/ShareTypes';
 import ShareContentTypes from './share/ShareContentTypes';
+
+$(window).on('exitapp', () => {
+    webview.exit();
+});
 
 export {
     sdk,

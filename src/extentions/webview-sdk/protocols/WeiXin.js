@@ -1,7 +1,7 @@
-import { WX_JS_URL, IS_WX, WX_APP_ID } from "../../env";
-import { loadJs } from "../../utils";
-import { popup } from "../../widget/popup";
-import toast from "../../widget/toast";
+import { WX_JS_URL, IS_WX, WX_APP_ID } from "../../../env";
+import { loadJs } from "../../../utils";
+import { popup } from "../../../widget/popup";
+import toast from "../../../widget/toast";
 
 type WXConfig = {
     // 必填，生成签名的时间戳

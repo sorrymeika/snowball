@@ -189,7 +189,7 @@ export default class Navigation implements INavigation {
         } else {
             if (closeWebViewTimer) clearTimeout(closeWebViewTimer);
             closeWebViewTimer = setTimeout(() => {
-                $(window).trigger('exitApp');
+                $(window).trigger('exitapp');
                 this.application.currentActivity && this.application.currentActivity.destroy();
             }, 600);
 
