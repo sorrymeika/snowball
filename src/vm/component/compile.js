@@ -36,6 +36,7 @@ const GLOBAL_VARS = {
     'Symbol': true,
     'RegExp': true,
     'JSON': true,
+    'Reflect': true,
     'Math': true,
     'Date': true,
     'parseInt': true,
