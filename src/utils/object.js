@@ -3,6 +3,7 @@ import { castPath } from './castPath';
 import { unique } from './array';
 
 var hasOwnProperty = Object.prototype.hasOwnProperty;
+var toString = Object.prototype.toString;
 var ArrayProto = Array.prototype;
 var slice = ArrayProto.slice;
 var concat = ArrayProto.concat;

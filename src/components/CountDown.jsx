@@ -11,7 +11,7 @@ const defaultRenderCountDown = props => {
     const { days, hours, minutes, seconds } = props;
     return (
         <span>
-            {days}天${hours}小时${minutes}分${seconds}秒
+            {days}天{hours}小时{minutes}分{seconds}秒
         </span>
     );
 };
