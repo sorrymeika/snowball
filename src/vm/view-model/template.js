@@ -9,6 +9,8 @@ import {
 import getFunctionArg from './getFunctionArg';
 import { TYPEOF } from '../predicates';
 
+const IS_IE = /(MSIE) (\d+)|Trident|Edge/i.test(navigator.userAgent);
+
 function isViewModel(model) {
     return model && model[TYPEOF] === 'ViewModel';
 }
@@ -50,8 +52,17 @@ export class TemplateCompiler {
         if (nodeType == TEXT_NODE) {
             fid = this.functionCompiler.push(node.nodeValue, true, true);
             if (fid) {
-                node.snAttributes = ['nodeValue', fid];
                 node.nodeValue = '';
+                if (IS_IE) {
+                    const replacement = document.createComment('text-' + fid);
+                    replacement.snAttributes = ['nodeValue', fid];
+                    replacement.snType = 'textReplacement';
+                    replacement.snTextNode = node;
+                    node.parentNode.insertBefore(replacement, node);
+                    node.snAttributes = null;
+                } else {
+                    node.snAttributes = ['nodeValue', fid];
+                }
             }
             return;
         } else if (nodeType == ELEMENT_NODE) {
@@ -216,9 +227,8 @@ function updateTextNode(el, val) {
     var removableTails = el.snTails;
 
     if (isArray(val) || (typeof val === 'object' && val.nodeType && (val = [val]))) {
-        if (val.every(v => !v || typeof v === 'string' || typeof v === 'number')) {
-            el.nodeValue = val.join('');
-            el.snTails = null;
+        if (el.snType === 'textReplacement') {
+            el.snTextNode.nodeValue = val.join('');
         } else {
             const newTails = [];
             let node = el;
