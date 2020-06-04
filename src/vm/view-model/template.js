@@ -1,4 +1,4 @@
-import { isArray, isNo } from '../../utils/is';
+import { isArray, isNo, isString } from '../../utils/is';
 import { $, TEXT_NODE, ELEMENT_NODE, eachElement, insertElementAfter, fade } from '../../utils/dom';
 import FunctionCompiler from './FunctionCompiler';
 import {
@@ -216,46 +216,51 @@ function updateTextNode(el, val) {
     var removableTails = el.snTails;
 
     if (isArray(val) || (typeof val === 'object' && val.nodeType && (val = [val]))) {
-        const newTails = [];
-        let node = el;
+        if (val.every(v => isString(v))) {
+            el.nodeValue = val.join('');
+            el.snTails = null;
+        } else {
+            const newTails = [];
+            let node = el;
 
-        val.reduce((res, item) => {
-            if (isViewModel(item))
-                return res.concat(item.nodes());
-            else if (Array.isArray(item))
-                return res.concat(item);
-            res.push(item);
-            return res;
-        }, []).forEach(function (item) {
-            if (item == null) item = '';
-            const nextSibling = node.nextSibling;
+            val.reduce((res, item) => {
+                if (isViewModel(item))
+                    return res.concat(item.nodes());
+                else if (Array.isArray(item))
+                    return res.concat(item);
+                res.push(item);
+                return res;
+            }, []).forEach(function (item) {
+                if (item == null) item = '';
+                const nextSibling = node.nextSibling;
 
-            if (nextSibling !== item) {
-                if (
-                    (item && item.nodeType) || (
-                        (!nextSibling ||
-                            nextSibling.nodeType !== TEXT_NODE ||
-                            nextSibling.nodeValue !== "" + item) &&
-                        (item = document.createTextNode(item))
-                    )
-                ) {
-                    insertElementAfter(node, item);
-                } else {
-                    item = nextSibling;
+                if (nextSibling !== item) {
+                    if (
+                        (item && item.nodeType) || (
+                            (!nextSibling ||
+                                nextSibling.nodeType !== TEXT_NODE ||
+                                nextSibling.nodeValue !== "" + item) &&
+                            (item = document.createTextNode(item))
+                        )
+                    ) {
+                        insertElementAfter(node, item);
+                    } else {
+                        item = nextSibling;
+                    }
                 }
-            }
-            if (removableTails) {
-                const index = removableTails.indexOf(item);
-                if (index !== -1) {
-                    removableTails.splice(index, 1);
+                if (removableTails) {
+                    const index = removableTails.indexOf(item);
+                    if (index !== -1) {
+                        removableTails.splice(index, 1);
+                    }
                 }
-            }
-            node = item;
-            newTails.push(item);
-        });
+                node = item;
+                newTails.push(item);
+            });
 
-        el.nodeValue = '';
-        el.snTails = newTails;
+            el.nodeValue = '';
+            el.snTails = newTails;
+        }
     } else {
         el.nodeValue = val;
         el.snTails = null;
