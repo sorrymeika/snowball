@@ -1,4 +1,4 @@
-import { isArray, isNo, isString } from '../../utils/is';
+import { isArray, isNo } from '../../utils/is';
 import { $, TEXT_NODE, ELEMENT_NODE, eachElement, insertElementAfter, fade } from '../../utils/dom';
 import FunctionCompiler from './FunctionCompiler';
 import {
@@ -216,7 +216,7 @@ function updateTextNode(el, val) {
     var removableTails = el.snTails;
 
     if (isArray(val) || (typeof val === 'object' && val.nodeType && (val = [val]))) {
-        if (val.every(v => isString(v))) {
+        if (val.every(v => !v || typeof v === 'string' || typeof v === 'number')) {
             el.nodeValue = val.join('');
             el.snTails = null;
         } else {
