@@ -121,7 +121,7 @@ const app = createApplication({
     }),
     options: {
         // 禁用跳转切换动画
-        disableTrasition: true
+        disableTransition: true
     },
     // 对app进行扩展
     extend() {
@@ -129,7 +129,7 @@ const app = createApplication({
             env: {
                 api: 'https://**'
             },
-            get server(){
+            get server() {
                 if (!this[SymbolServer]) {
                     this[SymbolServer] = new Server({
                         baseUrl: this.env.api
@@ -495,7 +495,7 @@ const app = createApplication({
     }),
     options: {
         // 禁用跳转切换动画
-        disableTrasition: true
+        disableTransition: true
     }
 }, document.getElementById('root'), callback);
 ```
@@ -721,7 +721,7 @@ Page.extentions.ctx((page, ctx) => {
     }
 
     return {
-        get logger(){
+        get logger() {
             return logger;
         }
     }
