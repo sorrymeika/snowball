@@ -41,13 +41,17 @@ window.preloader = (function (window, document, preloadOptions, undefined) {
     })([
         IS_MOBILE && iOS && function adjustViewportOnKeybordDown() {
             // 修复iOS输入框失焦后view不下来的问题
-            var initialWindowHeight = window.innerHeight;
+            var timer = 0;
             window.addEventListener('blur', function (e) {
-                document.body.style.height = initialWindowHeight + 1 + 'px';
-                setTimeout(() => {
-                    document.body.style.height = initialWindowHeight + 'px';
+                timer = setTimeout(function () {
+                    window.scrollTo && window.scrollTo(0, 0);
                     document.body.scrollTop = 0;
-                }, 100);
+                }, 200);
+            }, true);
+
+            window.addEventListener('focus', function (e) {
+                timer && clearTimeout(timer);
+                timer = 0;
             }, true);
         },
         /**
@@ -90,7 +94,7 @@ window.preloader = (function (window, document, preloadOptions, undefined) {
                 }
             } else {
                 addBodyClass('app-ios');
-                if (IS_SNOWBALL_WEBVIEW) {
+                if (preloadOptions.IS_FULLSCREEN_WEBVIEW || IS_SNOWBALL_WEBVIEW) {
                     addBodyClass('app-fix-statusbar');
                 }
             }

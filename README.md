@@ -241,7 +241,7 @@ class Home extends Component {
 
     render() {
         return (
-            <div >
+            <div>
                 <p onClick={this.ohYes}>{this.ohNo}</p>
                 <TypeSelect />
             </div>
