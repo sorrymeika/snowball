@@ -1,6 +1,6 @@
 import { castStyle, getTransition } from '../../graphics/animation';
 import { loader } from '../../widget';
-import { $, isThenable } from '../../utils';
+import { $, isThenable, noop } from '../../utils';
 
 import { IApplication, IActivityManager, ToggleOptions } from '../types';
 
@@ -57,10 +57,18 @@ export default class ActivityManager implements IActivityManager {
             }
         });
 
+        const { disableTransition = false } = application.options;
+        const canUseTransition = prevActivity && withTransition && !disableTransition;
+
         let resolveTransition;
-        let transitionTask = new Promise((resolve) => {
-            resolveTransition = resolve;
-        });
+        let transitionTask;
+        if (canUseTransition) {
+            transitionTask = new Promise((resolve) => {
+                resolveTransition = resolve;
+            });
+        } else {
+            resolveTransition = noop;
+        }
 
         let resolveRender;
         let renderTask = new Promise((resolve) => {
@@ -91,12 +99,9 @@ export default class ActivityManager implements IActivityManager {
             return replacingTask;
         }
 
-        const {
-            disableTransition = false,
-            activedPageStyle
-        } = application.options;
+        const { activedPageStyle } = application.options;
 
-        if (prevActivity && withTransition && !disableTransition) {
+        if (canUseTransition) {
             replaceActivityWithTransition(this, prevActivity, activity, isForward, resolveTransition);
         } else {
             activity.$el.css(activedPageStyle);

@@ -2,14 +2,14 @@ import { isFunction, isString } from "../../utils";
 import { ActivityOptions } from '../types';
 import { appCtx } from "../core/createApplication";
 import { registerRoutes } from "../core/registerRoutes";
-import { getWiringInfo } from "../core/autowired";
+import { getCurrentCtx } from "../core/autowired";
 import { symbolCtx, symbolController } from "./symbols";
 
 let isCreating = false;
 let currentCtx;
 
 export function initWithContext(fn) {
-    const ctx = currentCtx || getWiringInfo().ctx;
+    const ctx = currentCtx || getCurrentCtx();
     if (!ctx) {
         console.error('ctx 不能为空!');
     }

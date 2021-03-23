@@ -1,30 +1,12 @@
 /* eslint-disable react-hooks/rules-of-hooks */
-import React, { createElement, useState, useMemo, useRef, useEffect, useContext } from 'react';
+import React, { createElement, useState, useRef, useEffect, useContext } from 'react';
 import { isString, isArray, isFunction } from '../../utils';
 import { Reaction } from '../../vm';
 import { observer } from './observer';
-import { _getApplication, appCtx } from '../core/createApplication';
+import { _getApplication } from '../core/createApplication';
 import { withAutowiredScope, autowired } from '../core/autowired';
-import { buildConfiguration } from '../core/configuration';
 
 export const PageContext = React.createContext();
-
-export function AppContextProvider({ children, configurations }) {
-    const ctx = useMemo(() => {
-        return {
-            Configuration: buildConfiguration(appCtx._configuration.concat(configurations || []))
-        };
-    }, [configurations]);
-
-    return (
-        <PageContext.Provider
-            value={{
-                app: appCtx,
-                ctx,
-            }}
-        >{children}</PageContext.Provider>
-    );
-}
 
 function isStateless(component) {
     // `function() {}` has prototype, but `() => {}` doesn't
@@ -36,9 +18,11 @@ function makeStatelessComponentReacitve(statelessComponentFn) {
     const componentFn = (props, forwardRef) => {
         let [version, setRendering] = useState(0);
 
-        const reaction = useMemo(() => {
+        const reactionTrackingRef = useRef(null);
+
+        if (!reactionTrackingRef.current) {
             let ver = version;
-            const reaction = new Reaction(() => {
+            reactionTrackingRef.current = new Reaction(() => {
                 ver++;
                 if (!reaction.isRenderingPending) {
                     reaction.isRenderingPending = true;
@@ -52,9 +36,9 @@ function makeStatelessComponentReacitve(statelessComponentFn) {
                     }
                 }
             }, true);
-            return reaction;
-            // eslint-disable-next-line react-hooks/exhaustive-deps
-        }, []);
+        }
+
+        const reaction = reactionTrackingRef.current;
         reaction.isRenderingPending = false;
 
         useEffect(() => () => reaction.destroy(), [reaction]);
@@ -66,12 +50,6 @@ function makeStatelessComponentReacitve(statelessComponentFn) {
         return element;
     };
     return componentFn;
-}
-
-export function makeComponentReacitve(componentClass) {
-    return isStateless(componentClass)
-        ? makeStatelessComponentReacitve(componentClass)
-        : observer(componentClass);
 }
 
 function defaultMergeProps(additionalProps, ownProps) {
@@ -86,19 +64,12 @@ function createInjector(mapDependenciesToProps, mergeProps = defaultMergeProps, 
         componentClass = observer(componentClass);
     }
 
-    const Injector = React.forwardRef(makeStatelessComponentReacitve((ownProps, forwardRef) => {
+    const Injector = React.memo(React.forwardRef(makeStatelessComponentReacitve((ownProps, forwardRef) => {
         const context = useContext(PageContext);
-        const injector = useRef({
-            factoryInstances: {},
-        });
-        let newProps;
+        const injector = useRef({});
 
-        if (context) {
-            const additionalProps = mapDependenciesToProps(context, ownProps, injector.current);
-            newProps = mergeProps(additionalProps, ownProps);
-        } else {
-            newProps = Object.assign({}, ownProps);
-        }
+        const additionalProps = mapDependenciesToProps(context, ownProps, injector.current);
+        const newProps = mergeProps(additionalProps, ownProps);
 
         if (forwardRef) {
             newProps.ref = forwardRef;
@@ -107,7 +78,7 @@ function createInjector(mapDependenciesToProps, mergeProps = defaultMergeProps, 
             return createElement(componentClass, newProps);
         }
         return componentClass(newProps);
-    }));
+    })));
 
     Injector.WrappedComponent = WrappedComponent;
     Injector.isSnowballInjector = true;
@@ -120,16 +91,7 @@ function compose(mapDependenciesToPropsFactories) {
         const newProps = {};
         withAutowiredScope(dependencies, () => {
             mapDependenciesToPropsFactories.forEach(function (mapDependenciesToProps, i) {
-                const processerName = 'PROCESSER_' + i;
-                let additionalProps = !injector[processerName]
-                    ? mapDependenciesToProps(dependencies, ownProps)
-                    : injector[processerName](ownProps);
-
-                if (typeof additionalProps === 'function') {
-                    injector[processerName] = additionalProps;
-                    additionalProps = mapDependenciesToProps(dependencies, ownProps);
-                }
-
+                let additionalProps = mapDependenciesToProps(dependencies, ownProps);
                 if (additionalProps) {
                     for (let key in additionalProps) {
                         newProps[key] = additionalProps[key];

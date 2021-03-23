@@ -1,5 +1,5 @@
 
-import { $, getPropertyNames, defineProxyProperty } from '../../utils';
+import { $, sealObject } from '../../utils';
 import { ActivityOptions } from '../types';
 import { symbolController } from '../controller/symbols';
 import { Page, bindPageLifecycle } from './Page';
@@ -25,10 +25,6 @@ const lifecycleNames = [
     'onDestroy',
 ];
 const excludeProps = [...lifecycleNames, 'shouldRender', 'constructor'];
-
-function isInjectableProp(propName) {
-    return typeof propName === 'string' && !excludeProps.includes(propName) && /^[a-z]/.test(propName);
-}
 
 /**
  * 页面控制器
@@ -71,8 +67,7 @@ export class Activity {
 
     _init(props, cb) {
         this._inited = true;
-        const store = {};
-
+        let store;
         let type = this.controllerFactory;
 
         if (type.$$typeof === symbolController) {
@@ -89,12 +84,7 @@ export class Activity {
                 this.shouldRenderFn = controllerInstance.shouldRender.bind(controllerInstance);
             }
 
-            const propertyNames = getPropertyNames(controllerInstance);
-            propertyNames.forEach((propertyName) => {
-                if (isInjectableProp(propertyName)) {
-                    defineProxyProperty(store, propertyName, controllerInstance);
-                }
-            });
+            store = sealObject(controllerInstance, excludeProps);
             type = type.componentClass;
         }
 
@@ -102,7 +92,7 @@ export class Activity {
             page: this.page,
             ctx: this.page.ctx,
             el: this.el,
-            store,
+            store: store || {},
             activity: this
         });
 

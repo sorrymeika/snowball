@@ -1,8 +1,6 @@
 import { debounce, throttle, isFunction, isThenable } from "../utils";
 import { isObservable } from "../vm/predicates";
 
-const symbolEmitter = Symbol.for('snowball#Emitter');
-
 function flow(stream, fn) {
     return new Stream((iterator) => {
         return stream.subscribe((data) => {
@@ -286,24 +284,6 @@ function fromEvent(event, type, options?) {
     });
 }
 
-function fromEmitter(emitter) {
-    return new Stream(({ next, complete }) => {
-        const off = emitter.off;
-        const reset = emitter.reset;
-        emitter.on(next);
-        emitter.reset = () => {
-            reset();
-            complete();
-        };
-        emitter.off = (fn) => {
-            off(fn);
-            if (!fn || fn == next)
-                complete();
-        };
-        return () => off(next);
-    });
-}
-
 function fromArray(array) {
     return new Stream(({ next, complete }) => {
         array.forEach(next);
@@ -321,7 +301,6 @@ export const StreamUtils = {
     fromPromise,
     fromObservable,
     fromEvent,
-    fromEmitter,
     of,
     interval(time) {
         return new Stream(({ next }) => {
@@ -353,7 +332,7 @@ export const StreamUtils = {
 
 export default function stream(val) {
     return isFunction(val)
-        ? val[symbolEmitter] ? fromEmitter(val) : new Stream(val)
+        ? new Stream(val)
         : isObservable(val)
             ? fromObservable(val)
             : Array.isArray(val)

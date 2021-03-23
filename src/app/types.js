@@ -1,4 +1,3 @@
-import Event from "../core/event";
 import { IObservable } from "../vm/objects/Observer";
 
 export type Location = {
@@ -153,25 +152,12 @@ export interface IApplication {
     start: (cb: () => never) => IApplication;
 }
 
-type IEmitter = { once(): () => void, off(): never, middleware(): never };
-
-export type Emitter = Function & { emit(): Event } & IEmitter;
-export type AsyncEmitter = Function & { emit(): Promise<Event> } & IEmitter;
-
-type IEventDelegate = {
-    on(): IEventDelegate,
-    off(): IEventDelegate
-}
-
 export type PageCtx = {
     location: Location,
     page: IPage,
     on(): PageCtx,
     off(): PageCtx,
     emit(): any,
-    delegate(): IEventDelegate,
-    createEmitter(): Emitter,
-    createAsyncEmitter(): AsyncEmitter,
     autorun(): () => any,
     useObservable(fn: Function): IObservable,
     autoDispose(fn: Function): () => any,

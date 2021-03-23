@@ -204,7 +204,7 @@ export class Model extends Observer {
             if (attr === 'constructor' && typeof attrs[attr] === 'function') {
                 continue;
             }
-            if (attr === '__proto__' || attr === 'withMutations' || attr === SymbolFrom) {
+            if (attr === '__proto__' || attr === SymbolFrom) {
                 continue;
             }
 

@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
 import { isScrollToBottom } from '../utils';
-import { Service } from '../app';
 import scroll from '../widget/scroll';
 import ScrollElement from './ScrollElement';
 
@@ -14,114 +13,11 @@ interface IScrollViewProps {
     onScroll?: () => never;
     onScrollToBottom?: () => never;
     onScrollToTop?: () => never;
+    onScrollStop?: () => never;
     pullToRefresh?: (resolve: () => never, reject: () => never) => any;
 }
 
-/**
- * 滚动条滚动处理
- */
-class ScrollHandler extends Service {
-
-    onInit = this.ctx.createEmitter();
-    onDestroy = this.ctx.createEmitter();
-    _onScrollToBottom = this.ctx.createEmitter();
-
-    constructor(options) {
-        super();
-
-        this.options = {
-            hasFixableBar: false,
-            ...options
-        };
-        this.isDestroy = false;
-
-        this.onInit(this.init);
-
-        this.onDestroy(() => {
-            this.isDestroy = true;
-        });
-    }
-
-    scrollViewRef;
-    init = (scrollView) => {
-        if (this.scrollViewRef != scrollView) {
-            this.scrollViewRef = scrollView;
-        }
-    }
-
-    getScrollView(cb) {
-        if (!cb) {
-            return new Promise((resolve) => this.getScrollView(resolve));
-        }
-        if (this.scrollViewRef || this.isDestroy) {
-            cb(this.scrollViewRef);
-        } else {
-            this.onInit.once(() => cb(this.scrollViewRef));
-        }
-    }
-
-    getScrollElement(cb) {
-        if (!cb) return new Promise((resolve) => this.getScrollElement(resolve));
-        this.getScrollView((scrollView) => cb(scrollView.container));
-    }
-
-    addOnScrollStopListener(fn) {
-        this.getScrollView((scrollView) => scrollView.addOnScrollStopListener(fn));
-    }
-
-    removeOnScrollStopListener(fn) {
-        this.getScrollView((scrollView) => scrollView.removeOnScrollStopListener(fn));
-    }
-
-    addOnScrollListener = async (fn) => {
-        this.getScrollView((scrollView) => scrollView.addOnScrollListener(fn));
-    }
-
-    removeOnScrollListener = async (fn) => {
-        this.getScrollView((scrollView) => scrollView.removeOnScrollListener(fn));
-    }
-
-    isScrollToBottom() {
-        return !this.scrollViewRef
-            ? false
-            : typeof this.scrollViewRef.isScrollToBottom === 'function'
-                ? this.scrollViewRef.isScrollToBottom()
-                : isScrollToBottom(this.scrollViewRef.container);
-    }
-
-    addOnScrollToBottomListener = (fn) => {
-        if (!this.isAddOnScrollToBottomListener) {
-            this.addOnScrollStopListener(() => {
-                const isReachBottom = typeof this.scrollViewRef.isScrollToBottom === 'function'
-                    ? this.scrollViewRef.isScrollToBottom()
-                    : isScrollToBottom(this.scrollViewRef.container);
-
-                if (isReachBottom) {
-                    this._onScrollToBottom.emit();
-                }
-            });
-            this.isAddOnScrollToBottomListener = true;
-        }
-        return this._onScrollToBottom(fn);
-    }
-
-    scrollToTop(duration?: number) {
-        this.getScrollView((scrollView) => scrollView.scrollToTop(duration));
-    }
-
-    scrollTo(x, y, duration?: number, cb?) {
-        this.getScrollView((scrollView) => scrollView.scrollTo(x, y, duration, cb));
-    }
-
-    detectImageLazyLoad() {
-        this.scrollViewRef && this.scrollViewRef.detectImageLazyLoad();
-    }
-}
-
 export default class ScrollView extends Component<IScrollViewProps, any> {
-    static createHandler = (options) => {
-        return new ScrollHandler(options);
-    }
 
     componentDidMount() {
         this.imageLazyLoad();
@@ -188,6 +84,18 @@ export default class ScrollView extends Component<IScrollViewProps, any> {
         if (index != -1) {
             this.scrollListenerCache.splice(index, 1);
         }
+    }
+
+    isScrollToBottom() {
+        return isScrollToBottom(this.container);
+    }
+
+    addOnScrollToBottomListener = (fn) => {
+        this.addOnScrollStopListener(() => {
+            if (this.isScrollToBottom()) {
+                fn();
+            }
+        });
     }
 
     scrollTop(y) {

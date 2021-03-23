@@ -453,7 +453,7 @@ if (process.env.NODE_ENV === 'development') {
     });
 
     setTimeout(async () => {
-        const { observable, nextTick } = require("../../snowball");
+        const { observable, nextTick, asObservable } = require("../../snowball");
 
         let val,
             eq;
@@ -472,10 +472,8 @@ if (process.env.NODE_ENV === 'development') {
         await nextTick();
         console.assert(test.$el.html() == '1', 'el html must be `1`, now is `' + test.$el.html() + '`');
 
-        test.state.data.withMutations(data => {
-            data.set({
-                name: 2
-            });
+        asObservable(test.state.data).set({
+            name: 2
         });
 
         await nextTick();

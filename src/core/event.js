@@ -1,8 +1,3 @@
-import { isPlainObject } from "../utils";
-
-const symbolEventEmitter = Symbol.for('snowball#EventEmitter');
-const symbolEmitter = Symbol.for('snowball#Emitter');
-
 function returnFalse() {
     return false;
 }
@@ -35,8 +30,6 @@ Event.prototype = {
 };
 
 const EventEmitterProto = {
-    [symbolEventEmitter]: true,
-
     on(names, callback) {
         if (!callback || !names) return;
 
@@ -171,142 +164,21 @@ export function eventMixin(fn, ext) {
     return fn;
 }
 
-function createEmitterFn(extend) {
-    return (init) => {
-        let funcs = [];
-
-        const emitter = (fn) => typeof fn === 'function'
-            ? emitter.on(fn)
-            : emitter.emit(fn);
-
-        emitter[symbolEmitter] = true;
-
-        Object.assign(emitter, {
-            on(fn) {
-                funcs.push(fn);
-                return () => emitter.off(fn);
-            },
-            once(fn) {
-                const once = (state, e) => {
-                    dispose();
-                    fn(state, e);
-                };
-                const dispose = emitter.on(once);
-                return dispose;
-            },
-            untilTrue(fn) {
-                const dispose = emitter.on(async (state, e) => {
-                    let result = fn(state, e);
-                    if (result && typeof result.then === 'function') {
-                        result = await result;
-                    }
-                    if (result === true) {
-                        dispose();
-                    }
-                });
-                return dispose;
-            },
-            reset() {
-                funcs = init ? [init] : [];
-            },
-            off(fn) {
-                if (fn) {
-                    const index = funcs.indexOf(fn);
-                    if (index !== -1) {
-                        funcs.splice(index, 1);
-                    }
-                } else {
-                    funcs = [];
-                }
-                return emitter;
-            }
-        }, extend(funcs));
-
-        if (typeof init === 'function') {
-            emitter(init);
-        }
-
-        return emitter;
-    };
-}
-
-function eventFromState(state) {
-    return new Event(isPlainObject(state) && state.type && typeof state.type == 'string' ? state.type : 'do');
-}
-
-const createEmitter = createEmitterFn((funcs) => {
-    return {
-        emit(state) {
-            const event = eventFromState(state);
-            funcs.every(nextFunc => {
-                nextFunc(state, event);
-                return !event.isPropagationStopped() && !event.isDefaultPrevented();
-            });
-            return event;
-        }
-    };
-});
-
-const createAsyncEmitter = createEmitterFn((funcs) => {
-    return {
-        emit: async (state) => {
-            const event = eventFromState(state);
-            for (let i = 0; i < funcs.length; i++) {
-                await funcs[i](state, event);
-                if (event.isPropagationStopped() || event.isDefaultPrevented()) {
-                    break;
-                }
-            }
-            return event;
-        }
-    };
-});
-
-function createEventDelegate(eventEmitter, type, listener) {
-    let delegate;
-
-    if (typeof eventEmitter === 'function') {
-        let despose;
-        const on = () => {
-            despose && despose();
-            despose = eventEmitter();
+export function createEventSwitch(eventEmitter, type, listener) {
+    eventEmitter.on(type, listener);
+    const delegate = {
+        on() {
+            delegate.off();
+            eventEmitter.on(type, listener);
             return delegate;
-        };
-        delegate = {
-            on,
-            off() {
-                despose && despose();
-                return delegate;
-            }
-        };
-        on();
-    } else {
-        eventEmitter.on(type, listener);
-        delegate = {
-            emit(...args) {
-                eventEmitter.trigger(type, ...args);
-                return delegate;
-            },
-            on() {
-                delegate.off();
-                eventEmitter.on(type, listener);
-                return delegate;
-            },
-            off() {
-                eventEmitter.off(type, listener);
-                return delegate;
-            },
-        };
-    }
+        },
+        off() {
+            eventEmitter.off(type, listener);
+            return delegate;
+        },
+    };
     return delegate;
 }
-
-export const Emitter = {
-    create: createEmitter,
-    async: createAsyncEmitter,
-    delegate: createEventDelegate,
-};
-
 
 // var event = new EventEmitter();
 

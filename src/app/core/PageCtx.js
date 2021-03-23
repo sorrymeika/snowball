@@ -1,7 +1,6 @@
 import { observable, autorun, compute } from '../../vm';
-import { EventEmitter, Emitter } from '../../core/event';
+import { EventEmitter } from '../../core/event';
 import { buildConfiguration } from './configuration';
-import { withAutowiredScope, autowired } from './autowired';
 
 export default class PageCtx extends EventEmitter {
     constructor(page, app, configs) {
@@ -21,32 +20,10 @@ export default class PageCtx extends EventEmitter {
         return this.page.location;
     }
 
-    autowired(...args) {
-        return withAutowiredScope(this.page, () => autowired(...args));
-    }
-
     createEventEmitter() {
         const eventEmitter = new EventEmitter();
         this.page.on('destroy', () => eventEmitter.off());
         return eventEmitter;
-    }
-
-    createEmitter(init) {
-        const event = Emitter.create(init);
-        this.page.on('destroy', event.off);
-        return event;
-    }
-
-    createAsyncEmitter(init) {
-        const event = Emitter.async(init);
-        this.page.on('destroy', event.off);
-        return event;
-    }
-
-    delegate(eventEmitter, type, listener) {
-        const delegate = Emitter.delegate(eventEmitter, type, listener);
-        this.page.on('destroy', delegate.off);
-        return delegate;
     }
 
     autorun(fn) {

@@ -152,24 +152,49 @@ export function getPropertyNames(proto) {
     return unique(propertyNames);
 }
 
-export function defineProxyProperty(proxy, propertyName, source) {
-    Object.defineProperty(proxy, propertyName, {
-        configurable: true,
-        enumerable: true,
-        get() {
-            let val = source[propertyName];
-            if (isFunction(val) && !Object.prototype.hasOwnProperty.call(source, propertyName)) {
-                val = val.bind(source);
-                Object.defineProperty(this, propertyName, {
-                    configurable: false,
-                    enumerable: true,
-                    value: val
-                });
-            }
-            return val;
+const storeMap = new WeakMap();
+
+export function mapOnce(source, map) {
+    if (storeMap.has(source)) {
+        return storeMap.get(source);
+    }
+
+    const result = map(source);
+    storeMap.set(source, result);
+    return result;
+}
+
+export function sealObject(source, excludeProps) {
+    const proxy = {};
+    const propertyNames = getPropertyNames(source);
+    const filter = (propName) => {
+        return typeof propName === 'string' && (!excludeProps || !excludeProps.includes(propName)) && /^[a-z]/.test(propName);
+    };
+
+    propertyNames.forEach((propertyName) => {
+        if (filter(propertyName)) {
+            Object.defineProperty(proxy, propertyName, {
+                configurable: true,
+                enumerable: true,
+                get() {
+                    let val = source[propertyName];
+                    if (isFunction(val) && !Object.prototype.hasOwnProperty.call(source, propertyName)) {
+                        val = val.bind(source);
+                        Object.defineProperty(this, propertyName, {
+                            configurable: false,
+                            enumerable: true,
+                            value: val
+                        });
+                    }
+                    return val;
+                }
+            });
         }
     });
+
+    return proxy;
 }
+
 
 class MixinBuilder {
 

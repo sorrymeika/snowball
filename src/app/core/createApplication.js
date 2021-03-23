@@ -3,9 +3,7 @@ import ActivityManager from './ActivityManager';
 import Router from './Router';
 import Navigation from './Navigation';
 import Application from './Application';
-import { EventEmitter, Emitter } from '../../core/event';
-import { withAutowiredScope, autowired } from './autowired';
-import { buildConfiguration } from './configuration';
+import { EventEmitter } from '../../core/event';
 
 // 当前启动的应用的实例
 let application;
@@ -24,8 +22,6 @@ export const appCtx = Object.defineProperties(new EventEmitter(), {
     currentCtx: currentCtxProperty,
     current: currentCtxProperty,
 });
-appCtx.createEmitter = Emitter.create;
-appCtx.createAsyncEmitter = Emitter.async;
 
 /**
  * 创建应用
@@ -75,9 +71,6 @@ export function createApplication({
     application.setNavigation(navigation)
         .setActivityManager(new ActivityManager(application));
 
-    const Configuration = buildConfiguration(conf);
-    let autowiredCache;
-    let autowiredCount = 0;
     let isStart = false;
     Object.assign(appCtx, {
         navigation: ['forward', 'back', 'replace', 'transitionTo', 'home'].reduce((nav, prop) => {
@@ -98,22 +91,6 @@ export function createApplication({
 
             this.trigger('beforestart');
             application.start(cb);
-        },
-        autowired(...args) {
-            let instance = withAutowiredScope(autowiredCache || (autowiredCache = {
-                ctx: {
-                    Configuration
-                },
-                app: appCtx
-            }), () => autowired(...args));
-            autowiredCount++;
-            Promise.resolve().then(() => {
-                autowiredCount--;
-                if (autowiredCount == 0) {
-                    autowiredCache = null;
-                }
-            });
-            return instance;
         }
     });
 

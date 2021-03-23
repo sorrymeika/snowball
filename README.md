@@ -193,31 +193,30 @@ class HomeController {
 
 ```js
 import { observable } from 'snowball';
-import { ViewModel } from 'snowball/app';
+import { ViewModel, disposable } from 'snowball/app';
 
 class TypeViewModel extends ViewModel {
     @observable types = [];
     @observable subTypes = [];
 
-    // 初始化事件，页面`onInit`完成且`autowired`第一次调用时触发
-    // `ViewModel`的生命周期事件同`Controller`基本一样
-    onInit() {
-        this.init();
-    }
-
-    onTypeChange = this.ctx.createEmitter();
+     @disposable
+    _eventEmitter = new EventEmitter();
 
     constructor() {
         super();
 
-        this.onTypeChange((typeId) => this.changeType(typeId));
+        this._eventEmitter.on((e, typeId) => this.onTypeChange(typeId));
     }
 
-    init() {
+    // 初始化事件，页面`onInit`完成且`autowired`第一次调用时触发
+    // `ViewModel`的生命周期事件同`Controller`基本一样
+    onInit() {
         this.types = await this.app.server.post('/getTypes');
     }
 
-    changeType(typeId) {
+    dispatch = (e) => this._eventEmitter.emit(e);
+
+    onTypeChange(typeId) {
         this.subTypes = await this.app.server.post('/getSubTypes', typeId);
     }
 }
@@ -1352,16 +1351,15 @@ import { ScrollView, MainScrollView, scrollUtils } from 'snowball/components';
  * @param {function} [onScrollToBottom] 滚动到底部事件
  * @param {string|PagiationStatus} [loadMoreStatus] 加载更多状态
 */
-const mainScrollViewHandler = scrollUtils.createScrollHandler();
-mainScrollViewHandler.addOnScrollListener((e)=>{
-    console.log(e, e.target, e.x, e.y);
-});
 
 <MainScrollView
     loadMoreStatus={PagiationStatus}
     onScrollToBottom={autoLoadMore}
+    onScroll={(e) => {
+        console.log(e, e.target, e.x, e.y);
+    }}
     pullToRefresh={()=>{  }}
-    handler={mainScrollViewHandler}
+    ref={mainScrollViewRef}
 >
 </MainScrollView>
 

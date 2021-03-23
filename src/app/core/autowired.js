@@ -24,11 +24,12 @@ function formatWiredName(resourceType: string, resourceName: string) {
 let pageCtx;
 let wiringCaller;
 
-export function getWiringInfo() {
-    return {
-        ctx: pageCtx,
-        caller: wiringCaller
-    };
+export function getCurrentCtx() {
+    return pageCtx;
+}
+
+export function getCurrentCaller() {
+    return wiringCaller || (pageCtx && pageCtx._config._caller);
 }
 
 export function withAutowiredScope(caller, fn) {
@@ -37,10 +38,6 @@ export function withAutowiredScope(caller, fn) {
     const instance = fn();
     wiringCaller = prevInstance;
     return instance;
-}
-
-export function isAutowired(proto, name) {
-    return !!proto[AUTOWIRED_PROPS] && !!proto[AUTOWIRED_PROPS][name];
 }
 
 function getConfiguration(classInstance, fn) {

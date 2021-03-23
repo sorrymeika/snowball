@@ -148,7 +148,7 @@ if (process.env.NODE_ENV === 'development') {
 
     // observable object test
     setTimeout(() => {
-        const { observable } = require('../observable');
+        const { observable, asObservable } = require('../observable');
 
         class B {
             @observable
@@ -216,10 +216,8 @@ if (process.env.NODE_ENV === 'development') {
         };
         console.assert(count == 1, 'set a.data then reaction is not emit!');
 
-        a.data.withMutations((data) => {
-            data.set({
-                name: 2
-            });
+        asObservable(a.data).set({
+            name: 2
         });
         console.assert(count == 2, 'set a.data then reaction is not emit!');
 

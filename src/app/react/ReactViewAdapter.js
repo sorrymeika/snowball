@@ -26,10 +26,15 @@ export default class ReactViewAdapter implements IViewAdapter {
             constructor() {
                 super();
 
-                if (page.react && page.react.Provider) {
-                    const render = this.render;
-                    this.render = () => {
-                        return React.createElement(page.react.Provider, null, render.call(this));
+                let Wrapper;
+                if (page.react && (Wrapper = (page.react.Wrapper || page.react.Provider))) {
+                    const render = this._renderReactiveView;
+                    this._renderReactiveView = () => {
+                        return createElement(Wrapper, {
+                            controller: adapter.store,
+                            app: adapter.page.app,
+                            ctx: adapter.page.ctx
+                        }, render.call(this));
                     };
                 }
                 this.isRenderingPending = false;
@@ -48,12 +53,16 @@ export default class ReactViewAdapter implements IViewAdapter {
                 return true;
             }
 
+            _renderReactiveView() {
+                return createElement(reactiveView, adapter._reactProps);
+            }
+
             render() {
                 this.isRenderingPending = false;
                 return (
                     <PageContext.Provider
                         value={adapter.store}
-                    >{createElement(reactiveView, adapter._reactProps)}</PageContext.Provider>
+                    >{this._renderReactiveView()}</PageContext.Provider>
                 );
             }
         }

@@ -1,4 +1,4 @@
-import { eventMixin, Emitter } from '../../core/event';
+import { eventMixin, EventEmitter } from '../../core/event';
 import { identify } from '../../utils/guid';
 
 import { TYPEOF } from '../predicates';
@@ -184,7 +184,7 @@ export class PropObserver implements IObservable {
         this.observer = observer;
         this.name = name;
         this.callbacks = [];
-        this.desposer = Emitter.create();
+        this._eventEmitter = new EventEmitter();
     }
 
     get() {
@@ -198,10 +198,10 @@ export class PropObserver implements IObservable {
             next = next.next;
         }
         next(this.get());
-        complete && this.desposer.on(complete);
+        complete && this._eventEmitter.on('destroy', complete);
         const despose = this.observe(next);
         return () => {
-            complete && this.desposer.off(complete);
+            complete && this._eventEmitter.off('destroy', complete);
             despose();
         };
     }
@@ -229,9 +229,9 @@ export class PropObserver implements IObservable {
         for (var i = callbacks.length - 1; i >= 0; i--) {
             this.observer.unobserve(this.name, callbacks[i]);
         }
-        this.desposer.emit();
-        this.desposer.off();
-        this.observer = this.callbacks = this.desposer = null;
+        this._eventEmitter.emit('destroy');
+        this._eventEmitter.off();
+        this.observer = this.callbacks = this._eventEmitter = null;
     }
 }
 

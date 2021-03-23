@@ -18,14 +18,14 @@ export * from './core/backEventHandlers';
 export { configuration } from './core/configuration';
 export { autowired, param } from './core/autowired';
 export { controller } from './controller/controller';
-export { emitter, asyncEmitter } from './controller/emitter';
+export { disposable } from './controller/disposable';
 export { singleton } from './controller/singleton';
 export { Service } from './controller/Service';
 export { ViewModel } from './controller/ViewModel';
 export { default as Module } from './controller/Module';
+export { loadModule, flatModule } from './controller/loadModule';
 
-export { inject, PageContext, AppContextProvider } from './react/inject';
+export { inject, PageContext } from './react/inject';
 export { observer } from './react/observer';
 export { reactModule } from './react/reactModule';
 export { ref } from './react/ref';
-export { default as mapViewModelToProps } from './react/mapViewModelToProps';

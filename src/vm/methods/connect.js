@@ -41,16 +41,5 @@ export function freezeObject(data, observer) {
         writable: false,
         value: observer
     });
-
-    Object.defineProperty(data, 'withMutations', {
-        enumerable: false,
-        configurable: false,
-        writable: false,
-        value(fn) {
-            fn(this[SymbolFrom]);
-            return this[SymbolFrom].state.data;
-        }
-    });
-
     Object.freeze(data);
 }

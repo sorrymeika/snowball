@@ -44,7 +44,7 @@ export class Dictionary extends Observer {
             if (key === 'constructor' && typeof data[key] === 'function') {
                 continue;
             }
-            if (key === '__proto__' || key === 'withMutations' || key === SymbolFrom) {
+            if (key === '__proto__' || key === SymbolFrom) {
                 continue;
             }
 

@@ -37,7 +37,7 @@ export class Page extends EventEmitter implements IPage {
         mixin: (props) => {
             copyProperties(Page.prototype, props);
         },
-        react(props: { Provider: any }) {
+        react(props: { Wrapper: any }) {
             copyProperties(Page.prototype.react || (Page.prototype.react = {}), props);
         },
         ctx(props) {
