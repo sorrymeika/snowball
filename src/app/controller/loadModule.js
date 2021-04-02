@@ -4,7 +4,7 @@ import { buildConfiguration } from "../core/configuration";
 import { mapOnce, sealObject } from "../../utils";
 import { ViewModel } from "./ViewModel";
 
-const excludeProps = ['onResume', 'onPause', 'onInit', 'onCreate', 'onDestroy'];
+const excludeProps = ['ctx', 'app', 'constructor'];
 const excludeViewModelProps = [...excludeProps, 'onResume', 'onPause', 'onInit', 'onCreate', 'onDestroy'];
 
 let Configuration;

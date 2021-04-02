@@ -133,16 +133,6 @@ export class Activity {
         return this;
     }
 
-    whenNotInTransition(fn) {
-        if (!this.transitionTask) {
-            console.error('call `setTransitionTask` first!');
-            fn();
-            return;
-        }
-        this.transitionTask.then(fn);
-        return this;
-    }
-
     qsChange() {
         this.page.trigger('qschange');
     }

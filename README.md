@@ -252,16 +252,16 @@ class Home extends Component {
 * `app/home/containers/TypeSelect.jsx`
 
 ```js
-import { inject } from "snowball/app";
+import { inject, loadModule } from "snowball/app";
 
 // 可通过 `inject` 方法将 `controller` 的属性注入到组件的 `props` 中
 // `inject`方法内使用`autowired`可根据注册名称自动加载并实例化依赖
 // `controller` 中以 `_`和'$'开头的属性会认为是私有属性，不可注入
 const TypeSelect = inject(() => {
-    const typeViewModel = autowired('typeViewModel');
+    const typeViewModel = loadModule('typeViewModel');
     return {
         types: typeViewModel.types,
-        onTypeChange: typeViewModel.onTypeChange.emit,
+        onTypeChange: typeViewModel.onTypeChange,
     };
 })((props) => {
     const { type, subTypes, onTypeChange } = props;
@@ -438,7 +438,7 @@ var User = function (props) {
 
 ### `inject` 方法
 
-* `controller`的属性和方法以及`provide`提供的属性和方法，可通过inject方法跨组件注入到子组件的props中
+* `controller`的属性和方法，可通过inject跨组件注入到子组件的props中
 
 ```js
 import { inject } from 'snowball';
@@ -450,6 +450,8 @@ class SomeComponent extends Component {
 
 // `return`的属性会覆盖`props`的属性
 inject(({ user, data }, props)=>{
+    // 可自动加载configuration配置的类
+    const userService = loadModule('userService');
     return {
         user,
         data
@@ -569,27 +571,6 @@ class UserService extends Service {
     }
 }
 ```
-
-### `ctx.createEmitter` 
-
-* 创建页面级事件
-
-```js
-
-this.onClick = this.ctx.createEmitter();
-
-this.onClick((data, event) => {
-    console.log(data);
-    event.stopPropagation();
-})
-
-this.onClick((data, event) => {
-    console.log('propagation stopped');
-});
-
-this.onClick.emit({ name: 'on no!' });
-```
-
 
 ### `ctx.page` 属性
 
