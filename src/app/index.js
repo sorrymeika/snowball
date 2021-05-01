@@ -23,7 +23,7 @@ export { singleton } from './controller/singleton';
 export { Service } from './controller/Service';
 export { ViewModel } from './controller/ViewModel';
 export { default as Module } from './controller/Module';
-export { loadModule, flatModule } from './controller/loadModule';
+export { loadModule } from './controller/loadModule';
 
 export { inject, PageContext } from './react/inject';
 export { observer } from './react/observer';

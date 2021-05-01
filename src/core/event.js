@@ -144,12 +144,6 @@ const EventEmitterProto = {
             }
         }
         return this;
-    },
-
-    emitter(type) {
-        return (...args) => {
-            this.trigger(type, ...args);
-        };
     }
 };
 
@@ -162,22 +156,6 @@ EventEmitter.prototype = EventEmitterProto;
 export function eventMixin(fn, ext) {
     Object.assign(typeof fn == 'function' ? fn.prototype : fn, EventEmitterProto, ext);
     return fn;
-}
-
-export function createEventSwitch(eventEmitter, type, listener) {
-    eventEmitter.on(type, listener);
-    const delegate = {
-        on() {
-            delegate.off();
-            eventEmitter.on(type, listener);
-            return delegate;
-        },
-        off() {
-            eventEmitter.off(type, listener);
-            return delegate;
-        },
-    };
-    return delegate;
 }
 
 // var event = new EventEmitter();
