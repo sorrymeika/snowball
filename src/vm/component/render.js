@@ -11,6 +11,7 @@ import {
     setAttribute
 } from './element';
 import { createComponent } from './component';
+import getEventId from './getEventId';
 
 const UNPROPAGATIVE_EVENTS = ['scroll', 'scrollstop'];
 
@@ -96,12 +97,12 @@ function _render(element: IElement, state, data, insertElementFn) {
                 const fid = events[i + 1];
                 const eventName = events[i];
                 if (!isPropagativeEvents(events[i])) {
-                    element.node.setAttribute('sn' + state.state.id + '-on' + eventName, fid);
+                    element.node.setAttribute(getEventId(state, eventName), fid);
                     element.node.addEventListener(events[i], (e) => {
                         return invokeEvent(element, element.data, fid, e);
                     });
                 } else {
-                    element.node.setAttribute('sn' + ownComponent.state.state.id + '-on' + eventName, fid);
+                    element.node.setAttribute(getEventId(ownComponent.$state, eventName), fid);
                     ownComponent._eventsDelegation[eventName] = true;
                 }
             }

@@ -7,6 +7,7 @@ import { $, isFunction } from "../../utils";
 import { _isObservableClass } from "../reaction/initializer";
 import { Model } from "../objects/Model";
 import { asObservable } from "../observable";
+import getEventId from "./getEventId";
 
 const factories = {};
 
@@ -119,7 +120,7 @@ class Component {
                 };
                 events.forEach((eventName) => {
                     nodes.forEach((el) => {
-                        const eventId = 'sn' + this.$state.state.id + '-on' + eventName;
+                        const eventId = getEventId(this.$state, eventName);
                         if (el.nodeType == 1 && !(el.boundEvents || (el.boundEvents = {}))[eventId]) {
                             el.boundEvents[eventId] = true;
                             const fxEventName = eventFxMap[eventName] || eventName;
