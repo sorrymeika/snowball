@@ -168,7 +168,7 @@ Object.assign(Slider.prototype, {
         this.set(this._data);
     },
 
-    set: function ({ data }) {
+    set: function (data) {
         if (!Array.isArray(data)) data = data ? [data] : [];
         this._data = data;
 

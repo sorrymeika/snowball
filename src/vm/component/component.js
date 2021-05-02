@@ -304,7 +304,7 @@ export function component({
     tagName,
     template
 }) {
-    const rootVNode = compile(template);
+    let rootVNode;
 
     return (State) => {
         if (_isObservableClass(State)) {
@@ -318,6 +318,10 @@ export function component({
 
         const componentFactory = function (data, ownComponent?) {
             const state = new State(data);
+            if (!rootVNode) {
+                rootVNode = compile(template);
+                template = null;
+            }
             return state.component = new Component(state, rootVNode, ownComponent);
         };
         componentFactory.$$typeof = 'snowball#component';

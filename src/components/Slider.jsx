@@ -25,12 +25,12 @@ export default class Slider extends Component<ISliderProps, never> {
 
     componentDidMount() {
         this.slider = new SliderWidget({
-            data: this.props.data,
             container: ReactDOM.findDOMNode(this),
             dots: true,
             loop: this.props.loop || true,
             autoLoop: this.props.autoLoop
         });
+        this.slider.set(this.props.data);
     }
 
     render() {
