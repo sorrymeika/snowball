@@ -168,7 +168,10 @@ Object.assign(Slider.prototype, {
         this.set(this._data);
     },
 
-    set: function (data) {
+    set: function ({
+        index,
+        data
+    }) {
         if (!Array.isArray(data)) data = data ? [data] : [];
         this._data = data;
 
@@ -300,4 +303,6 @@ Object.assign(Slider.prototype, {
     }
 });
 
-export default customComponent('Slider')(Slider);
+export const SliderComponent = customComponent('Slider')(Slider);
+
+export default Slider;

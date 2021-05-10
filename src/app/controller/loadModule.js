@@ -24,6 +24,14 @@ export function flatModule(moduleName, options) {
     };
 }
 
+export default function mapViewModelToProps(viewModelName, options?) {
+    const caller = getCurrentCaller();
+    const fn = flatModule(viewModelName, options);
+    return caller
+        ? fn(caller, viewModelName, options)
+        : fn;
+}
+
 function sealModule(viewModel) {
     return mapOnce(viewModel, () => sealObject(viewModel, excludeProps));
 }

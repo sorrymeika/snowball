@@ -18,7 +18,9 @@ interface ISliderProps {
 export default class Slider extends Component<ISliderProps, never> {
     shouldComponentUpdate(nextProps) {
         if (this.props.data !== nextProps.data) {
-            this.slider.set(nextProps.data);
+            this.slider.set({
+                data: nextProps.data
+            });
         }
         return false;
     }
@@ -27,10 +29,13 @@ export default class Slider extends Component<ISliderProps, never> {
         this.slider = new SliderWidget({
             container: ReactDOM.findDOMNode(this),
             dots: true,
+            index: this.props.index,
             loop: this.props.loop || true,
             autoLoop: this.props.autoLoop
         });
-        this.slider.set(this.props.data);
+        this.slider.set({
+            data: this.props.data
+        });
     }
 
     render() {

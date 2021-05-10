@@ -21,7 +21,7 @@ export class Custom {
     tagName: 'Test',
     template: `
     test:
-    <ul @click={a=Date.now(),console.log($event)}>
+    <ul onclick={a=Date.now(),console.log($event)}>
     {a}
     <li sn-repeat="item,i in data">a:{i},{item.name}</li>
     </ul>

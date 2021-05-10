@@ -345,8 +345,8 @@ interface CustumComponentConstructor {
 }
 
 class CustomComponent {
-    constructor(component, ownComponent) {
-        this.component = component;
+    constructor(state, ownComponent) {
+        this.state = state;
         this.ownComponent = ownComponent || this;
         this._domMutations = [];
         this._domNodeHasParentNode = false;
@@ -362,7 +362,7 @@ class CustomComponent {
     }
 
     get $el() {
-        return this.component.$el || $(this.component.el);
+        return this.state.$el || $(this.state.el);
     }
 
     get lastNode() {
@@ -371,15 +371,15 @@ class CustomComponent {
     }
 
     set(data) {
-        this.component.set(data);
+        this.state.set(data);
     }
 
     render() {
-        this.component.render && this.component.render();
+        this.state.render && this.state.render();
     }
 
     destroy() {
-        this.component.destroy && this.component.destroy();
+        this.state.destroy && this.state.destroy();
     }
 }
 ['appendTo', 'prependTo', 'before', 'after', 'insertAfter', 'insertBefore', 'remove'].forEach((type) => {
