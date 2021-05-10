@@ -24,7 +24,7 @@ export function flatModule(moduleName, options) {
     };
 }
 
-export default function mapViewModelToProps(viewModelName, options?) {
+export function mapViewModelToProps(viewModelName, options?) {
     const caller = getCurrentCaller();
     const fn = flatModule(viewModelName, options);
     return caller
