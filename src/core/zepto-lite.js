@@ -371,7 +371,7 @@ var Zepto = (function () {
             var nodes = [];
             if (isFunction(selector) && selector.call !== undefined)
                 this.each(function (idx) {
-                    if (!selector.call(this, idx)) nodes.push(this);
+                    if (!selector.call(this, idx, this)) nodes.push(this);
                 });
             else {
                 var excludes = typeof selector == 'string' ? this.filter(selector) :
