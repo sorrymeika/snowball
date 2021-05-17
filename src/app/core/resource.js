@@ -1,5 +1,4 @@
-import preloader from '../../preloader';
-import { isString, loadJs, joinPath } from '../../utils';
+import { isString, joinPath } from '../../utils';
 
 function resolveUrl(mainUrl, path) {
     if (/^(https?:)?\/\//.test(path)) {
@@ -8,59 +7,89 @@ function resolveUrl(mainUrl, path) {
     return joinPath(mainUrl, path);
 }
 
-export async function loadProject(projectUrl) {
-    let mainUrl;
-    let mainJS;
-    let vendorsJS;
-    let bundleJS;
-    let runtimeJS;
-    let mainCSS;
-
-    if (/asset-manifest\.json$/.test(projectUrl)) {
-        let manifest = preloader.getManifest(projectUrl);
-        if (!manifest) {
-            manifest = await loadJSON(projectUrl);
+export function loadProject(projectUrl) {
+    return httpGet(projectUrl, {
+        headers: {
+            'Cache-Control': 'no-cache'
         }
-        mainUrl = projectUrl.slice(0, projectUrl.lastIndexOf('/') + 1);
-
-        Object.keys(manifest.files)
-            .forEach((key) => {
-                if (/^main[\w.]*\.js$/.test(key)) {
-                    mainJS = manifest.files[key];
-                } else if (/^main[\w./]*\.css$/.test(key)) {
-                    mainCSS = manifest.files[key];
-                } else if (/^vendors[~\w.]*\.js$/.test(key)) {
-                    vendorsJS = manifest.files[key];
-                } else if (/^runtime[~\w.]*\.js$/.test(key)) {
-                    runtimeJS = manifest.files[key];
-                }
+    })
+        .then((html) => {
+            html.replace(/<link\s+href="(.+?)"\s+/g, (match, url) => {
+                loadCss(resolveUrl(projectUrl, url));
+                return match;
             });
-    } else {
-        const result = await fetch(
-            projectUrl,
-            projectUrl.startsWith('http://localhost')
-                ? undefined
-                : {
-                    method: 'GET',
-                    headers: {
-                        'Cache-Control': 'no-cache'
+
+            const scripts = [];
+            html.replace(/<script.*?(?:\s+src="(.+?)")?.*?>([\S\s]*?)<\/script>/g, (match, url, text) => {
+                const scriptPromise = new Promise((resolve, reject) => {
+                    const script = document.createElement('script');
+                    if (url) {
+                        httpGet(resolveUrl(projectUrl, url))
+                            .then((text) => {
+                                script.text = text;
+                                resolve(script);
+                            });
+                    } else if (text) {
+                        script.text = text;
+                        resolve(script);
+                    } else {
+                        resolve();
                     }
-                }
-        ).then(response => response.text());
+                });
+                scripts.push(scriptPromise);
+            });
 
-        mainUrl = projectUrl;
-        mainCSS = (result.match(/<link\s+href="(?:\.\/)?([\w./]+\.css)"/) || [])[1];
+            return Promise.all(scripts)
+                .then(scripts => {
+                    scripts.forEach((script) => {
+                        if (script) {
+                            document.body.appendChild(script);
+                        }
+                    });
+                });
+        });
+}
 
-        bundleJS = result.match(/<script[^>]+?src="[^"]*(static\/js\/bundle[\w.]*\.js)"/)[1];
-        vendorsJS = result.match(/<script[^>]+?src="[^"]*(?:\/)?(static\/js\/(vendors)[~\w.]*\.js)"/)[1];
-        mainJS = result.match(/<script[^>]+?src="[^"]*(static\/js\/main[\w.]*\.js)"/)[1];
+
+function ajax(params) {
+    var url = params.url,
+        method = params.method || 'GET',
+        headers = params.headers,
+        data = params.data || null,
+        beforeSend = params.beforeSend,
+        success = params.success,
+        error = params.error;
+
+    if (!url) return;
+    var xhr = new XMLHttpRequest();
+    xhr.addEventListener('load', function () {
+        success(xhr.responseText, xhr);
+    });
+    error && xhr.addEventListener('error', error);
+
+    xhr.open(method, url, true);
+    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
+
+    if (headers) {
+        Object.keys(headers).forEach((key) => {
+            xhr.setRequestHeader(key, headers[key]);
+        });
     }
 
-    mainCSS && loadCss(resolveUrl(mainUrl, mainCSS));
-    bundleJS && await loadJs(resolveUrl(mainUrl, bundleJS));
-    vendorsJS && await loadJs(resolveUrl(mainUrl, vendorsJS));
-    await loadJs(resolveUrl(mainUrl, mainJS));
-    runtimeJS && await loadJs(resolveUrl(mainUrl, runtimeJS));
+    beforeSend && beforeSend(xhr);
+
+    xhr.send(data);
+}
+
+function httpGet(url, options) {
+    return new Promise((resolve, reject) => {
+        ajax({
+            url,
+            ...options,
+            success: resolve,
+            error: reject
+        });
+    });
 }
 
 export async function loadJSON(src: string) {

@@ -128,7 +128,12 @@ export function format(format) {
 
 export function joinPath() {
     var args = [].slice.apply(arguments);
+    var prefix = "";
     var result = args.join('/').replace(/[\\]+/g, '/')
+        .replace(/^(?:https?:)?\/\/.+?\//, (match) => {
+            prefix = match;
+            return '';
+        })
         .replace(/([^:/]|^)[/]{2,}/g, '$1/')
         .replace(/([^.]|^)\.\//g, '$1');
     var flag = true;
@@ -142,7 +147,7 @@ export function joinPath() {
         flag = false;
         result = result.replace(/([^/]+)\/\.\.(\/|$)/g, replacePath);
     }
-    return result.replace(/\/$/, '');
+    return prefix + result.replace(/\/$/, '');
 }
 
 export function rmb(str) {
