@@ -43,16 +43,8 @@ export const observable = (initalValue, execute, descriptor) => {
     }
 };
 
-observable.number = attributes.number;
-observable.string = attributes.string;
-observable.object = attributes.object;
-observable.array = attributes.array;
-observable.boolean = attributes.boolean;
-
 export const dictionary = observable.dictionary = attributes.dictionary;
 export const collection = observable.collection = attributes.collection;
-// TODO: @action
-export const action = attributes.func;
 
 function throwIsNotObservableError() {
     throw new Error(

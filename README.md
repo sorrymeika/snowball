@@ -997,22 +997,6 @@ model.observe('user.userName', function(e) {
 
 * 移除监听
 
-#### `Model.prototype.collection(key)` 方法
-
-* 获取属性名为key的collection，不存在即创建
-
-```js
-model.collection('productList').add([{ id: 1 }]);
-```
-
-#### `Model.prototype.model(key)` 方法
-
-* 获取属性名为key的model，不存在即创建
-
-```js
-home.model('settings').attributes;
-```
-
 #### `(Collection|Model).prototype._` 方法
 
 * Model/Collection 查询
