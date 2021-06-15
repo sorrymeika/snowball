@@ -1,4 +1,4 @@
-import { $ } from '../utils';
+import { $, reflow } from '../utils';
 
 var promise = Promise.resolve();
 var timer;
@@ -16,10 +16,11 @@ const Toast = {
     msec: 2000,
 
     show() {
-        if (!$el.hasClass('app-toast-show'))
-            $el.removeClass('app-toast-hide')
-                .show()
+        if (!$el.hasClass('app-toast-show')) {
+            reflow($el.removeClass('app-toast-hide')
+                .show())
                 .addClass('app-toast-show');
+        }
     },
 
     msg(msg) {
