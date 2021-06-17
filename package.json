@@ -58,7 +58,7 @@
     "preact": "^10.3.3",
     "react": "^16.8.6",
     "react-app-polyfill": "^1.0.1",
-    "react-dev-utils": "^9.1.0",
+    "react-dev-utils": "^11.0.4",
     "react-dom": "^16.8.6",
     "resolve": "1.10.0",
     "sass-loader": "7.1.0",
