@@ -86,6 +86,11 @@ export class Activity {
 
             store = sealObject(controllerInstance, excludeProps);
             type = type.componentClass;
+        } else {
+            store = {
+                ctx: this.page.ctx,
+                app: this.page.app,
+            };
         }
 
         this.view = ViewAdapter.create(type, {
