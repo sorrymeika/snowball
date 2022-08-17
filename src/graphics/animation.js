@@ -5,6 +5,7 @@ import rAF from '../core/rAF';
 import Matrix2D from "./Matrix2D";
 import tween from "./tween";
 import CubicBezier from "./CubicBezier";
+import { android } from "../env";
 
 const DEFAULT_TRANSITION = {
     openEnterZIndex: 2,
@@ -113,7 +114,7 @@ export function castStyle(css) {
         var m = key.match(TRANSFORM_FUNC_RE);
         if (m) {
             if (key === 'translate') {
-                val = (result[TRANSFORM] || '') + ' ' + key + '(' + val + ') translateZ(0)';
+                val = (result[TRANSFORM] || '') + ' ' + key + '(' + val + ')' + (android ? ' translateZ(0)' : '');
             } else {
                 if (!matrix) matrix = new Matrix2D();
                 origTransform = (result[TRANSFORM] || '');
