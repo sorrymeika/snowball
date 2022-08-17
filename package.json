@@ -63,7 +63,7 @@
     "resolve": "1.10.0",
     "sass-loader": "7.1.0",
     "semver": "6.0.0",
-    "sharp": "^0.25.2",
+    "sharp": "^0.30.5",
     "style-loader": "0.23.1",
     "terser-webpack-plugin": "^2.3.5",
     "ts-pnp": "1.1.2",
